@@ -1,0 +1,18 @@
+# Ignore .env files across the whole project
+.env
+
+# Ignore node_modules folders (common in all folders)
+node_modules/
+
+# Ignore build outputs
+build/
+dist/
+
+# OS and editor-specific files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Optional: Ignore sensitive folders (if needed)
+uploads/
