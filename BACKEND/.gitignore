@@ -1,6 +1,9 @@
-# Ignore .env and config.env files
+# Ignore config.env inside the config folder
+config/config.env
+
+# Also ignore .env if you haven't already
 .env
-config.env
+
 # Ignore node_modules folders (common in all folders)
 node_modules/
 
