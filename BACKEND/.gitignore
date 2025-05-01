@@ -1,6 +1,6 @@
-# Ignore .env files across the whole project
+# Ignore .env and config.env files
 .env
-
+config.env
 # Ignore node_modules folders (common in all folders)
 node_modules/
 
@@ -16,3 +16,5 @@ Thumbs.db
 
 # Optional: Ignore sensitive folders (if needed)
 uploads/
+
+
