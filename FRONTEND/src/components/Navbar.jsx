@@ -1,13 +1,14 @@
 import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, NavLink } from "react-router-dom";
 import { GiHamburgerMenu } from "react-icons/gi";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Context } from "../main";
+import "./Navbar.css";
 
 const Navbar = () => {
   const [show, setShow] = useState(false);
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
+  const { isAuthenticated, setIsAuthenticated, user } = useContext(Context);
 
   const handleLogout = async () => {
     await axios
@@ -37,20 +38,37 @@ const Navbar = () => {
         </div>
         <div className={show ? "navLinks showmenu" : "navLinks"}>
           <div className="links">
-            <Link to={"/"} onClick={() => setShow(!show)}>
+            <NavLink to={"/"} onClick={() => setShow(!show)}>
               Home
-            </Link>
-            <Link to={"/appointment"} onClick={() => setShow(!show)}>
-              Appointment
-            </Link>
-            <Link to={"/about"} onClick={() => setShow(!show)}>
+            </NavLink>
+            <NavLink to={"/doctors"} onClick={() => setShow(!show)}>
+              Find Doctors
+            </NavLink>
+            <NavLink to={"/specialties"} onClick={() => setShow(!show)}>
+              Specialties
+            </NavLink>
+            <NavLink to={"/appointment"} onClick={() => setShow(!show)}>
+              Appointments
+            </NavLink>
+            <NavLink to={"/my-bookings"} onClick={() => setShow(!show)}>
+              My Bookings
+            </NavLink>
+            <NavLink to={"/about"} onClick={() => setShow(!show)}>
               About Us
-            </Link>
+            </NavLink>
+            <NavLink to={"/contact"} onClick={() => setShow(!show)}>
+              Contact
+            </NavLink>
           </div>
           {isAuthenticated ? (
-            <button className="logoutBtn btn" onClick={handleLogout}>
-              LOGOUT
-            </button>
+            <div className="auth-links">
+              <NavLink to={"/profile"} onClick={() => setShow(!show)} className="profile-link">
+                Profile
+              </NavLink>
+              <button className="logoutBtn btn" onClick={handleLogout}>
+                LOGOUT
+              </button>
+            </div>
           ) : (
             <button className="loginBtn btn" onClick={goToLogin}>
               LOGIN

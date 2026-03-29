@@ -1,4 +1,5 @@
 import React from "react";
+import "./Biography.css";
 
 const Biography = ({imageUrl}) => {
   return (

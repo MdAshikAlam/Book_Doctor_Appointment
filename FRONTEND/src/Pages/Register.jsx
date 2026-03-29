@@ -3,6 +3,7 @@ import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
 import { Context } from "../main";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import "./Auth.css";
 
 const Register = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(Context);
