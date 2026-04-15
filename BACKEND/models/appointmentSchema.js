@@ -42,7 +42,15 @@ const appointmentSchema=new mongoose.Schema({
         type:String,
         required:true,
     },
+    timing:{
+        type:String,
+        required:true,
+    },
     department:{
+        type:String,
+        required:true,
+    },
+    city:{
         type:String,
         required:true,
     },
