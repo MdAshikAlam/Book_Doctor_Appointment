@@ -4,6 +4,7 @@
   padding-top: 120px;
   padding-bottom: 120px;
   position: relative;
+  overflow: hidden;
 }
 .hero .banner {
   flex: 1;
@@ -37,7 +38,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-y: hidden;
 }
 .animated-image {
   animation: moveUpDown  infinite alternate ease-in-out;

@@ -7,9 +7,8 @@ import "./Auth.css";
 
 const Login = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(Context);
-  const [email, setEmail] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigateTo = useNavigate();
 
@@ -18,8 +17,8 @@ const Login = () => {
     console.log("Form submitted");
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/v1/user/login",
-        { email, password, confirmPassword, role: "Patient" },
+        `${import.meta.env.VITE_BACKEND_URL}/user/login`,
+        { emailOrPhone, password, role: "Patient" },
         {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
@@ -29,9 +28,8 @@ const Login = () => {
       toast.success(response.data.message);
       setIsAuthenticated(true);
       navigateTo("/");
-      setEmail("");
+      setEmailOrPhone("");
       setPassword("");
-      setConfirmPassword("");
     } catch (error) {
       console.log("Error occurred", error);
       toast.error(error.response?.data?.message || "An error occurred");
@@ -45,51 +43,75 @@ const Login = () => {
   return (
     <>
       <div className="container form-component login-form">
-        <h2>Sign In</h2>
-        <p>Please Login To Continue</p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat culpa
-          voluptas expedita itaque ex, totam ad quod error?
-        </p>
-        <form onSubmit={handleLogin}>
-          <input
-            type="text"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <div
+        <div className="login-card">
+          <button 
+            onClick={() => navigateTo(-1)} 
             style={{
-              display: "flex",
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
+              position: "absolute",
+              top: "15px",
+              right: "20px",
+              background: "none",
+              border: "none",
+              fontSize: "24px",
+              cursor: "pointer",
+              color: "#666",
+              padding: "0",
+              margin: "0",
+              width: "auto",
+              boxShadow: "none"
             }}
           >
-            <p style={{ marginBottom: 0 }}>Not Registered?</p>
-            <Link
-              to={"/register"}
-              style={{ textDecoration: "none", color: "#271776ca" }}
+            &times;
+          </button>
+          <h2>Sign In</h2>
+          <p>Please Login To Continue</p>
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Email or Phone Number <span>*</span></label>
+              <input
+                type="text"
+                placeholder="Enter email or phone number"
+                value={emailOrPhone}
+                onChange={(e) => setEmailOrPhone(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Password <span>*</span></label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div
+              className="register-link"
+              style={{
+                display: "flex",
+                gap: "10px",
+                justifyContent: "center",
+                marginTop: "10px"
+              }}
             >
-              Register Now
-            </Link>
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Login</button>
-          </div>
-        </form>
+              <p style={{ marginBottom: 0 }}>Not Registered?</p>
+              <Link
+                to={"/register"}
+                style={{ textDecoration: "none", color: "#271776ca", fontWeight: "600" }}
+              >
+                Register Now
+              </Link>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <button 
+                type="submit" 
+                className={`btn ${(!emailOrPhone || !password) ? "disabled-btn" : ""}`}
+                disabled={!emailOrPhone || !password}
+              >
+                Login
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </>
   );

@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
 import { Link, useNavigate, NavLink } from "react-router-dom";
 import { GiHamburgerMenu } from "react-icons/gi";
+import { FaSearch, FaUserCircle } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Context } from "../main";
@@ -8,11 +9,12 @@ import "./Navbar.css";
 
 const Navbar = () => {
   const [show, setShow] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const { isAuthenticated, setIsAuthenticated, user } = useContext(Context);
 
   const handleLogout = async () => {
     await axios
-      .get("http://localhost:4000/api/v1/user/patient/logout", {
+      .get(`${import.meta.env.VITE_BACKEND_URL}/user/patient/logout`, {
         withCredentials: true,
       })
       .then((res) => {
@@ -41,9 +43,6 @@ const Navbar = () => {
             <NavLink to={"/"} onClick={() => setShow(!show)}>
               Home
             </NavLink>
-            <NavLink to={"/doctors"} onClick={() => setShow(!show)}>
-              Find Doctors
-            </NavLink>
             <NavLink to={"/specialties"} onClick={() => setShow(!show)}>
               Specialties
             </NavLink>
@@ -59,15 +58,32 @@ const Navbar = () => {
             <NavLink to={"/contact"} onClick={() => setShow(!show)}>
               Contact
             </NavLink>
+            <div className="search-bar">
+              <input type="text" placeholder="Search doctors,clinics,etc" />
+              <FaSearch className="search-icon" />
+            </div>
           </div>
+        </div>
+
+        <div className="auth-section">
           {isAuthenticated ? (
             <div className="auth-links">
-              <NavLink to={"/profile"} onClick={() => setShow(!show)} className="profile-link">
-                Profile
-              </NavLink>
-              <button className="logoutBtn btn" onClick={handleLogout}>
-                LOGOUT
-              </button>
+              <div
+                className="profile-icon-container"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                <FaUserCircle className="profile-icon" />
+                {showDropdown && (
+                  <div className="profile-dropdown">
+                    <NavLink to={"/profile"} onClick={() => setShowDropdown(false)}>
+                      User Profile
+                    </NavLink>
+                    <button className="dropdown-item" onClick={handleLogout}>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <button className="loginBtn btn" onClick={goToLogin}>
@@ -75,6 +91,7 @@ const Navbar = () => {
             </button>
           )}
         </div>
+
         <div className="hamburger" onClick={() => setShow(!show)}>
           <GiHamburgerMenu />
         </div>
