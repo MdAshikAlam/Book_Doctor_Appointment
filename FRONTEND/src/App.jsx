@@ -12,6 +12,8 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { Context } from "./main";
 import Login from "./Pages/Login";
+import Specialties from "./Pages/Specialties";
+import Profile from "./Pages/Profile";
 const App = () => {
   const { isAuthenticated, setIsAuthenticated, setUser } =
     useContext(Context);
@@ -20,7 +22,7 @@ const App = () => {
     const fetchUser = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:4000/api/v1/user/patient/me",
+          `${import.meta.env.VITE_BACKEND_URL}/user/patient/me`,
           {
             withCredentials: true,
           }
@@ -45,6 +47,8 @@ const App = () => {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/specialties" element={<Specialties />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />
         <ToastContainer position="top-center" />

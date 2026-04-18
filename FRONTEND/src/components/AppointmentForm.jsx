@@ -17,6 +17,8 @@ const AppointmentForm = () => {
   const [doctorLastName, setDoctorLastName] = useState("");
   const [address, setAddress] = useState("");
   const [hasVisited, setHasVisited] = useState(false);
+  const [timing, setTiming] = useState("");
+  const [city, setCity] = useState("");
 
   const departmentsArray = [
     "Pediatrics",
@@ -36,7 +38,7 @@ const AppointmentForm = () => {
     const fetchDoctors = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/user/doctors",
+          `${import.meta.env.VITE_BACKEND_URL}/user/doctors`,
           { withCredentials: true }
         );
         setDoctors(data.doctors);
@@ -55,7 +57,7 @@ const AppointmentForm = () => {
     try {
       const hasVisitedBool = Boolean(hasVisited);
       const { data } = await axios.post(
-        "http://localhost:4000/api/v1/appointment/post",
+        `${import.meta.env.VITE_BACKEND_URL}/appointment/post`,
 
         {
           firstName,
@@ -71,6 +73,8 @@ const AppointmentForm = () => {
           doctor_lastName: doctorLastName,
           hasVisited: hasVisitedBool,
           address,
+          timing,
+          city,
         },
         {
           withCredentials: true,
@@ -92,6 +96,8 @@ const AppointmentForm = () => {
       setDoctorLastName("");
       setHasVisited(false);
       setAddress("");
+      setTiming("");
+      setCity("");
     } catch (error) {
       console.error("Error creating appointment:", error);
       toast.error(error.response?.data?.message || "An error occurred");
@@ -99,125 +105,203 @@ const AppointmentForm = () => {
   };
 
   return (
-    <div className="container form-component appointment-form">
+    <div className="container appointment-page-wrapper">
       <h2>Appointment</h2>
-      <form onSubmit={handleAppointment}>
-        <div>
-          <input
-            type="text"
-            placeholder="First Name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
+      <form onSubmit={handleAppointment} className="appointment-main-form">
+        <div className="apt-main-container">
+          <div className="apt-section-header">
+            <h4>Doctor & Clinic Details</h4>
+            <div className="apt-header-line"></div>
+          </div>
+          <div className="apt-form-grid">
+            <div className="apt-form-group">
+              <label>Department <span>*</span></label>
+              <select
+                title="Department"
+                value={department}
+                onChange={(e) => {
+                  setDepartment(e.target.value);
+                  setCity("");
+                  setDoctorFirstName("");
+                  setDoctorLastName("");
+                }}
+              >
+                {departmentsArray.map((depart, index) => (
+                  <option value={depart} key={index}>
+                    {depart}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="apt-form-group">
+              <label>Clinic City <span>*</span></label>
+              <select
+                title="Clinic City"
+                value={city}
+                onChange={(e) => {
+                  setCity(e.target.value);
+                  setDoctorFirstName("");
+                  setDoctorLastName("");
+                }}
+                disabled={!department}
+              >
+                <option value="">Select City</option>
+                {[...new Set(doctors
+                  .filter(d => d.doctorDepartment === department)
+                  .map(d => d.city))]
+                  .map((c, index) => (
+                    <option value={c} key={index}>{c}</option>
+                  ))}
+              </select>
+            </div>
+            <div className="apt-form-group">
+              <label>Doctor <span>*</span></label>
+              <select
+                title="Doctor"
+                value={`${doctorFirstName} ${doctorLastName}`}
+                onChange={(e) => {
+                  const [firstName, lastName] = e.target.value.split(" ");
+                  setDoctorFirstName(firstName);
+                  setDoctorLastName(lastName);
+                }}
+              >
+                <option value="">Select Doctor</option>
+                {doctors
+                  .filter((doctor) => doctor.doctorDepartment === department && doctor.city === city)
+                  .map((doctor, index) => (
+                    <option
+                      value={`${doctor.firstName} ${doctor.lastName}`}
+                      key={index}
+                    >
+                      {doctor.firstName} {doctor.lastName}
+                    </option>
+                  ))}
+                {city && doctors.filter(d => d.doctorDepartment === department && d.city === city).length === 0 && (
+                  <option disabled>No doctors available in this city</option>
+                )}
+              </select>
+            </div>
+            <div className="apt-form-group">
+              <label>Appointment Date <span>*</span></label>
+              <input
+                title="Appointment Date"
+                type="date"
+                placeholder="Date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Appointment Time <span>*</span></label>
+              <input
+                title="Appointment Time"
+                type="time"
+                placeholder="Time"
+                value={timing}
+                onChange={(e) => setTiming(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="apt-section-header" style={{ marginTop: "30px" }}>
+            <h4>Personal Details</h4>
+            <div className="apt-header-line"></div>
+          </div>
+          <div className="apt-form-grid">
+            <div className="apt-form-group">
+              <label>First Name <span>*</span></label>
+              <input
+                title="First Name"
+                type="text"
+                placeholder="First Name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Last Name <span>*</span></label>
+              <input
+                title="Last Name"
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Email <span>*</span></label>
+              <input
+                title="Email"
+                type="text"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Mobile Number <span>*</span></label>
+              <input
+                title="Mobile Number"
+                type="number"
+                placeholder="Mobile Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Aadhaar <span>*</span></label>
+              <input
+                title="Aadhaar"
+                type="number"
+                placeholder="Aadhaar"
+                value={adhar}
+                onChange={(e) => setAdhar(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Date of Birth <span>*</span></label>
+              <input
+                title="Date of Birth"
+                type="date"
+                placeholder="Date of Birth"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
+            <div className="apt-form-group">
+              <label>Gender <span>*</span></label>
+              <select
+                title="Gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div className="apt-form-group apt-grid-span-2">
+              <label>Patient Address <span>*</span></label>
+              <textarea
+                title="Patient Address"
+                rows="3"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Your Address"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <input
-            type="text"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="Mobile Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
-        <div>
-          <input
-            type="number"
-            placeholder="Aadhaar"
-            value={adhar}
-            onChange={(e) => setAdhar(e.target.value)}
-          />
-          <input
-            type="date"
-            placeholder="Date of Birth"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-          />
-        </div>
-        <div>
-          <select value={gender} onChange={(e) => setGender(e.target.value)}>
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <input
-            type="date"
-            placeholder=" Date"
-            value={appointmentDate}
-            onChange={(e) => setAppointmentDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <select
-            value={department}
-            onChange={(e) => {
-              setDepartment(e.target.value);
-              setDoctorFirstName("");
-              setDoctorLastName("");
-            }}
-          >
-            {departmentsArray.map((depart, index) => (
-              <option value={depart} key={index}>
-                {depart}
-              </option>
-            ))}
-          </select>
-          <select
-            value={`${doctorFirstName} ${doctorLastName}`}
-            onChange={(e) => {
-              const [firstName, lastName] = e.target.value.split(" ");
-              setDoctorFirstName(firstName);
-              setDoctorLastName(lastName);
-            }}
-            disabled={!department}
-          >
-            <option value="">Select Doctor</option>
-            {doctors
-              .filter((doctor) => doctor.doctorDepartment === department)
-              .map((doctor, index) => (
-                <option
-                  value={`${doctor.firstName} ${doctor.lastName}`}
-                  key={index}
-                >
-                  {doctor.firstName} {doctor.lastName}
-                </option>
-              ))}
-          </select>
-        </div>
-        <textarea
-          rows="10"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Address"
-        />
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            justifyContent: "flex-end",
-            flexDirection: "row",
-          }}
-        >
-          <p style={{ marginBottom: 0 }}>Have you visited before?</p>
+        <div className="visited-container">
+          <p>Have you visited before?</p>
           <input
             type="checkbox"
             checked={hasVisited}
             onChange={(e) => setHasVisited(e.target.checked)}
-            style={{ flex: "none", width: "25px" }}
           />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <button type="submit" style={{ margin: "0 auto" }}>
+        <div className="button-container">
+          <button type="submit" className="btn">
             GET APPOINTMENT
           </button>
         </div>

@@ -8,14 +8,11 @@ import "./Auth.css";
 const Register = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(Context);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [adhar, setAdhar] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigateTo = useNavigate();
 
@@ -23,24 +20,20 @@ const Register = () => {
     e.preventDefault();
     console.log("Form submitted");
   
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !phone ||
-      !adhar ||
-      !dob ||
-      !gender ||
-      !password
-    ) {
+    if (!fullName || !email || !phone || !password || !confirmPassword) {
       toast.error("Please fill in all fields!");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Password and Confirm Password do not match!");
       return;
     }
   
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/v1/user/patient/register",
-        { firstName, lastName, email, phone, adhar, dob, gender, password, role: "Patient" },
+        `${import.meta.env.VITE_BACKEND_URL}/user/patient/register`,
+        { fullName, email, phone, password, confirmPassword, role: "Patient" },
         {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
@@ -50,14 +43,11 @@ const Register = () => {
       toast.success(response.data.message);
       setIsAuthenticated(true);
       navigateTo("/");
-      setFirstName("");
-      setLastName("");
+      setFullName("");
       setEmail("");
       setPhone("");
-      setAdhar("");
-      setDob("");
-      setGender("");
       setPassword("");
+      setConfirmPassword("");
     } catch (error) {
       console.log("Error response:", error.response);
   
@@ -69,9 +59,6 @@ const Register = () => {
   
       toast.error(errorMessage);
     }
-  
-    
-    
   };
 
   if (isAuthenticated) {
@@ -81,88 +68,111 @@ const Register = () => {
   return (
     <>
       <div className="container form-component register-form">
-        <h2>Sign Up</h2>
-        <p>Please Sign Up To Continue</p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat culpa
-          voluptas expedita itaque ex, totam ad quod error?
-        </p>
-        <form onSubmit={handleRegistration}>
-          <div>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Aadhaar"
-              value={adhar}
-              onChange={(e) => setAdhar(e.target.value)}
-            />
-            <input
-              type="date"
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-          <div>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <div
+        <div className="register-card">
+          <button 
+            onClick={() => navigateTo(-1)} 
             style={{
-              display: "flex",
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
+              position: "absolute",
+              top: "15px",
+              right: "20px",
+              background: "none",
+              border: "none",
+              fontSize: "24px",
+              cursor: "pointer",
+              color: "#666",
+              padding: "0",
+              margin: "0",
+              width: "auto",
+              boxShadow: "none"
             }}
           >
-            <p style={{ marginBottom: 0 }}>Already Registered?</p>
-            <Link
-              to={"/signin"}
-              style={{ textDecoration: "none", color: "#271776ca" }}
+            &times;
+          </button>
+          <h2>Sign Up</h2>
+          <p>Please Sign Up To Continue</p>
+
+          <form onSubmit={handleRegistration}>
+            <div style={{ display: "flex", gap: "15px" }}>
+              <div className="form-group">
+                <label>Full Name <span>*</span></label>
+                <input
+                  type="text"
+                  placeholder="Full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Email <span>*</span></label>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "15px" }}>
+              <div className="form-group">
+                <label>Phone Number <span>*</span></label>
+                <input
+                  type="text"
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Password <span>*</span></label>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Confirm Password <span>*</span></label>
+              <input
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                justifyContent: "center",
+                marginTop: "5px"
+              }}
             >
-              Login Now
-            </Link>
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Register</button>
-          </div>
-        </form>
+              <p style={{ marginBottom: 0 }}>Already Registered?</p>
+              <Link
+                to={"/signin"}
+                style={{ textDecoration: "none", color: "#271776ca", fontWeight: "600" }}
+              >
+                Login Now
+              </Link>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <button 
+                type="submit" 
+                disabled={!fullName || !email || !phone || !password || !confirmPassword}
+                className={`btn ${(!fullName || !email || !phone || !password || !confirmPassword) ? "disabled-btn" : ""}`}
+              >
+                Register
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </> 
   );

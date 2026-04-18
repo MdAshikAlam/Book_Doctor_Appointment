@@ -15,7 +15,7 @@ const MessageForm = () => {
     console.log("Form submitted");
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/v1/message/send",
+        `${import.meta.env.VITE_BACKEND_URL}/message/send`,
         { firstName, lastName, phone, email, message },
         {
           withCredentials: true,

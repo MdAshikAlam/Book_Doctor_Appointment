@@ -32,11 +32,11 @@ nav .navLinks {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 30px;
+  gap: 20px;
 }
 nav .navLinks .links {
   display: flex;
-  gap: 15px;
+  gap: 12px;
 }
 nav .navLinks .links a {
   text-decoration: none;
@@ -76,21 +76,84 @@ nav .auth-links {
   align-items: center;
   gap: 20px;
 }
-nav .profile-link {
+nav .profile-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+nav .profile-icon {
+  font-size: 2.5rem;
+  color: #271776ca;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+nav .profile-icon-container:hover .profile-icon {
+  transform: scale(1.05);
+  color: #1a0f52;
+}
+
+nav .profile-dropdown {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  background: #fff;
+  min-width: 180px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 10px 0;
+  z-index: 1001;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: dropdownFade 0.2s ease-out;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+nav .profile-dropdown a,
+nav .profile-dropdown .dropdown-item {
+  padding: 12px 20px;
   text-decoration: none;
-  color: #222;
-  font-size: 16px;
+  color: #333;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 1.4px;
+  text-align: left;
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
 }
-nav .profile-link.active {
-  font-weight: 700;
-  color: #000;
+
+nav .profile-dropdown a:hover,
+nav .profile-dropdown .dropdown-item:hover {
+  background: #f8f9ff;
+  color: #271776ca;
 }
-nav .profile-link:hover {
-  color: #000;
-  transition: 0.3s;
+
+nav .profile-dropdown .dropdown-item {
+  color: #e74c3c;
+  border-top: 1px solid #f0f0f0;
 }
+
+nav .profile-dropdown .dropdown-item:hover {
+  background: #fff5f5;
+  color: #c0392b;
+}
+
 nav .hamburger {
   display: none;
 }
@@ -103,13 +166,61 @@ nav svg {
   width: auto;
 }
 
-@media (max-width: 1520px) {
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #f4f4f4;
+  padding: 6px 15px;
+  border-radius: 25px;
+  margin-left: 20px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.search-bar:focus-within {
+  background: #fff;
+  border-color: #000;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #333;
+  width: 200px;
+  transition: width 0.3s ease;
+}
+
+.search-bar input:focus {
+  width: 250px;
+}
+
+.search-icon {
+  color: #777;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: 20px;
+}
+
+.auth-section .profile-dropdown {
+  top: 50px;
+}
+
+@media (max-width: 1600px) {
   nav {
     min-width: 100%;
-    padding: 0px 40px !important;
+    padding: 0px 30px !important;
   }
 }
-@media (max-width: 1350px) {
+@media (max-width: 1500px) {
   nav {
     background: #ffffffbf;
     position: fixed;
@@ -160,6 +271,16 @@ nav svg {
   }
   nav .logoutBtn {
     margin-top: 20px;
+  }
+  .search-bar {
+    margin-left: 0;
+    width: 100%;
+    margin-top: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+  }
+  .search-bar input {
+    width: 100% !important;
   }
 }
 @media (max-width: 800px) {

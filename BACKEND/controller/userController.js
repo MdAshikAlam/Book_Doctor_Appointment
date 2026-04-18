@@ -6,61 +6,59 @@ import cloudinary from "cloudinary";
 // patient register
 export const patientRegister=catchAsyncErrors(async(req,res,next)=>{
     const {
-        firstName,
-        lastName,
+        fullName,
         email,
         phone,
-        adhar,
-        dob,
-        gender,
         password,
+        confirmPassword,
         role,
     }=req.body;
-    if(
-        !firstName||
-        !lastName||
-        !email||
-        !phone||
-        !password||
-        !gender ||
-        !dob ||
-        !adhar ||
-        !role
-    ) {
-        return next(new ErrorHandler("Please Fill Full Form!",400));
-    }
-    let user =await User.findOne({ email });
-    if(user){
-        return next(new ErrorHandler("User Already Registerd!",400));
+
+    if(!fullName || !email || !phone || !password || !confirmPassword || !role) {
+        return next(new ErrorHandler("Please Fill Full Form!", 400));
     }
 
-    user=await User.create({
+    if(password !== confirmPassword){
+        return next(new ErrorHandler("Password and Confirm Password Do Not Match!", 400));
+    }
+
+    // Split fullName into firstName and lastName
+    const nameParts = fullName.trim().split(" ");
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : " ";
+
+    const userExists = await User.findOne({ 
+        $or: [{ email }, { phone }] 
+    });
+
+    if(userExists){
+        return next(new ErrorHandler("User Already Registered with this Email or Phone!", 400));
+    }
+
+    const user = await User.create({
         firstName,
         lastName,
         email,
         phone,
         password,
-        gender,
-        dob,
-        adhar,
         role,
     });
-    generateToken(user,"User Registered!", 200,res);
+    generateToken(user, "User Registered!", 200, res);
 });
 // login
 export const login=catchAsyncErrors(async(req,res,next)=>{
-const{ email,password,confirmPassword,role}=req.body;
-if(!email ||!password || !confirmPassword || !role){
+const{ emailOrPhone,password,role}=req.body;
+if(!emailOrPhone ||!password || !role){
     return next(new ErrorHandler("Please Provide All Details",400));
 }
-if(password!==confirmPassword){
-    return next(
-        new ErrorHandler("Password And Confirm Password Do Not Match!",400)
-    );
-}
-const user=await User.findOne({email}).select("+password");
+
+// Search for user by email OR phone
+const user=await User.findOne({
+    $or: [{ email: emailOrPhone }, { phone: emailOrPhone }]
+}).select("+password");
+
 if(!user) {
-        return next(new ErrorHandler("Invalid Email of Password",400));
+        return next(new ErrorHandler("Invalid Email or Password",400));
     }
 const isPasswordMatched=await user.comparePassword(password);
 if(!isPasswordMatched){
@@ -170,7 +168,8 @@ export const addNewDoctor=catchAsyncErrors(async(req,res,next)=>{
         gender,
         dob,
         adhar,
-        doctorDepartment
+        doctorDepartment,
+        city
         }=req.body;
         if(
           ( !firstName ||
@@ -181,7 +180,8 @@ export const addNewDoctor=catchAsyncErrors(async(req,res,next)=>{
             !gender ||
             !dob ||
             !adhar ||
-            !doctorDepartment)
+            !doctorDepartment ||
+            !city)
         ){
             return next(new ErrorHandler("Please Provide Full Details",400));
         }
@@ -213,6 +213,7 @@ export const addNewDoctor=catchAsyncErrors(async(req,res,next)=>{
         dob,
         adhar,
         doctorDepartment,
+        city,
         role:"Doctor",
         docPicture: {
             public_id:cloudinaryResponse.public_id,
