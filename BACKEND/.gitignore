@@ -1,23 +1,22 @@
-# Ignore config.env inside the config folder
-config/config.env
+# dependencies
+/node_modules
+/dist
 
-# Also ignore .env if you haven't already
+# env files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Ignore node_modules folders (common in all folders)
-node_modules/
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Ignore build outputs
-build/
-dist/
-
-# OS and editor-specific files
+# misc
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.pem
 
-# Optional: Ignore sensitive folders (if needed)
-uploads/
-
-
+# uploads
+/uploads
