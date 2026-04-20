@@ -41,6 +41,7 @@ const doctorProfileSchema = z.object({
   city: z.string(),
   country: z.string(),
   location: z.object({
+    type: z.literal('Point'),
     coordinates: z.array(z.number()).length(2),
   }).optional(),
 });

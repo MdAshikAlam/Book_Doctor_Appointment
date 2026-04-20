@@ -3,11 +3,16 @@ import Doctor from '../models/Doctor';
 import { AppError } from '../middlewares/error';
 
 export const bookAppointment = async (data: Partial<IAppointment>) => {
+  const { doctor, date, slot } = data;
+  if (!doctor || !date || !slot) {
+    throw new AppError('Doctor, date and slot are required for booking', 400);
+  }
+
   // Check if slot is available (Simple check for now)
   const existing = await Appointment.findOne({
-    doctor: data.doctor,
-    date: data.date,
-    slot: data.slot,
+    doctor,
+    date,
+    slot,
     status: { $ne: AppointmentStatus.CANCELLED },
   });
 

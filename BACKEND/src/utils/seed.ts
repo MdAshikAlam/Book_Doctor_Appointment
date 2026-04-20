@@ -9,7 +9,7 @@ export const seedSystemUsers = async () => {
 
     if (!superAdminExists) {
       logger.info(`🚀 Seeding Super Admin account (${config.SUPER_ADMIN_EMAIL})...`);
-      
+
       await User.create({
         name: 'System Super Admin',
         email: config.SUPER_ADMIN_EMAIL,
