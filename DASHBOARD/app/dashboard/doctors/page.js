@@ -53,9 +53,61 @@ export default function DoctorsPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [countriesList, setCountriesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const [isFetchingCountries, setIsFetchingCountries] = useState(false);
+  const [isFetchingCities, setIsFetchingCities] = useState(false);
 
-  const countries = ['USA', 'UK', 'India', 'Canada', 'Australia', 'Germany', 'France', 'UAE'];
-  const cities = ['New York', 'London', 'Mumbai', 'Delhi', 'Toronto', 'Sydney', 'Berlin', 'Paris', 'Dubai', 'San Francisco', 'Chicago', 'Los Angeles'];
+  const fetchCountries = async () => {
+    try {
+      setIsFetchingCountries(true);
+      const res = await fetch('https://countriesnow.space/api/v0.1/countries/iso');
+      const result = await res.json();
+      if (!result.error) {
+        setCountriesList(result.data.map(c => c.name).sort());
+      }
+    } catch (err) {
+      console.error('Failed to fetch countries:', err);
+    } finally {
+      setIsFetchingCountries(false);
+    }
+  };
+
+  const fetchCities = async (countryName) => {
+    if (!countryName) return;
+    try {
+      setIsFetchingCities(true);
+      const res = await fetch('https://countriesnow.space/api/v0.1/countries/cities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country: countryName }),
+      });
+      const result = await res.json();
+      if (!result.error) {
+        setCitiesList(result.data.sort());
+      } else {
+        setCitiesList([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch cities:', err);
+      setCitiesList([]);
+    } finally {
+      setIsFetchingCities(false);
+    }
+  };
+
+  const handleCountryChange = (e) => {
+    const country = e.target.value;
+    setFormData({
+      ...formData,
+      country: country,
+      city: '' // Clear city when country changes
+    });
+    setCitiesList([]);
+    if (country) {
+      fetchCities(country);
+    }
+  };
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -71,7 +123,15 @@ export default function DoctorsPage() {
 
   useEffect(() => {
     fetchDoctors();
+    fetchCountries();
   }, [fetchDoctors]);
+
+  // When editing, fetch cities for the initial country
+  useEffect(() => {
+    if (editingDoctor && formData.country) {
+      fetchCities(formData.country);
+    }
+  }, [editingDoctor]);
 
   const handleOpenAddModal = () => {
     setEditingDoctor(null);
@@ -403,33 +463,40 @@ export default function DoctorsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <select 
+                className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium appearance-none disabled:opacity-50"
+                value={formData.country}
+                onChange={handleCountryChange}
+                disabled={isFetchingCountries}
+              >
+                <option value="">{isFetchingCountries ? 'Loading countries...' : 'Select Country'}</option>
+                {countriesList.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">
                 City <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input 
                   list="city-options"
-                  placeholder="Select or Search City"
-                  className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium"
+                  placeholder={isFetchingCities ? 'Loading cities...' : 'Select or Search City'}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium disabled:opacity-50"
                   value={formData.city}
                   onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  disabled={!formData.country || isFetchingCities}
                 />
                 <datalist id="city-options">
-                  {cities.map(city => <option key={city} value={city} />)}
+                  {citiesList.map(city => <option key={city} value={city} />)}
                 </datalist>
+                {isFetchingCities && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Loader2 size={18} className="animate-spin text-blue-600" />
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">
-                Country <span className="text-red-500">*</span>
-              </label>
-              <select 
-                className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium appearance-none"
-                value={formData.country}
-                onChange={(e) => setFormData({...formData, country: e.target.value})}
-              >
-                <option value="">Select Country</option>
-                {countries.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
             </div>
           </div>
 

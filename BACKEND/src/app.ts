@@ -14,6 +14,7 @@ import clinicRoutes from './routes/clinic.routes';
 import appointmentRoutes from './routes/appointment.routes';
 import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
+import utilityRoutes from './routes/utility.routes';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/v1/clinics', clinicRoutes);
 app.use('/api/v1/appointments', appointmentRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/utils', utilityRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

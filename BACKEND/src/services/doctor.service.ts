@@ -3,9 +3,10 @@ import Doctor, { IDoctor } from '../models/Doctor';
 import { AppError } from '../middlewares/error';
 
 export const getAllDoctors = async (query: any) => {
-  const { specialty, name, lat, lng, radius = 5000 } = query;
+  const { specialty, name, lat, lng, radius = 5000, city, country } = query;
   const pipeline: any[] = [];
 
+  // 1. GeoNear must be first if coordinates are provided
   if (lat && lng) {
     pipeline.push({
       $geoNear: {
@@ -20,19 +21,7 @@ export const getAllDoctors = async (query: any) => {
     });
   }
 
-  const match: any = {};
-  if (specialty) {
-    match.specialty = { $regex: specialty, $options: 'i' };
-  }
-  if (name) {
-    match.$text = { $search: name };
-  }
-
-  if (Object.keys(match).length > 0) {
-    pipeline.push({ $match: match });
-  }
-
-  // Populate user data
+  // 2. Lookup user early to allow matching by name
   pipeline.push({
     $lookup: {
       from: 'users',
@@ -42,8 +31,31 @@ export const getAllDoctors = async (query: any) => {
     },
   });
   pipeline.push({ $unwind: '$user' });
-  
-  // Project to match expected output format
+
+  // 3. Build Match Stage
+  const match: any = {};
+  if (specialty) {
+    match.specialty = { $regex: specialty, $options: 'i' };
+  }
+  if (city) {
+    match.city = { $regex: city, $options: 'i' };
+  }
+  if (country) {
+    match.country = { $regex: country, $options: 'i' };
+  }
+  if (name) {
+    // Search by doctor name OR specialty (now smarter for global search)
+    match.$or = [
+      { 'user.name': { $regex: name, $options: 'i' } },
+      { specialty: { $regex: name, $options: 'i' } }
+    ];
+  }
+
+  if (Object.keys(match).length > 0) {
+    pipeline.push({ $match: match });
+  }
+
+  // 4. Project to match expected output format
   pipeline.push({
     $project: {
       'user.password': 0,
