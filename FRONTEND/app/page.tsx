@@ -10,14 +10,17 @@ import Testimonial from '@/components/Testimonial';
 import CTA from '@/components/CTA';
 import { specialties, testimonials } from '@/data/mock';
 
+import { useLocation } from '@/context/LocationContext';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function Home() {
+  const { selectedCity, selectedCountry, latitude, longitude } = useLocation();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [searchRadius, setSearchRadius] = useState(5000); // 5km default
+  const [searchRadius, setSearchRadius] = useState(5000); // 5km default for browser locate
 
   const fetchDoctors = useCallback(async (lat?: number, lng?: number) => {
     try {
@@ -28,9 +31,18 @@ export default function Home() {
       const params = new URLSearchParams();
       
       if (lat && lng) {
+        // From browser geolocation
         params.append('lat', lat.toString());
         params.append('lng', lng.toString());
         params.append('radius', searchRadius.toString());
+      } else if (latitude && longitude) {
+        // From selected city in navbar (fixed 60km limit)
+        params.append('lat', latitude.toString());
+        params.append('lng', longitude.toString());
+        params.append('radius', '60000'); 
+      } else if (selectedCity) {
+        params.append('city', selectedCity);
+        if (selectedCountry) params.append('country', selectedCountry);
       }
       
       const res = await fetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
@@ -47,11 +59,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [searchRadius]);
+  }, [searchRadius, selectedCity, selectedCountry, latitude, longitude]);
 
   useEffect(() => {
     fetchDoctors();
-  }, [fetchDoctors]);
+  }, [fetchDoctors, selectedCity, selectedCountry, latitude, longitude]);
 
   const handleFindNearby = () => {
     if (!navigator.geolocation) {

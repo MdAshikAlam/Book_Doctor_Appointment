@@ -5,6 +5,7 @@ import BootstrapClient from "@/components/BootstrapClient";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import { LocationProvider } from "@/context/LocationContext";
 
 export const metadata: Metadata = {
   title: "BookMyDoctor – Your Health, Our Priority",
@@ -24,13 +25,15 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased min-h-screen flex flex-col">
         <AuthProvider>
-          <BootstrapClient />
-          <Header />
-          <main className="flex-grow">
-            {children}
-          </main>
-          {authModal}
-          <Footer />
+          <LocationProvider>
+            <BootstrapClient />
+            <Header />
+            <main className="flex-grow">
+              {children}
+            </main>
+            {authModal}
+            <Footer />
+          </LocationProvider>
         </AuthProvider>
       </body>
     </html>
