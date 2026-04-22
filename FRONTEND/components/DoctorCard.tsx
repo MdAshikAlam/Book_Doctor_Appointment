@@ -1,6 +1,10 @@
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { Star, Clock, MapPin, CheckCircle } from 'lucide-react';
+import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
 
 interface DoctorCardProps {
+  id: string;
   name: string;
   specialization: string;
   experience: number;
@@ -13,6 +17,7 @@ interface DoctorCardProps {
 }
 
 const DoctorCard = ({
+  id,
   name,
   specialization,
   experience,
@@ -23,13 +28,18 @@ const DoctorCard = ({
   availability,
   distance
 }: DoctorCardProps) => {
+  const fallbackAvatar = useMemo(() => getAvatarFallback(name), [name]);
+  const initialAvatar = useMemo(() => resolveImageUrl(avatarUrl) || fallbackAvatar, [avatarUrl, fallbackAvatar]);
+  const [imgSrc, setImgSrc] = useState(initialAvatar);
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 group">
       <div className="flex flex-col sm:flex-row gap-5">
         <div className="relative">
           <img 
-            src={avatarUrl || `https://ui-avatars.com/api/?name=${name}&background=random`} 
+            src={imgSrc}
             alt={name}
+            onError={() => setImgSrc(fallbackAvatar)}
             className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl object-cover ring-4 ring-gray-50 group-hover:ring-primary/10 transition-all"
           />
           <div className="absolute -bottom-2 -right-2 bg-white p-1 rounded-full shadow-md">
@@ -64,9 +74,20 @@ const DoctorCard = ({
               <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Next Available</p>
               <p className="text-sm font-semibold text-gray-700">{availability}</p>
             </div>
-            <button className="w-full sm:w-auto bg-gray-900 hover:bg-primary text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm">
-              Book Appointment
-            </button>
+            <div className="w-full sm:w-auto flex gap-2">
+              <Link
+                href={`/doctors/${id}`}
+                className="w-full sm:w-auto text-center border border-gray-200 hover:border-primary hover:text-primary text-gray-700 px-4 py-2.5 rounded-xl font-bold transition-all"
+              >
+                View Profile
+              </Link>
+              <Link
+                href={`/appointments?doctorId=${id}`}
+                className="w-full sm:w-auto text-center bg-gray-900 hover:bg-primary text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm"
+              >
+                Book Appointment
+              </Link>
+            </div>
           </div>
         </div>
       </div>

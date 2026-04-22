@@ -32,11 +32,8 @@ router.post('/', protect, upload.single('image'), (req: Request, res: Response) 
     return res.status(400).json({ status: 'fail', message: 'No file uploaded' });
   }
 
-  // Use the port from environment or default to 5000
-  const port = process.env.PORT || 5000;
-  // Construct the URL. In production, this would use the domain name.
-  // For now, we assume it's running on localhost
-  const fileUrl = `${req.protocol}://${req.hostname}:${port}/uploads/${req.file.filename}`;
+  // Return relative path only; frontend can prepend backend origin when needed.
+  const fileUrl = `/uploads/${req.file.filename}`;
 
   res.status(200).json({
     status: 'success',
