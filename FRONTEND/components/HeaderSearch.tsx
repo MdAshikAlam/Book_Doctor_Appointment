@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, Loader2, X, Navigation } from 'lucide-react';
 import { useLocation } from '@/context/LocationContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
@@ -230,14 +231,21 @@ export default function HeaderSearch() {
                     <button 
                       key={doc._id}
                       onClick={() => {
-                        window.location.href = `/specialties?specialty=${doc.specialty}`;
+                        window.location.href = `/doctors/${doc._id}`;
                         setShowSuggestions(false);
                       }}
                       className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
                     >
                       <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all overflow-hidden font-bold">
                         {doc.user.avatar ? (
-                          <img src={doc.user.avatar} alt="" className="w-full h-full object-cover" />
+                          <img
+                            src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = getAvatarFallback(doc.user.name);
+                            }}
+                          />
                         ) : (
                           doc.user.name[0]
                         )}

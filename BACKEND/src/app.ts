@@ -22,7 +22,12 @@ const app = express();
 
 
 // Security Middlewares
-app.use(helmet());
+// Allow assets (e.g. uploaded profile images) to be embedded by frontend/dashboard on a different origin.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

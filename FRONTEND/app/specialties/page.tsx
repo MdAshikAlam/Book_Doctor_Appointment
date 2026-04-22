@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Stethoscope, 
   Search, 
@@ -20,12 +21,20 @@ import { useLocation } from '@/context/LocationContext';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function SpecialtiesPage() {
+  const searchParams = useSearchParams();
   const { selectedCity, selectedCountry, latitude, longitude } = useLocation();
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const specialtyFromQuery = searchParams.get('specialty')?.trim();
+    if (specialtyFromQuery) {
+      setSelectedSpecialty(specialtyFromQuery);
+    }
+  }, [searchParams]);
 
   const fetchDoctors = useCallback(async (specialtyParam?: string) => {
     try {
@@ -196,6 +205,7 @@ export default function SpecialtiesPage() {
               {filteredDoctors.map((doctor: any) => (
                 <DoctorCard 
                   key={doctor._id}
+                  id={doctor._id}
                   name={doctor.user.name}
                   specialization={doctor.specialty}
                   experience={doctor.experience}
