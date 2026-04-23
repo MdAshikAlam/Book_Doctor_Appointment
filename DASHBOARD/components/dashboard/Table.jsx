@@ -7,10 +7,10 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Table = ({ columns, data, pagination = true }) => {
+const Table = ({ columns, data, pagination = true, emptyMessage = "No data available." }) => {
   return (
     <div className="w-full">
-      <div className="overflow-x-auto">
+      <div className="overflow-visible min-h-[400px]">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-border bg-slate-50/50">
@@ -22,31 +22,33 @@ const Table = ({ columns, data, pagination = true }) => {
                   {column.header}
                 </th>
               ))}
-              <th className="px-6 py-4"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {data.map((row, rowIndex) => (
-              <tr 
-                key={rowIndex} 
-                className="hover:bg-slate-50/80 transition-colors group"
-              >
-                {columns.map((column, colIndex) => (
-                  <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                    {column.render ? column.render(row) : (
-                      <span className="text-sm font-medium text-slate-700">
-                        {row[column.accessor]}
-                      </span>
-                    )}
-                  </td>
-                ))}
-                <td className="px-6 py-4 text-right">
-                  <button className="p-2 hover:bg-slate-200 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 transition-all">
-                    <MoreHorizontal size={16} />
-                  </button>
+            {data.length > 0 ? (
+              data.map((row, rowIndex) => (
+                <tr 
+                  key={rowIndex} 
+                  className="hover:bg-slate-50/80 transition-colors group"
+                >
+                  {columns.map((column, colIndex) => (
+                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
+                      {column.render ? column.render(row) : (
+                        <span className="text-sm font-medium text-slate-700">
+                          {row[column.accessor]}
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                  </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-400 font-medium">
+                  {emptyMessage}
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -8,7 +8,7 @@ function cn(...inputs) {
 
 const Card = ({ children, className, title, subtitle, footer, action }) => {
   return (
-    <div className={cn("bg-card rounded-xl border border-border card-shadow flex flex-col overflow-hidden", className)}>
+    <div className={cn("bg-card rounded-xl border border-border card-shadow flex flex-col", className)}>
       {(title || subtitle || action) && (
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div>
@@ -18,7 +18,7 @@ const Card = ({ children, className, title, subtitle, footer, action }) => {
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 overflow-visible">
         {children}
       </div>
       {footer && (

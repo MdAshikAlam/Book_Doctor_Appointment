@@ -25,7 +25,7 @@ export default function AppointmentsPage() {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, confirmed, pending, cancelled
+  const [filter, setFilter] = useState('pending'); // all, confirmed, pending, cancelled
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchAppointments = useCallback(async () => {
@@ -237,7 +237,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                       <MapPin size={14} className="text-slate-300" />
-                      <span className="font-bold text-slate-700">Location:</span> {app.clinic?.name || 'On-site Clinic'}
+                      <span className="font-bold text-slate-700">Location:</span> {app.city}, {app.country}
                     </div>
                   </div>
                 </motion.div>

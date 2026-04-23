@@ -18,11 +18,23 @@ export default function DashboardLayout({ children }) {
     }
   }, [user, loading, router]);
 
-  // If loading or not properly authenticated, show full-screen loader
-  if (loading || !user || !user.email) {
+  // If loading, show full-screen loader
+  if (loading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-slate-50">
         <Loader />
+      </div>
+    );
+  }
+
+  // If not properly authenticated, show redirecting state
+  if (!user || !user.email) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-4 text-slate-500 font-medium animate-pulse">Redirecting to login...</p>
+        </div>
       </div>
     );
   }

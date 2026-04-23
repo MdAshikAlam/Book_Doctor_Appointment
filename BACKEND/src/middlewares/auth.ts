@@ -61,3 +61,40 @@ export const restrictTo = (...roles: UserRole[]) => {
     next();
   };
 };
+
+export const checkAdminOwnership = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const requester = req.user;
+    const targetId = req.params.id;
+
+    if (!requester) return next(new AppError('Unauthorized', 401));
+
+    // Super Admin has full access
+    if (requester.role === UserRole.SUPER_ADMIN) return next();
+
+    const targetUser = await User.findById(targetId);
+    if (!targetUser) return next(new AppError('User not found', 404));
+
+    // Admin Ownership Check
+    if (requester.role === UserRole.ADMIN) {
+      // Admin can only access users where they are the parentAdmin
+      // OR themselves
+      if (targetUser.parentAdmin?.toString() === requester.id || targetUser._id.toString() === requester.id) {
+        return next();
+      }
+    }
+
+    // Sub Admin Ownership Check
+    if (requester.role === UserRole.SUB_ADMIN) {
+      // Sub Admin can only access doctors they manage (where they are parentSubAdmin)
+      // OR themselves
+      if (targetUser.parentSubAdmin?.toString() === requester.id || targetUser._id.toString() === requester.id) {
+        return next();
+      }
+    }
+
+    return next(new AppError('You do not have permission to access this user', 403));
+  } catch (error) {
+    next(error);
+  }
+};
