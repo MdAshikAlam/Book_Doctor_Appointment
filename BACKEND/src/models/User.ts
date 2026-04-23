@@ -20,6 +20,9 @@ export interface IUser extends Document {
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  createdBy?: mongoose.Types.ObjectId;
+  parentAdmin?: mongoose.Types.ObjectId;
+  parentSubAdmin?: mongoose.Types.ObjectId;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -35,6 +38,9 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

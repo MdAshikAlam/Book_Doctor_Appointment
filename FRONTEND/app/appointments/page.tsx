@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { Stethoscope, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Stethoscope, User, LogIn, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 import "../../styles/AppointmentForm.css";
 
 export default function Appointments() {
+  const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [formData, setFormData] = useState({
     department: "Pediatrics",
-    clinicCity: "",
+    city: "",
+    country: "",
     doctor: "",
     appointmentDate: "",
     appointmentTime: "",
-    firstName: "",
-    lastName: "",
+    fullName: "",
     email: "",
     phone: "",
     aadhaar: "",
@@ -21,6 +27,31 @@ export default function Appointments() {
     address: "",
     visitedBefore: false,
   });
+
+  const [doctorInfo, setDoctorInfo] = useState<any>(null);
+  
+  useEffect(() => {
+    const doctorId = searchParams.get("doctorId");
+    if (doctorId) {
+      setFormData(prev => ({ ...prev, doctor: doctorId }));
+      // Fetch doctor details
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/doctors/${doctorId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const doc = data.data.doctor;
+            setDoctorInfo(doc);
+            setFormData(prev => ({ 
+              ...prev, 
+              department: doc.specialty || prev.department,
+              city: doc.city || prev.city,
+              country: doc.country || prev.country
+            }));
+          }
+        })
+        .catch(err => console.error("Error fetching doctor:", err));
+    }
+  }, [searchParams]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({
@@ -36,28 +67,41 @@ export default function Appointments() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
     setStatus({ type: null, message: "" });
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointment/post`, {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          date: formData.appointmentDate,
+          slot: formData.appointmentTime,
+          reason: `Appointment for ${formData.department}`
+        }),
       });
 
       if (response.ok) {
         setStatus({ type: "success", message: "Appointment booked successfully!" });
         setFormData({
           department: "Pediatrics",
-          clinicCity: "",
+          city: "",
+          country: "",
           doctor: "",
           appointmentDate: "",
           appointmentTime: "",
-          firstName: "",
-          lastName: "",
+          fullName: "",
           email: "",
           phone: "",
           aadhaar: "",
@@ -80,12 +124,12 @@ export default function Appointments() {
 
   const isFormValid = 
     formData.department &&
-    formData.clinicCity &&
+    formData.city &&
+    formData.country &&
     formData.doctor &&
     formData.appointmentDate &&
     formData.appointmentTime &&
-    formData.firstName &&
-    formData.lastName &&
+    formData.fullName &&
     formData.email &&
     formData.phone &&
     formData.aadhaar &&
@@ -113,35 +157,27 @@ export default function Appointments() {
             <h2 className="section-title">
               <Stethoscope size={20} /> Doctor & Clinic Details
             </h2>
-            <div className="grid-2">
+            <div className="grid-3">
               <div className="input-group">
                 <label htmlFor="department">Department <span>*</span></label>
-                <select id="department" name="department" value={formData.department} onChange={handleChange} required className="form-control-custom">
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Dermatology">Dermatology</option>
-                </select>
+                <input id="department" name="department" value={formData.department} onChange={handleChange} required className="form-control-custom" />
               </div>
               <div className="input-group">
-                <label htmlFor="clinicCity">Clinic City <span>*</span></label>
-                <select id="clinicCity" name="clinicCity" value={formData.clinicCity} onChange={handleChange} required className="form-control-custom">
-                  <option value="">Select City</option>
-                  <option value="New York">New York</option>
-                  <option value="San Francisco">San Francisco</option>
-                  <option value="Chicago">Chicago</option>
-                </select>
+                <label htmlFor="city">Clinic City <span>*</span></label>
+                <input id="city" name="city" value={formData.city} onChange={handleChange} required className="form-control-custom" />
+              </div>
+              <div className="input-group">
+                <label htmlFor="country">Country <span>*</span></label>
+                <input id="country" name="country" value={formData.country} onChange={handleChange} required className="form-control-custom" />
               </div>
             </div>
             <div className="grid-3">
               <div className="input-group">
                 <label htmlFor="doctor">Doctor <span>*</span></label>
-                <select id="doctor" name="doctor" value={formData.doctor} onChange={handleChange} required className="form-control-custom">
-                  <option value="">Select Doctor</option>
-                  <option value="Dr. Sarah Johnson">Dr. Sarah Johnson</option>
-                  <option value="Dr. Michael Chen">Dr. Michael Chen</option>
-                  <option value="Dr. Elena Rodriguez">Dr. Elena Rodriguez</option>
-                </select>
+                <div className="form-control-custom flex items-center bg-gray-50 text-gray-500 cursor-not-allowed">
+                  {doctorInfo ? `Dr. ${doctorInfo.user?.name}` : (formData.doctor || "Select Doctor")}
+                </div>
+                <input type="hidden" name="doctor" value={formData.doctor} />
               </div>
               <div className="input-group">
                 <label htmlFor="appointmentDate">Appointment Date <span>*</span></label>
@@ -161,12 +197,8 @@ export default function Appointments() {
             </h2>
             <div className="grid-2">
               <div className="input-group">
-                <label htmlFor="firstName">First Name <span>*</span></label>
-                <input type="text" id="firstName" name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} required className="form-control-custom" />
-              </div>
-              <div className="input-group">
-                <label htmlFor="lastName">Last Name <span>*</span></label>
-                <input type="text" id="lastName" name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} required className="form-control-custom" />
+                <label htmlFor="fullName">Full Name <span>*</span></label>
+                <input type="text" id="fullName" name="fullName" placeholder="Full Name" value={formData.fullName} onChange={handleChange} required className="form-control-custom" />
               </div>
               <div className="input-group">
                 <label htmlFor="email">Email <span>*</span></label>
@@ -215,6 +247,47 @@ export default function Appointments() {
           </button>
         </form>
       </div>
+
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                <LogIn size={40} />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
+              <p className="text-gray-500 mb-8">
+                Please log in to your account to book an appointment with our specialists.
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <Link 
+                  href="/login"
+                  onClick={() => setShowAuthModal(false)}
+                  className="bg-primary text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                >
+                  <LogIn size={20} />
+                  Login Now
+                </Link>
+                <button 
+                  onClick={() => setShowAuthModal(false)}
+                  className="py-4 text-gray-500 font-bold hover:text-gray-700 transition-colors"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

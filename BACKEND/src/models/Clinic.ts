@@ -10,6 +10,7 @@ export interface IClinic extends Document {
     coordinates: number[]; // [longitude, latitude]
   };
   owner: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId;
 }
 
 const clinicSchema = new Schema<IClinic>(
@@ -23,6 +24,7 @@ const clinicSchema = new Schema<IClinic>(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

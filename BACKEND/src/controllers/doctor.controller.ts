@@ -4,11 +4,21 @@ import * as doctorService from '../services/doctor.service';
 import { AuthRequest } from '../middlewares/auth';
 import { AppError } from '../middlewares/error';
 import { z } from 'zod';
+import { UserRole } from '../models/User';
 import { geocodeAddress } from '../utils/geocoder';
 
 export const getDoctors = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const doctors = await doctorService.getAllDoctors(req.query);
+    const currentUser = (req as any).user;
+    let creatorId: string | undefined;
+
+    // Filter by creator if not Super Admin and in dashboard context
+    // Assuming we use this for the dashboard list
+    if (currentUser && currentUser.role !== UserRole.SUPER_ADMIN) {
+      creatorId = currentUser.id;
+    }
+
+    const doctors = await doctorService.getAllDoctors(req.query, creatorId);
     res.status(200).json({
       status: 'success',
       results: doctors.length,
@@ -104,7 +114,8 @@ export const adminCreateDoctor = async (req: Request, res: Response, next: NextF
 
     const result = await doctorService.createDoctorWithUser(
       validatedData.userData,
-      validatedData.profileData
+      validatedData.profileData,
+      (req as any).user.id
     );
 
     res.status(201).json({

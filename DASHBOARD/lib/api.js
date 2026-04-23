@@ -78,6 +78,7 @@ export const appointmentsApi = {
 
 export const usersApi = {
   getStaff: () => apiCall('/users/staff'),
+  getHierarchy: () => apiCall('/users/hierarchy'),
   createStaff: (data) => apiCall('/users/staff', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -89,4 +90,6 @@ export const usersApi = {
   delete: (id) => apiCall(`/users/${id}`, {
     method: 'DELETE',
   }),
+  getPatients: () => apiCall('/users/patients'),
+  getPatientDetails: (id) => apiCall(`/users/patients/${id}`),
 };

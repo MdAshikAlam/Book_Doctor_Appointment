@@ -19,18 +19,27 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('user');
         const token = Cookies.get('accessToken');
         
-        if (storedUser && token) {
-          const parsedUser = JSON.parse(storedUser);
-          // Simple validation: ensure it's a real user object
-          if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
-            setUser(parsedUser);
+        if (token) {
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
+              setUser(parsedUser);
+            } else {
+              // Fetch fresh user data if stored data is invalid
+              const response = await authApi.getMe();
+              setUser(response.data.user);
+              localStorage.setItem('user', JSON.stringify(response.data.user));
+            }
           } else {
-            // Invalid data in localStorage
-            logout();
+            // Token exists but no user info, fetch it
+            const response = await authApi.getMe();
+            setUser(response.data.user);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
           }
-        } else if (!token) {
-          // Token missing, clear localStorage to be sure
+        } else {
+          // Token missing, clear state
           localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
           setUser(null);
         }
       } catch (err) {
@@ -52,13 +61,13 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.login(credentials);
       const { user, accessToken } = response.data;
       
-      // Store in Cookies for Middleware access
-      Cookies.set('accessToken', accessToken, { expires: 7, secure: true, sameSite: 'strict' });
-      Cookies.set('userRole', user.role, { expires: 7, secure: true, sameSite: 'strict' });
+      // Store in Cookies for Middleware access - added path: '/'
+      Cookies.set('accessToken', accessToken, { expires: 7, secure: true, sameSite: 'strict', path: '/' });
+      Cookies.set('userRole', user.role, { expires: 7, secure: true, sameSite: 'strict', path: '/' });
       
       // Store in LocalStorage for Client-Side state
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('accessToken', accessToken); // Backup
+      localStorage.setItem('accessToken', accessToken);
       
       setUser(user);
       router.push('/dashboard');

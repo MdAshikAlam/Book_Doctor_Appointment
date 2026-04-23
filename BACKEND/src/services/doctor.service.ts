@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Doctor, { IDoctor } from '../models/Doctor';
 import { AppError } from '../middlewares/error';
 
-export const getAllDoctors = async (query: any) => {
+export const getAllDoctors = async (query: any, creatorId?: string) => {
   const { specialty, name, lat, lng, radius = 5000, city, country } = query;
   const pipeline: any[] = [];
 
@@ -49,6 +49,18 @@ export const getAllDoctors = async (query: any) => {
       { 'user.name': { $regex: name, $options: 'i' } },
       { specialty: { $regex: name, $options: 'i' } }
     ];
+  }
+  if (creatorId) {
+    const creatorObjectId = new mongoose.Types.ObjectId(creatorId);
+    pipeline.push({
+      $match: {
+        $or: [
+          { 'parentAdmin': creatorObjectId },
+          { 'parentSubAdmin': creatorObjectId },
+          { 'createdBy': creatorObjectId }
+        ]
+      }
+    });
   }
 
   if (Object.keys(match).length > 0) {
@@ -102,7 +114,7 @@ export const deleteDoctorProfile = async (id: string) => {
   return await Doctor.findByIdAndDelete(id);
 };
 
-export const createDoctorWithUser = async (userData: any, profileData: any) => {
+export const createDoctorWithUser = async (userData: any, profileData: any, creatorId?: string) => {
   const User = mongoose.model('User');
   
   const existingUser = await User.findOne({ email: userData.email });
@@ -110,15 +122,37 @@ export const createDoctorWithUser = async (userData: any, profileData: any) => {
     throw new AppError('Email already in use', 400);
   }
 
+  // Determine Parents for hierarchy
+  let parentAdmin: any = undefined;
+  let parentSubAdmin: any = undefined;
+
+  if (creatorId) {
+    const creator = await User.findById(creatorId);
+    if (creator) {
+      if (creator.role === 'admin') {
+        parentAdmin = creator._id;
+      } else if (creator.role === 'sub_admin') {
+        parentAdmin = creator.parentAdmin;
+        parentSubAdmin = creator._id;
+      }
+    }
+  }
+
   const user = await User.create({
     ...userData,
     role: 'doctor',
-  });
+    createdBy: creatorId,
+    parentAdmin,
+    parentSubAdmin
+  } as any);
 
   const doctor = await Doctor.create({
     ...profileData,
     user: user._id,
-  });
+    createdBy: creatorId,
+    parentAdmin,
+    parentSubAdmin
+  } as any);
 
   return { user, doctor };
 };

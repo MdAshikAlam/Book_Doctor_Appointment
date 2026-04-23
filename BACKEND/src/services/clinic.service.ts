@@ -1,7 +1,7 @@
 import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
-export const getAllClinics = async (query: any) => {
+export const getAllClinics = async (query: any, creatorId?: string) => {
   const { lat, lng, radius = 5000 } = query;
   const filter: any = {};
 
@@ -16,6 +16,9 @@ export const getAllClinics = async (query: any) => {
       },
     };
   }
+  if (creatorId) {
+    filter.createdBy = creatorId;
+  }
 
   return await Clinic.find(filter).populate('owner', 'name email');
 };
@@ -28,8 +31,8 @@ export const getClinicById = async (id: string) => {
   return clinic;
 };
 
-export const createClinic = async (data: Partial<IClinic>) => {
-  return await Clinic.create(data);
+export const createClinic = async (data: Partial<IClinic>, creatorId?: string) => {
+  return await Clinic.create({ ...data, createdBy: creatorId } as any);
 };
 
 export const updateClinic = async (id: string, ownerId: string, data: Partial<IClinic>) => {

@@ -6,10 +6,20 @@ import { AppointmentStatus } from '../models/Appointment';
 
 const appointmentSchema = z.object({
   doctor: z.string(),
-  clinic: z.string(),
+  clinic: z.string().optional(),
   date: z.string().transform((str) => new Date(str)),
   slot: z.string(),
-  reason: z.string(),
+  reason: z.string().optional().default('General Checkup'),
+  fullName: z.string(),
+  email: z.string().email(),
+  phone: z.string(),
+  aadhaar: z.string(),
+  dob: z.string().transform((str) => new Date(str)),
+  gender: z.string(),
+  address: z.string(),
+  country: z.string(),
+  city: z.string(),
+  visitedBefore: z.boolean().optional().default(false),
 });
 
 export const bookAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {

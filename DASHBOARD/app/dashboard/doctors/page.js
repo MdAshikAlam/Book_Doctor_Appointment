@@ -112,7 +112,7 @@ export default function DoctorsPage() {
   const fetchDoctors = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await doctorsApi.getAll();
+      const res = await doctorsApi.getAll({ dashboard: true });
       setDoctors(res.data.doctors || []);
     } catch (err) {
       console.error(err);

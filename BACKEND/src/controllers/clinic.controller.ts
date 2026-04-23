@@ -5,7 +5,14 @@ import { z } from 'zod';
 
 export const getClinics = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clinics = await clinicService.getAllClinics(req.query);
+    const currentUser = (req as any).user;
+    let creatorId: string | undefined;
+
+    if (currentUser && currentUser.role !== 'super_admin' && req.query.dashboard === 'true') {
+      creatorId = currentUser.id;
+    }
+
+    const clinics = await clinicService.getAllClinics(req.query, creatorId);
     res.status(200).json({
       status: 'success',
       results: clinics.length,
@@ -35,7 +42,7 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
         type: 'Point',
       },
       owner: req.user!.id as any,
-    });
+    }, req.user!.id);
 
     res.status(201).json({
       status: 'success',
