@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as clinicController from '../controllers/clinic.controller';
-import { protect, restrictTo } from '../middlewares/auth';
+import { protect, restrictTo, optionalProtect } from '../middlewares/auth';
 import { UserRole } from '../models/User';
 
 const router = Router();
@@ -22,7 +22,7 @@ const router = Router();
  *       200:
  *         description: List of clinics
  */
-router.get('/', clinicController.getClinics);
+router.get('/', optionalProtect, clinicController.getClinics);
 
 /**
  * @swagger

@@ -102,5 +102,6 @@ router.get('/my', appointmentController.getMyAppointments);
  *         description: Status updated successfully
  */
 router.patch('/:id/status', appointmentController.updateStatus);
+router.patch('/:id/reschedule', appointmentController.rescheduleAppointment);
 
 export default router;

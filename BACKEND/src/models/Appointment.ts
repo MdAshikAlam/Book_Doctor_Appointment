@@ -41,7 +41,7 @@ const appointmentSchema = new Schema<IAppointment>(
     status: {
       type: String,
       enum: Object.values(AppointmentStatus),
-      default: AppointmentStatus.PENDING,
+      default: AppointmentStatus.CONFIRMED,
     },
     reason: { type: String, required: true },
     paymentStatus: {

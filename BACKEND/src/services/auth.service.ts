@@ -25,7 +25,7 @@ export const registerUser = async (userData: Partial<IUser>) => {
   return { user: userObj, accessToken, refreshToken };
 };
 
-export const loginUser = async (email: string, password?: string) => {
+export const loginUser = async (email: string, password?: string, isDashboard: boolean = false) => {
   if (!email || !password) {
     throw new AppError('Please provide email and password', 400);
   }
@@ -33,6 +33,13 @@ export const loginUser = async (email: string, password?: string) => {
   const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError('Incorrect email or password', 401);
+  }
+
+  if (isDashboard) {
+    const staffRoles = [UserRole.DOCTOR, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUB_ADMIN];
+    if (!staffRoles.includes(user.role)) {
+      throw new AppError('Email not registered.', 401);
+    }
   }
 
   const accessToken = generateAccessToken({ id: user._id.toString(), role: user.role });

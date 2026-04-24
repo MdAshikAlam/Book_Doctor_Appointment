@@ -3,6 +3,7 @@ import { AppError } from './error';
 import { verifyAccessToken } from '../utils/auth';
 import User, { UserRole } from '../models/User';
 import logger from '../utils/logger';
+import mongoose from 'mongoose';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -51,6 +52,43 @@ export const protect = async (
   }
 };
 
+export const optionalProtect = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let token: string | undefined;
+
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return next();
+    }
+
+    req.user = {
+      id: currentUser._id.toString(),
+      role: currentUser.role as UserRole,
+    };
+    next();
+  } catch (error: any) {
+    // If token is invalid or expired, just proceed without user
+    next();
+  }
+};
+
 export const restrictTo = (...roles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -94,6 +132,43 @@ export const checkAdminOwnership = async (req: AuthRequest, res: Response, next:
     }
 
     return next(new AppError('You do not have permission to access this user', 403));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const checkDoctorOwnership = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const requester = req.user;
+    const doctorId = req.params.id;
+
+    if (!requester) return next(new AppError('Unauthorized', 401));
+
+    // Super Admin has full access
+    if (requester.role === UserRole.SUPER_ADMIN) return next();
+
+    const Doctor = mongoose.model('Doctor');
+    const doctor = await Doctor.findById(doctorId).populate('user');
+    if (!doctor) return next(new AppError('Doctor not found', 404));
+
+    const targetUser = (doctor as any).user;
+    if (!targetUser) return next(new AppError('User profile not found for this doctor', 404));
+
+    // Admin Ownership Check
+    if (requester.role === UserRole.ADMIN) {
+      if (targetUser.parentAdmin?.toString() === requester.id) {
+        return next();
+      }
+    }
+
+    // Sub Admin Ownership Check
+    if (requester.role === UserRole.SUB_ADMIN) {
+      if (targetUser.parentSubAdmin?.toString() === requester.id) {
+        return next();
+      }
+    }
+
+    return next(new AppError('You do not have permission to manage this doctor', 403));
   } catch (error) {
     next(error);
   }

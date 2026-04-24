@@ -67,16 +67,54 @@ export const getMyAppointments = async (userId: string, role: string) => {
 export const updateAppointmentStatus = async (id: string, userId: string, role: string, status: AppointmentStatus) => {
   const filter: any = { _id: id };
   if (role === 'doctor') {
-    filter.doctor = userId;
+    const doctor = await Doctor.findOne({ user: userId });
+    if (!doctor) throw new AppError('Doctor profile not found', 404);
+    filter.doctor = doctor._id;
   } else if (role === 'admin' || role === 'sub_admin') {
-    // Verify the appointment belongs to a doctor created by this admin
-    const app = await Appointment.findById(id).populate('doctor');
-    if (!app || (app.doctor as any).createdBy?.toString() !== userId) {
+    const app = await Appointment.findById(id).populate({
+      path: 'doctor',
+      select: 'parentAdmin parentSubAdmin'
+    });
+    
+    const isOwner = app && (
+      (role === 'admin' && (app.doctor as any).parentAdmin?.toString() === userId) ||
+      (role === 'sub_admin' && (app.doctor as any).parentSubAdmin?.toString() === userId)
+    );
+
+    if (!isOwner) {
       throw new AppError('Unauthorized access to this appointment', 403);
     }
   }
 
   const appointment = await Appointment.findOneAndUpdate(filter, { status }, { new: true });
+  if (!appointment) {
+    throw new AppError('Appointment not found or unauthorized', 404);
+  }
+  return appointment;
+};
+
+export const rescheduleAppointment = async (id: string, userId: string, role: string, date: Date, slot: string) => {
+  const filter: any = { _id: id };
+  if (role === 'doctor') {
+    const doctor = await Doctor.findOne({ user: userId });
+    if (!doctor) throw new AppError('Doctor profile not found', 404);
+    filter.doctor = doctor._id;
+  } else if (role === 'admin' || role === 'sub_admin') {
+    // Similar ownership check
+    const app = await Appointment.findById(id).populate('doctor');
+    const isOwner = app && (
+      (role === 'admin' && (app.doctor as any).parentAdmin?.toString() === userId) ||
+      (role === 'sub_admin' && (app.doctor as any).parentSubAdmin?.toString() === userId)
+    );
+    if (!isOwner) throw new AppError('Unauthorized', 403);
+  }
+
+  const appointment = await Appointment.findOneAndUpdate(
+    filter, 
+    { date, slot, status: AppointmentStatus.CONFIRMED }, 
+    { new: true }
+  );
+  
   if (!appointment) {
     throw new AppError('Appointment not found or unauthorized', 404);
   }

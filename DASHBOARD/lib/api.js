@@ -33,7 +33,7 @@ export const apiCall = async (endpoint, options = {}) => {
 export const authApi = {
   login: (credentials) => apiCall('/auth/login', {
     method: 'POST',
-    body: JSON.stringify(credentials),
+    body: JSON.stringify({ ...credentials, isDashboard: true }),
   }),
   getMe: () => apiCall('/users/me'),
   forgotPassword: (email) => apiCall('/auth/forgot-password', {
@@ -73,6 +73,10 @@ export const appointmentsApi = {
   updateStatus: (id, status) => apiCall(`/appointments/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  }),
+  reschedule: (id, data) => apiCall(`/appointments/${id}/reschedule`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
   }),
 };
 

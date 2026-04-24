@@ -8,7 +8,7 @@ export const getClinics = async (req: Request, res: Response, next: NextFunction
     const currentUser = (req as any).user;
     let creatorId: string | undefined;
 
-    if (currentUser && currentUser.role !== 'super_admin' && req.query.dashboard === 'true') {
+    if (currentUser && currentUser.role !== 'super_admin') {
       creatorId = currentUser.id;
     }
 

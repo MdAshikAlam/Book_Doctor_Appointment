@@ -15,7 +15,14 @@ export const getDoctors = async (req: Request, res: Response, next: NextFunction
     // Filter by creator if not Super Admin and in dashboard context
     // Assuming we use this for the dashboard list
     if (currentUser && currentUser.role !== UserRole.SUPER_ADMIN) {
-      creatorId = currentUser.id;
+      if (currentUser.role === UserRole.SUB_ADMIN) {
+        // Sub-Admins see all doctors of their parent Admin
+        const User = mongoose.model('User');
+        const userDoc = await User.findById(currentUser.id);
+        creatorId = userDoc?.parentAdmin?.toString() || currentUser.id;
+      } else {
+        creatorId = currentUser.id;
+      }
     }
 
     const doctors = await doctorService.getAllDoctors(req.query, creatorId);

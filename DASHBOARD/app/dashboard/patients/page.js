@@ -28,6 +28,7 @@ export default function PatientsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState(null);
+  const [viewingPatient, setViewingPatient] = useState(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -70,9 +71,12 @@ export default function PatientsPage() {
             {row.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </div>
           <div>
-            <Link href={`/dashboard/patients/${row._id}`} className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors">
-              {row.name}
-            </Link>
+            <button 
+              onClick={() => setViewingPatient(row)}
+              className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors text-left"
+            >
+              {row.fullName || row.name}
+            </button>
             <p className="text-xs text-slate-500 truncate max-w-[150px]">{row._id}</p>
           </div>
         </div>
@@ -111,92 +115,56 @@ export default function PatientsPage() {
       )
     },
     { 
-      header: 'STATUS', 
-      accessor: 'status',
-      render: (row) => (
-        <div className="relative action-menu-container">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveMenu(activeMenu === `status-${row._id}` ? null : `status-${row._id}`);
-            }}
-            className={`p-2 rounded-xl transition-all ${activeMenu === `status-${row._id}` ? "bg-slate-900 text-white shadow-lg" : "hover:bg-slate-100 text-slate-400"}`}
-          >
-            <MoreVertical size={20} />
-          </button>
-          
-          {activeMenu === `status-${row._id}` && (
-            <div 
-              className="absolute left-0 mt-2 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button 
-                className="flex items-center justify-between w-full text-left px-4 py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors"
-                onClick={() => {
-                  alert("Accepted");
-                  setActiveMenu(null);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  Accept
-                </div>
-                <CheckCircle size={14} className="text-emerald-500" />
-              </button>
-              <button 
-                className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-bold text-amber-600 hover:bg-amber-50 transition-colors"
-                onClick={() => {
-                  alert("Pending");
-                  setActiveMenu(null);
-                }}
-              >
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                Pending
-              </button>
-              <button 
-                className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
-                onClick={() => {
-                  alert("Rejected");
-                  setActiveMenu(null);
-                }}
-              >
-                <div className="w-2 h-2 rounded-full bg-rose-500" />
-                Reject
-              </button>
-            </div>
-          )}
-        </div>
-      )
-    },
-    { 
-      header: 'VIEW', 
+      header: 'ACTIONS', 
       accessor: 'view',
       render: (row) => (
-        <div className="relative action-menu-container">
+        <div className="flex items-center gap-2">
           <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveMenu(activeMenu === `view-${row._id}` ? null : `view-${row._id}`);
-            }}
-            className={`p-2 rounded-xl transition-all ${activeMenu === `view-${row._id}` ? "bg-blue-600 text-white shadow-lg" : "hover:bg-slate-100 text-slate-400"}`}
+            onClick={() => setViewingPatient(row)}
+            className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
+            title="View Details"
           >
-            <MoreVertical size={20} />
+            <Eye size={18} />
           </button>
-          
-          {activeMenu === `view-${row._id}` && (
-            <div 
-              className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
+          <div className="relative action-menu-container">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMenu(activeMenu === `row-${row._id}` ? null : `row-${row._id}`);
+              }}
+              className={`p-2 rounded-xl transition-all ${activeMenu === `row-${row._id}` ? "bg-slate-900 text-white shadow-lg" : "hover:bg-slate-100 text-slate-400"}`}
             >
-              <Link 
-                href={`/dashboard/patients/${row._id}`}
-                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+              <MoreVertical size={18} />
+            </button>
+            
+            {activeMenu === `row-${row._id}` && (
+              <div 
+                className="absolute right-0 mt-2 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Eye size={16} />
-                View Patient Details
-              </Link>
-            </div>
-          )}
+                <button 
+                  className="flex items-center justify-between w-full text-left px-4 py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors"
+                  onClick={() => {
+                    alert("Account Verified");
+                    setActiveMenu(null);
+                  }}
+                >
+                  Verify Account
+                  <CheckCircle size={14} />
+                </button>
+                <button 
+                  className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+                  onClick={() => {
+                    alert("Account Deactivated");
+                    setActiveMenu(null);
+                  }}
+                >
+                  Deactivate
+                  <XCircle size={14} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )
     },
@@ -277,6 +245,105 @@ export default function PatientsPage() {
             emptyMessage="No patients found matching your search."
           />
         </Card>
+      )}
+
+      {/* View Details Modal */}
+      {viewingPatient && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div 
+            className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+          >
+            {/* Modal Header */}
+            <div className="p-8 bg-slate-900 text-white relative">
+              <button 
+                onClick={() => setViewingPatient(null)}
+                className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+              >
+                <XCircle size={24} />
+              </button>
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-2xl font-black shadow-lg shadow-blue-500/20 uppercase">
+                  {viewingPatient.name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black leading-none">{viewingPatient.name}</h3>
+                  <p className="text-blue-400 text-xs font-bold mt-2 uppercase tracking-widest">Patient Profile</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+              {/* Personal Info */}
+              <div>
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                  <Mail size={14} /> Contact Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Email Address</p>
+                    <p className="text-sm font-black text-slate-900">{viewingPatient.email}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Phone Number</p>
+                    <p className="text-sm font-black text-slate-900">{viewingPatient.phone || 'Not Provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking History Details */}
+              {viewingPatient.aadhaar && (
+                <div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <AlertCircle size={14} /> Details from Latest Booking
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Aadhaar ID</p>
+                      <p className="text-sm font-black text-slate-900">{viewingPatient.aadhaar}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Date of Birth</p>
+                      <p className="text-sm font-black text-slate-900">{new Date(viewingPatient.dob).toLocaleDateString()}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Gender</p>
+                      <p className="text-sm font-black text-slate-900">{viewingPatient.gender}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Returning Patient?</p>
+                      <p className="text-sm font-black text-slate-900">{viewingPatient.visitedBefore ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 col-span-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-2">
+                        <MapPin size={12} /> Registered Address
+                      </p>
+                      <p className="text-sm font-bold text-slate-900 leading-relaxed mt-1">
+                        {viewingPatient.address}, {viewingPatient.city}, {viewingPatient.country}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!viewingPatient.aadhaar && (
+                <div className="p-8 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <p className="text-slate-400 text-sm font-bold italic">No booking history available for this patient yet.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-8 border-t border-slate-100 bg-slate-50">
+              <button 
+                onClick={() => setViewingPatient(null)}
+                className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+              >
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

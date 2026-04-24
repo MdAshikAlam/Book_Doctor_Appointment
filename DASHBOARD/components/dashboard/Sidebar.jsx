@@ -25,9 +25,9 @@ function cn(...inputs) {
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },
-  { icon: Shield, label: 'Admins & Staff', href: '/dashboard/staff', roles: ['super_admin', 'admin'] },
-  { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors', roles: ['super_admin', 'admin', 'patient'] },
-  { icon: Users, label: 'Patients', href: '/dashboard/patients', roles: ['super_admin', 'admin', 'doctor'] },
+  { icon: Shield, label: 'Admins & Staff', href: '/dashboard/staff', roles: ['super_admin', 'admin', 'sub_admin'] },
+  { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors', roles: ['super_admin', 'admin', 'sub_admin', 'patient'] },
+  { icon: Users, label: 'Patients', href: '/dashboard/patients', roles: ['super_admin', 'admin', 'sub_admin', 'doctor'] },
   { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },
   { icon: BarChart3, label: 'Reports', href: '/dashboard/reports', roles: ['super_admin', 'admin'] },
   { icon: Settings, label: 'Settings', href: '/dashboard/settings', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },
