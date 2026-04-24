@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as doctorController from '../controllers/doctor.controller';
-import { protect, restrictTo } from '../middlewares/auth';
+import { protect, restrictTo, optionalProtect, checkDoctorOwnership } from '../middlewares/auth';
 import { UserRole } from '../models/User';
 
 const router = Router();
@@ -22,7 +22,7 @@ const router = Router();
  *       200:
  *         description: List of doctors
  */
-router.get('/', doctorController.getDoctors);
+router.get('/', optionalProtect, doctorController.getDoctors);
 
 /**
  * @swagger
@@ -70,21 +70,23 @@ router.post(
 router.post(
   '/',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
   doctorController.adminCreateDoctor
 );
 
 router.patch(
   '/:id',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  checkDoctorOwnership,
   doctorController.adminUpdateDoctor
 );
 
 router.delete(
   '/:id',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  checkDoctorOwnership,
   doctorController.deleteDoctor
 );
 

@@ -15,7 +15,14 @@ import {
   ChevronRight,
   MoreVertical,
   MessageSquare,
-  MapPin
+  MapPin,
+  Eye,
+  Mail,
+  Phone,
+  Shield,
+  CalendarCheck,
+  CreditCard,
+  Activity
 } from 'lucide-react';
 import { appointmentsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +34,9 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // all, confirmed, pending, cancelled
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewingAppointment, setViewingAppointment] = useState(null);
+  const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
+  const [rescheduleData, setRescheduleData] = useState({ date: '', slot: '' });
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -47,6 +57,20 @@ export default function AppointmentsPage() {
   const handleStatusUpdate = async (id, status) => {
     try {
       await appointmentsApi.updateStatus(id, status);
+      fetchAppointments();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleReschedule = async () => {
+    try {
+      if (!rescheduleData.date || !rescheduleData.slot) {
+        alert('Please select both date and slot');
+        return;
+      }
+      await appointmentsApi.reschedule(reschedulingAppointment._id, rescheduleData);
+      setReschedulingAppointment(null);
       fetchAppointments();
     } catch (err) {
       alert(err.message);
@@ -181,7 +205,7 @@ export default function AppointmentsPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Patient</p>
-                          <p className="text-sm font-black text-slate-900">{app.patient?.name}</p>
+                          <p className="text-sm font-black text-slate-900">{app.fullName || app.patient?.name}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -205,19 +229,29 @@ export default function AppointmentsPage() {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        {app.status === 'pending' && (
+                        <button 
+                          onClick={() => setViewingAppointment(app)}
+                          className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
+                          title="View Details"
+                        >
+                          <Eye size={20} />
+                        </button>
+                        {(app.status === 'pending' || app.status === 'confirmed') && (
                           <>
                             <button 
-                              onClick={() => handleStatusUpdate(app._id, 'confirmed')}
-                              className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm shadow-emerald-100"
-                              title="Confirm Appointment"
+                              onClick={() => {
+                                setReschedulingAppointment(app);
+                                setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
+                              }}
+                              className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm shadow-blue-100"
+                              title="Reschedule / Extend Date"
                             >
-                              <CheckCircle2 size={20} />
+                              <Calendar size={20} />
                             </button>
                             <button 
                               onClick={() => handleStatusUpdate(app._id, 'cancelled')}
                               className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm shadow-red-100"
-                              title="Cancel Appointment"
+                              title="Reject / Cancel"
                             >
                               <XCircle size={20} />
                             </button>
@@ -246,6 +280,180 @@ export default function AppointmentsPage() {
           </div>
         )}
       </div>
+
+      {/* View Details Modal */}
+      <AnimatePresence>
+        {viewingAppointment && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-8 bg-slate-900 text-white relative">
+                <button 
+                  onClick={() => setViewingAppointment(null)}
+                  className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+                >
+                  <XCircle size={24} />
+                </button>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-2xl font-black shadow-lg shadow-blue-500/20">
+                    {viewingAppointment.fullName?.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black leading-none">{viewingAppointment.fullName}</h3>
+                    <div className="flex items-center gap-2 mt-2 opacity-70 text-xs font-bold uppercase tracking-widest">
+                       <Calendar size={12} />
+                       Scheduled for {formatDate(viewingAppointment.date)} at {viewingAppointment.slot}
+                    </div>
+                  </div>
+                </div>
+                <div className={cn(
+                  "inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                  getStatusColor(viewingAppointment.status)
+                )}>
+                  {viewingAppointment.status}
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                {/* Personal Info */}
+                <div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <User size={14} /> Personal Information
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <DetailItem label="Email Address" value={viewingAppointment.email} icon={<Mail size={14} />} />
+                    <DetailItem label="Phone Number" value={viewingAppointment.phone} icon={<Phone size={14} />} />
+                    <DetailItem label="Gender" value={viewingAppointment.gender} icon={<Activity size={14} />} />
+                    <DetailItem label="Date of Birth" value={new Date(viewingAppointment.dob).toLocaleDateString()} icon={<CalendarCheck size={14} />} />
+                    <DetailItem label="Aadhaar ID" value={viewingAppointment.aadhaar} icon={<CreditCard size={14} />} className="col-span-2" />
+                  </div>
+                </div>
+
+                {/* Location Info */}
+                <div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <MapPin size={14} /> Contact & Address
+                  </h4>
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Patient Home Address</p>
+                    <p className="text-sm font-bold text-slate-900 leading-relaxed">
+                      {viewingAppointment.address}, {viewingAppointment.city}, {viewingAppointment.country}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Medical Context */}
+                <div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Stethoscope size={14} /> Consultation Context
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100">
+                      <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">Reason for Visit</p>
+                      <p className="text-sm font-black text-slate-900">{viewingAppointment.reason}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">First Time Visit?</p>
+                      <p className="text-sm font-black text-slate-900">{viewingAppointment.visitedBefore ? 'Yes, Returning Patient' : 'No, New Patient'}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 col-span-2">
+                       <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Doctor Assigned</p>
+                       <p className="text-sm font-black text-slate-900">Dr. {viewingAppointment.doctor?.user?.name || 'Pending Assignment'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-8 border-t border-slate-100 bg-slate-50">
+                <button 
+                  onClick={() => setViewingAppointment(null)}
+                  className="w-full h-14 rounded-2xl bg-white border border-slate-200 text-slate-900 font-black hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                >
+                  Close Details
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reschedule Modal */}
+      <AnimatePresence>
+        {reschedulingAppointment && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
+                  <Calendar size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">Reschedule</h3>
+                  <p className="text-sm text-slate-500 font-medium italic">Extend date or change slot</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">New Appointment Date</label>
+                  <input 
+                    type="date" 
+                    value={rescheduleData.date}
+                    onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
+                    className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">New Time Slot</label>
+                  <input 
+                    type="time" 
+                    value={rescheduleData.slot}
+                    onChange={(e) => setRescheduleData({ ...rescheduleData, slot: e.target.value })}
+                    className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-10 flex gap-4">
+                <button 
+                  onClick={() => setReschedulingAppointment(null)}
+                  className="flex-1 h-14 rounded-2xl bg-slate-100 text-slate-600 font-black hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleReschedule}
+                  className="flex-1 h-14 rounded-2xl bg-blue-600 text-white font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                >
+                  Reschedule
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DetailItem({ label, value, icon, className = "" }) {
+  return (
+    <div className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-sm ${className}`}>
+      <p className="text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-2">
+        {icon} {label}
+      </p>
+      <p className="text-sm font-black text-slate-900 truncate">{value || 'N/A'}</p>
     </div>
   );
 }

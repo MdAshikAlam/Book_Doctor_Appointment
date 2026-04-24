@@ -72,3 +72,28 @@ export const updateStatus = async (req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 };
+
+const rescheduleSchema = z.object({
+  date: z.string().transform((str) => new Date(str)),
+  slot: z.string(),
+});
+
+export const rescheduleAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { date, slot } = rescheduleSchema.parse(req.body);
+    const appointment = await appointmentService.rescheduleAppointment(
+      req.params.id as string,
+      req.user!.id,
+      req.user!.role,
+      date,
+      slot
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: { appointment },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

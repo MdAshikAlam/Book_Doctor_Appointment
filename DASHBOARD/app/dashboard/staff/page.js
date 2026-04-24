@@ -15,7 +15,10 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  MoreVertical
+  MoreVertical,
+  Eye,
+  CalendarCheck,
+  MapPin
 } from 'lucide-react';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +26,13 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+
+const getFullImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${BACKEND_URL}${path}`;
+};
 
 export default function StaffManagementPage() {
   const { user: currentUser } = useAuth();
@@ -34,6 +44,7 @@ export default function StaffManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [formData, setFormData] = useState({
@@ -85,6 +96,10 @@ export default function StaffManagementPage() {
       phone: member.phone || '',
     });
     setIsModalOpen(true);
+  };
+  
+  const handleOpenViewModal = (member) => {
+    setViewingUser(member);
   };
 
   const handleSubmit = async (e) => {
@@ -146,7 +161,7 @@ export default function StaffManagementPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admins & Staff Management</h1>
           <p className="text-slate-500 mt-1 font-medium">Manage platform administrators, sub-admins, and medical staff permissions.</p>
         </div>
-        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && (
           <Button 
             onClick={handleOpenAddModal}
             className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2"
@@ -214,6 +229,7 @@ export default function StaffManagementPage() {
                   <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Member</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Address</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Joined</th>
                   <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -241,7 +257,7 @@ export default function StaffManagementPage() {
                         <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
-                              {member.avatar ? <img src={member.avatar} alt="" /> : member.name?.charAt(0)}
+                              {member.avatar ? <img src={getFullImageUrl(member.avatar)} alt="" className="w-full h-full object-cover" /> : member.name?.charAt(0)}
                             </div>
                             <div>
                               <p className="font-bold text-slate-900">{member.name}</p>
@@ -265,12 +281,25 @@ export default function StaffManagementPage() {
                             </div>
                           </div>
                         </td>
+                        <td className="px-6 py-5">
+                          <p className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                            <MapPin size={12} className="text-slate-300" /> {member.address || member.city || 'N/A'}
+                          </p>
+                          {member.country && <p className="text-[10px] text-slate-400 font-medium ml-4">{member.country}</p>}
+                        </td>
                         <td className="px-6 py-5 font-bold text-slate-600 text-sm">
                           {new Date(member.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-8 py-5 text-right">
                           <div className="flex items-center justify-end gap-2 transition-opacity">
-                            {currentUser?.role === 'super_admin' && (
+                            <button 
+                              onClick={() => handleOpenViewModal(member)}
+                              className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                              title="View Details"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && (
                               <button 
                                 onClick={() => handleOpenEditModal(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
@@ -278,7 +307,7 @@ export default function StaffManagementPage() {
                                 <Edit size={18} />
                               </button>
                             )}
-                            {currentUser?.role === 'super_admin' && currentUser?._id !== member._id && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && currentUser?._id !== member._id && (
                               <button 
                                 onClick={() => setUserToDelete(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
@@ -339,7 +368,7 @@ export default function StaffManagementPage() {
               >
                 {currentUser?.role === 'super_admin' && <option value="super_admin">Super Admin</option>}
                 {currentUser?.role === 'super_admin' && <option value="admin">Administrator</option>}
-                <option value="sub_admin">Sub Admin</option>
+                {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="sub_admin">Sub Admin</option>}
                 <option value="doctor">Doctor</option>
               </select>
             </div>
@@ -385,6 +414,76 @@ export default function StaffManagementPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+      
+      {/* View Details Modal */}
+      <Modal
+        isOpen={!!viewingUser}
+        onClose={() => setViewingUser(null)}
+        title="Staff Member Details"
+        size="lg"
+      >
+        {viewingUser && (
+          <div className="space-y-8 py-2">
+            {/* Header / Profile Info */}
+            <div className="flex flex-col items-center text-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+              <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl font-black text-blue-600 mb-4 border border-slate-100 overflow-hidden">
+                {viewingUser.avatar ? <img src={getFullImageUrl(viewingUser.avatar)} className="w-full h-full object-cover" /> : viewingUser.name?.charAt(0)}
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 leading-tight">{viewingUser.name}</h3>
+              <p className="text-slate-500 font-medium">{viewingUser.email}</p>
+              <div className="mt-4 flex gap-2">
+                 <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${getRoleBadge(viewingUser.role).color}`}>
+                   {React.createElement(getRoleBadge(viewingUser.role).icon, { size: 14 })}
+                   {getRoleBadge(viewingUser.role).label}
+                 </span>
+                 <span className="px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black border border-indigo-100 uppercase tracking-wider">
+                   ID: {viewingUser._id?.slice(-6)}
+                 </span>
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Users size={16} className="text-slate-300" /> {viewingUser.name}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Mail size={16} className="text-slate-300" /> {viewingUser.email}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Phone size={16} className="text-slate-300" /> {viewingUser.phone || 'Not Provided'}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Joined</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <CalendarCheck size={16} className="text-slate-300" /> {new Date(viewingUser.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm md:col-span-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Address</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <MapPin size={16} className="text-slate-300" /> {viewingUser.address || 'N/A'}{viewingUser.city ? `, ${viewingUser.city}` : ''}{viewingUser.country ? `, ${viewingUser.country}` : ''}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+               <Button onClick={() => setViewingUser(null)} className="w-full h-14 bg-slate-100 text-slate-900 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                 Close Details
+               </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
@@ -479,8 +578,8 @@ function DoctorCard({ doctor, onEdit, onDelete }) {
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between group shadow-sm hover:shadow-md transition-all">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold border border-amber-100">
-          {doctor.avatar ? <img src={doctor.avatar} className="w-full h-full rounded-full object-cover" /> : doctor.name?.charAt(0)}
+        <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold border border-amber-100 overflow-hidden">
+          {doctor.avatar ? <img src={getFullImageUrl(doctor.avatar)} className="w-full h-full object-cover" /> : doctor.name?.charAt(0)}
         </div>
         <div>
           <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doctor.name}</p>

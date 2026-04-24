@@ -23,18 +23,33 @@ export const AuthProvider = ({ children }) => {
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
+              // Safety check: Patients should not be in the dashboard
+              if (parsedUser.role === 'patient') {
+                logout();
+                return;
+              }
               setUser(parsedUser);
             } else {
               // Fetch fresh user data if stored data is invalid
               const response = await authApi.getMe();
-              setUser(response.data.user);
-              localStorage.setItem('user', JSON.stringify(response.data.user));
+              const freshUser = response.data.user;
+              if (freshUser.role === 'patient') {
+                logout();
+                return;
+              }
+              setUser(freshUser);
+              localStorage.setItem('user', JSON.stringify(freshUser));
             }
           } else {
             // Token exists but no user info, fetch it
             const response = await authApi.getMe();
-            setUser(response.data.user);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            const freshUser = response.data.user;
+            if (freshUser.role === 'patient') {
+              logout();
+              return;
+            }
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
           }
         } else {
           // Token missing, clear state

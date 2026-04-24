@@ -11,6 +11,8 @@ export interface IClinic extends Document {
   };
   owner: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
+  parentAdmin?: mongoose.Types.ObjectId;
+  parentSubAdmin?: mongoose.Types.ObjectId;
 }
 
 const clinicSchema = new Schema<IClinic>(
@@ -25,6 +27,8 @@ const clinicSchema = new Schema<IClinic>(
     },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

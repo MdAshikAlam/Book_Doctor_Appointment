@@ -14,10 +14,22 @@ import {
   DollarSign,
   AlertCircle,
   Loader2,
-  Filter
+  Filter,
+  Eye,
+  Users,
+  Phone,
+  CalendarCheck,
+  Shield
 } from 'lucide-react';
-import { doctorsApi } from '@/lib/api';
+import { usersApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+
+const getFullImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${BACKEND_URL}${path}`;
+};
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
@@ -31,9 +43,10 @@ export default function DoctorsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState(null);
   const [editingDoctor, setEditingDoctor] = useState(null);
+  const [viewingDoctor, setViewingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'sub_admin';
   
   // Form State
   const [formData, setFormData] = useState({
@@ -163,6 +176,10 @@ export default function DoctorsPage() {
     setSelectedFile(null);
     setPreviewUrl(doc.user?.avatar || '');
     setIsModalOpen(true);
+  };
+
+  const handleOpenViewModal = (doc) => {
+    setViewingDoctor(doc);
   };
 
   const handleFileChange = (e) => {
@@ -332,8 +349,12 @@ export default function DoctorsPage() {
                   <tr key={doc._id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
-                          {doc.user?.name?.split(' ').map(n=>n[0]).join('')}
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold overflow-hidden border border-blue-100">
+                          {doc.user?.avatar ? (
+                            <img src={getFullImageUrl(doc.user.avatar)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            doc.user?.name?.split(' ').map(n=>n[0]).join('')
+                          )}
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{doc.user?.name}</p>
@@ -360,19 +381,30 @@ export default function DoctorsPage() {
                     </td>
                     {canManage && (
                       <td className="px-8 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2 transition-opacity">
                           <button 
-                            onClick={() => handleOpenEditModal(doc)}
-                            className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
+                            onClick={() => handleOpenViewModal(doc)}
+                            className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                            title="View Details"
                           >
-                            <Edit size={18} />
+                            <Eye size={18} />
                           </button>
-                          <button 
-                            onClick={() => setDoctorToDelete(doc)}
-                            className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {canManage && (
+                            <button 
+                              onClick={() => handleOpenEditModal(doc)}
+                              className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
+                            >
+                              <Edit size={18} />
+                            </button>
+                          )}
+                          {canManage && (
+                            <button 
+                              onClick={() => setDoctorToDelete(doc)}
+                              className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -566,6 +598,95 @@ export default function DoctorsPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* View Details Modal */}
+      <Modal
+        isOpen={!!viewingDoctor}
+        onClose={() => setViewingDoctor(null)}
+        title="Doctor Profile Details"
+        size="lg"
+      >
+        {viewingDoctor && (
+          <div className="space-y-8 py-2">
+            {/* Header / Profile Info */}
+            <div className="flex flex-col items-center text-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+              <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl font-black text-blue-600 mb-4 border border-slate-100 overflow-hidden">
+                {viewingDoctor.user?.avatar ? (
+                  <img src={getFullImageUrl(viewingDoctor.user.avatar)} className="w-full h-full object-cover" />
+                ) : (
+                  viewingDoctor.user?.name?.charAt(0)
+                )}
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 leading-tight">Dr. {viewingDoctor.user?.name}</h3>
+              <p className="text-slate-500 font-medium">{viewingDoctor.user?.email}</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                 <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
+                   <Stethoscope size={14} />
+                   {viewingDoctor.specialty}
+                 </span>
+                 <span className="px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-black border border-blue-100 uppercase tracking-wider">
+                   {viewingDoctor.experience} Years Exp.
+                 </span>
+                 <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black border border-emerald-100 uppercase tracking-wider">
+                   ${viewingDoctor.consultationFee} Fee
+                 </span>
+              </div>
+            </div>
+
+            {/* About / Bio */}
+            {viewingDoctor.bio && (
+              <div className="p-6 rounded-3xl bg-white border border-slate-100 shadow-sm">
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                  <Briefcase size={14} /> Professional Biography
+                </h4>
+                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                  {viewingDoctor.bio}
+                </p>
+              </div>
+            )}
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Users size={16} className="text-slate-300" /> {viewingDoctor.user?.name}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Mail size={16} className="text-slate-300" /> {viewingDoctor.user?.email}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Joined</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <CalendarCheck size={16} className="text-slate-300" /> {new Date(viewingDoctor.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultation Fee</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <DollarSign size={16} className="text-slate-300" /> ${viewingDoctor.consultationFee}
+                </p>
+              </div>
+              <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm md:col-span-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinic Address</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <MapPin size={16} className="text-slate-300" /> {viewingDoctor.address || 'N/A'}{viewingDoctor.city ? `, ${viewingDoctor.city}` : ''}{viewingDoctor.country ? `, ${viewingDoctor.country}` : ''}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+               <Button onClick={() => setViewingDoctor(null)} className="w-full h-14 bg-slate-100 text-slate-900 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                 Close Details
+               </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

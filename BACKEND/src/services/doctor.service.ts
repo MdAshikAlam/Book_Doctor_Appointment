@@ -55,6 +55,7 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
     pipeline.push({
       $match: {
         $or: [
+          { 'user._id': creatorObjectId },
           { 'parentAdmin': creatorObjectId },
           { 'parentSubAdmin': creatorObjectId },
           { 'createdBy': creatorObjectId }

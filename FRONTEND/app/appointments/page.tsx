@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Stethoscope, User, LogIn, X } from "lucide-react";
+import { Stethoscope, User, LogIn, X, MapPin } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import "../../styles/AppointmentForm.css";
@@ -41,11 +41,27 @@ export default function Appointments() {
           if (data.status === 'success') {
             const doc = data.data.doctor;
             setDoctorInfo(doc);
+            
+            // Try to extract city/country from address if they are missing
+            let detectedCity = doc.city;
+            let detectedCountry = doc.country;
+            
+            if (!detectedCity && doc.address) {
+              const parts = doc.address.split(',').map((p: string) => p.trim());
+              if (parts.length >= 2) {
+                detectedCity = parts[parts.length - 2];
+                detectedCountry = parts[parts.length - 1];
+              } else {
+                detectedCity = doc.address;
+              }
+            }
+
             setFormData(prev => ({ 
               ...prev, 
               department: doc.specialty || prev.department,
-              city: doc.city || prev.city,
-              country: doc.country || prev.country
+              city: detectedCity || prev.city,
+              country: detectedCountry || prev.country,
+              address: doc.address || prev.address
             }));
           }
         })
@@ -171,6 +187,15 @@ export default function Appointments() {
                 <input id="country" name="country" value={formData.country} onChange={handleChange} required className="form-control-custom" />
               </div>
             </div>
+            {doctorInfo?.address && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3">
+                <MapPin size={18} className="text-blue-500 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Clinic Address</p>
+                  <p className="text-xs font-bold text-blue-700">{doctorInfo.address}</p>
+                </div>
+              </div>
+            )}
             <div className="grid-3">
               <div className="input-group">
                 <label htmlFor="doctor">Doctor <span>*</span></label>

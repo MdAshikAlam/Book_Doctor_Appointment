@@ -10,12 +10,59 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
     let query: any = { role: UserRole.PATIENT };
 
     if (currentUser.role === UserRole.ADMIN) {
-      query.parentAdmin = currentUser.id;
+      query.parentAdmin = new mongoose.Types.ObjectId(currentUser.id);
     } else if (currentUser.role === UserRole.SUB_ADMIN) {
-      query.parentSubAdmin = currentUser.id;
+      const userDoc = await User.findById(currentUser.id);
+      query.parentAdmin = userDoc?.parentAdmin || new mongoose.Types.ObjectId(currentUser.id);
+    } else if (currentUser.role === UserRole.DOCTOR) {
+      // Doctors only see patients who have appointments with them
+      const Appointment = (await import('../models/Appointment')).default;
+      const Doctor = (await import('../models/Doctor')).default;
+      
+      const doctorProfile = await Doctor.findOne({ user: currentUser.id });
+      if (doctorProfile) {
+        const appointments = await Appointment.find({ doctor: doctorProfile._id }).select('patient');
+        const patientIds = appointments.map(app => app.patient);
+        query._id = { $in: patientIds };
+      } else {
+        query._id = { $in: [] }; // No profile, no patients
+      }
     }
 
-    const patients = await User.find(query).select('-password');
+    const patients = await User.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'appointments',
+          let: { patientId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$patient', '$$patientId'] } } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 }
+          ],
+          as: 'latestBooking'
+        }
+      },
+      {
+        $addFields: {
+          latestBooking: { $arrayElemAt: ['$latestBooking', 0] }
+        }
+      },
+      {
+        $addFields: {
+          aadhaar: '$latestBooking.aadhaar',
+          dob: '$latestBooking.dob',
+          gender: '$latestBooking.gender',
+          address: '$latestBooking.address',
+          city: '$latestBooking.city',
+          country: '$latestBooking.country',
+          visitedBefore: '$latestBooking.visitedBefore',
+          fullName: '$latestBooking.fullName'
+        }
+      },
+      { $project: { password: 0, latestBooking: 0 } }
+    ]);
+
     res.status(200).json({
       status: 'success',
       results: patients.length,
@@ -36,19 +83,39 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
     // Data Isolation & Hierarchy
     if (currentUser.role === UserRole.ADMIN) {
       // Admin only sees users where they are the parentAdmin
-      query.parentAdmin = currentUser.id;
+      query.parentAdmin = new mongoose.Types.ObjectId(currentUser.id);
       // Exclude themselves from the "staff" list if desired, but here we show all under them
-      query._id = { $ne: currentUser.id };
+      query._id = { $ne: new mongoose.Types.ObjectId(currentUser.id) };
     } else if (currentUser.role === UserRole.SUB_ADMIN) {
-      // Sub Admin only sees Doctors they manage
+      // Sub Admin only sees Doctors of their parent Admin
+      const userDoc = await User.findById(currentUser.id);
       query.role = UserRole.DOCTOR;
-      query.parentSubAdmin = currentUser.id;
+      query.parentAdmin = userDoc?.parentAdmin || new mongoose.Types.ObjectId(currentUser.id);
     } else if (currentUser.role === UserRole.DOCTOR) {
       query._id = currentUser.id;
     }
     // SUPER_ADMIN sees all (no extra query filters)
 
-    const staff = await User.find(query).select('-password');
+    const staff = await User.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'doctors',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'doctorProfile'
+        }
+      },
+      {
+        $addFields: {
+          address: { $arrayElemAt: ['$doctorProfile.address', 0] },
+          specialty: { $arrayElemAt: ['$doctorProfile.specialty', 0] },
+          city: { $arrayElemAt: ['$doctorProfile.city', 0] },
+          country: { $arrayElemAt: ['$doctorProfile.country', 0] }
+        }
+      },
+      { $project: { password: 0, doctorProfile: 0 } }
+    ]);
 
     res.status(200).json({
       status: 'success',
@@ -110,6 +177,24 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
       parentAdmin,
       parentSubAdmin
     } as any);
+
+    // If role is doctor, create a default Doctor profile so they appear in Doctors list
+    if (validatedData.role === UserRole.DOCTOR) {
+      const Doctor = (await import('../models/Doctor')).default;
+      await Doctor.create({
+        user: user._id,
+        specialty: 'General',
+        experience: 0,
+        consultationFee: 0,
+        location: {
+          type: 'Point',
+          coordinates: [0, 0] // Default location
+        },
+        createdBy: currentUser.id,
+        parentAdmin,
+        parentSubAdmin
+      });
+    }
 
     const u = user as any;
     res.status(201).json({
@@ -200,6 +285,11 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       throw new AppError('Doctors cannot delete users', 403);
     }
     
+    if (user.role === UserRole.DOCTOR) {
+      const Doctor = (await import('../models/Doctor')).default;
+      await Doctor.findOneAndDelete({ user: id });
+    }
+    
     await User.findByIdAndDelete(id);
 
     res.status(204).json({
@@ -272,8 +362,10 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
       stages.push({ $match: { role: UserRole.ADMIN } });
     } else if (currentUser.role === UserRole.ADMIN) {
       stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id) } });
+    } else if (currentUser.role === UserRole.SUB_ADMIN) {
+      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id) } });
     } else {
-      throw new AppError('Only Admins and Super Admins can view hierarchy', 403);
+      throw new AppError('Only Admins, Sub-Admins and Super Admins can view hierarchy', 403);
     }
 
     // 2. Sub-Admin Lookup

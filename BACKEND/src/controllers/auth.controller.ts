@@ -13,6 +13,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  isDashboard: z.boolean().optional(),
 });
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -32,7 +33,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = loginSchema.parse(req.body);
-    const result = await authService.loginUser(validatedData.email, validatedData.password);
+    const result = await authService.loginUser(
+      validatedData.email, 
+      validatedData.password, 
+      validatedData.isDashboard
+    );
 
     res.status(200).json({
       status: 'success',
