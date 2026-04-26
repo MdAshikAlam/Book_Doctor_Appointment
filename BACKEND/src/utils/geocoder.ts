@@ -9,14 +9,14 @@ interface GeocodeResult {
 /**
  * Converts address, city, and country into latitude and longitude using OpenCage API.
  * @param address Full address string
- * @param city City name
- * @param country Country name
+ * @param district District name
+ * @param state State name
  * @returns Lat/Lng coordinates
  */
 export const geocodeAddress = async (
   address: string,
-  city: string,
-  country: string
+  district: string,
+  state: string
 ): Promise<GeocodeResult> => {
   const apiKey = process.env.OPENCAGE_API_KEY;
   
@@ -24,7 +24,7 @@ export const geocodeAddress = async (
     throw new AppError('OpenCage API key is missing from environment variables', 500);
   }
 
-  const query = `${address}, ${city}, ${country}`;
+  const query = `${address}, ${district}, ${state}, India`;
   const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${apiKey}`;
 
   try {

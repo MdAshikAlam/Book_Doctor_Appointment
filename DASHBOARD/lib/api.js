@@ -97,3 +97,8 @@ export const usersApi = {
   getPatients: () => apiCall('/users/patients'),
   getPatientDetails: (id) => apiCall(`/users/patients/${id}`),
 };
+
+export const utilityApi = {
+  getStates: () => apiCall('/utility/states'),
+  getDistricts: (state) => apiCall(`/utility/districts?state=${state}`),
+};

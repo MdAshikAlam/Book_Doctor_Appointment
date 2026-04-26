@@ -3,6 +3,7 @@ import * as utilityController from '../controllers/utility.controller';
 
 const router = Router();
 
-router.get('/geocode', utilityController.geocodeCity);
+router.get('/states', utilityController.getStates);
+router.get('/districts', utilityController.getDistricts);
 
 export default router;

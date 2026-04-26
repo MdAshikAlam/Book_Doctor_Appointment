@@ -3,7 +3,7 @@ import Doctor, { IDoctor } from '../models/Doctor';
 import { AppError } from '../middlewares/error';
 
 export const getAllDoctors = async (query: any, creatorId?: string) => {
-  const { specialty, name, lat, lng, radius = 5000, city, country } = query;
+  const { specialty, name, lat, lng, radius = 5000, district, state } = query;
   const pipeline: any[] = [];
 
   // 1. GeoNear must be first if coordinates are provided
@@ -37,11 +37,11 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
   if (specialty) {
     match.specialty = { $regex: specialty, $options: 'i' };
   }
-  if (city) {
-    match.city = { $regex: city, $options: 'i' };
+  if (district) {
+    match.district = { $regex: district, $options: 'i' };
   }
-  if (country) {
-    match.country = { $regex: country, $options: 'i' };
+  if (state) {
+    match.state = { $regex: state, $options: 'i' };
   }
   if (name) {
     // Search by doctor name OR specialty (now smarter for global search)
@@ -76,7 +76,61 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
     }
   });
 
-  return await Doctor.aggregate(pipeline);
+  let doctors = await Doctor.aggregate(pipeline);
+
+  // FALLBACK LOGIC: If no doctors found in the specific district, search for others in the same state
+  if (doctors.length === 0 && (district || (lat && lng))) {
+    const fallbackPipeline: any[] = [];
+    
+    // If we had lat/lng, maybe search with a much larger radius or just general state
+    if (lat && lng) {
+      fallbackPipeline.push({
+        $geoNear: {
+          near: { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] },
+          distanceField: 'distance',
+          spherical: true,
+          // No maxDistance here to find "nearest" anywhere
+        }
+      });
+    }
+
+    fallbackPipeline.push({
+      $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' }
+    });
+    fallbackPipeline.push({ $unwind: '$user' });
+
+    const fallbackMatch: any = {};
+    if (specialty) fallbackMatch.specialty = { $regex: specialty, $options: 'i' };
+    if (name) {
+      fallbackMatch.$or = [
+        { 'user.name': { $regex: name, $options: 'i' } },
+        { specialty: { $regex: name, $options: 'i' } }
+      ];
+    }
+    
+    // If district was specified, we specifically want doctors NOT in that district but in the same state
+    if (district && state) {
+      fallbackMatch.state = state;
+      fallbackMatch.district = { $ne: district };
+    }
+
+    if (Object.keys(fallbackMatch).length > 0) {
+      fallbackPipeline.push({ $match: fallbackMatch });
+    }
+
+    fallbackPipeline.push({ $limit: 10 }); // Limit fallback results
+    fallbackPipeline.push({
+      $addFields: { isFallback: true }
+    });
+    
+    fallbackPipeline.push({
+      $project: { 'user.password': 0, 'user.refreshToken': 0 }
+    });
+
+    doctors = await Doctor.aggregate(fallbackPipeline);
+  }
+
+  return doctors;
 };
 
 export const getDoctorById = async (id: string) => {

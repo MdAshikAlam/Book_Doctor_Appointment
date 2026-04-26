@@ -9,10 +9,10 @@ import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function HeaderSearch() {
-  const { selectedCountry, selectedCity, setSelectedCountry, setSelectedCity, latitude, longitude } = useLocation();
+  const { selectedState, selectedDistrict, setSelectedState, setSelectedDistrict, latitude, longitude } = useLocation();
   const [isLocationOpen, setIsLocationOpen] = useState(false);
-  const [countries, setCountries] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
+  const [states, setStates] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   
   const [query, setQuery] = useState('');
@@ -37,72 +37,72 @@ export default function HeaderSearch() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch Countries
+  // Fetch States
   useEffect(() => {
-    const fetchCountries = async () => {
+    const fetchStates = async () => {
       try {
         setIsLoadingLocations(true);
-        const res = await fetch('https://countriesnow.space/api/v0.1/countries/iso');
+        const res = await fetch(`${API_BASE_URL}/utility/states`);
         const data = await res.json();
-        if (!data.error) {
-          setCountries(data.data.map((c: any) => c.name).sort());
+        if (data.status === 'success') {
+          setStates(data.data);
         }
       } catch (err) {
-        console.error('Failed to fetch countries:', err);
+        console.error('Failed to fetch states:', err);
       } finally {
         setIsLoadingLocations(false);
       }
     };
-    if (isLocationOpen && countries.length === 0) {
-      fetchCountries();
+    if (isLocationOpen && states.length === 0) {
+      fetchStates();
     }
-  }, [isLocationOpen, countries.length]);
+  }, [isLocationOpen, states.length]);
 
-  // Fetch Cities when Country changes
+  // Fetch Districts when State changes
   useEffect(() => {
-    const fetchCities = async () => {
-      if (!selectedCountry) {
-        setCities([]);
+    const fetchDistricts = async () => {
+      if (!selectedState) {
+        setDistricts([]);
         return;
       }
       try {
         setIsLoadingLocations(true);
-        const res = await fetch('https://countriesnow.space/api/v0.1/countries/cities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ country: selectedCountry }),
-        });
+        const res = await fetch(`${API_BASE_URL}/utility/districts?state=${encodeURIComponent(selectedState)}`);
         const data = await res.json();
-        if (!data.error) {
-          setCities(data.data.sort());
+        if (data.status === 'success') {
+          setDistricts(data.data);
         }
       } catch (err) {
-        console.error('Failed to fetch cities:', err);
+        console.error('Failed to fetch districts:', err);
       } finally {
         setIsLoadingLocations(false);
       }
     };
-    if (selectedCountry) {
-      fetchCities();
+    if (selectedState) {
+      fetchDistricts();
     }
-  }, [selectedCountry]);
+  }, [selectedState]);
 
   // Fetch Search Suggestions
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (query.length < 2) {
+      // If no query and no location, don't show anything
+      if (query.length < 2 && !latitude && !longitude && !selectedDistrict) {
         setSuggestions([]);
         return;
       }
+
       try {
         setIsLoadingSuggestions(true);
-        let url = `${API_BASE_URL}/doctors?name=${encodeURIComponent(query)}`;
+        // If query is present, search by name, otherwise just get nearby
+        let url = `${API_BASE_URL}/doctors?${query.length >= 2 ? `name=${encodeURIComponent(query)}` : ''}`;
         
         // Add geographical filters if available
         if (latitude && longitude) {
           url += `&lat=${latitude}&lng=${longitude}&radius=60000`; // 60km radius
-        } else if (selectedCity) {
-          url += `&city=${encodeURIComponent(selectedCity)}`;
+        } else if (selectedDistrict) {
+          url += `&district=${encodeURIComponent(selectedDistrict)}`;
+          if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
         }
 
         const res = await fetch(url);
@@ -119,7 +119,7 @@ export default function HeaderSearch() {
 
     const debounce = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounce);
-  }, [query, latitude, longitude, selectedCity]);
+  }, [query, latitude, longitude, selectedDistrict]);
 
   return (
     <div className="hidden lg:flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function HeaderSearch() {
           <div className="text-left">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-none mb-1">Your Location</p>
             <p className="text-sm font-extrabold text-gray-900 leading-none truncate max-w-[120px]">
-              {selectedCity || 'Select City'}
+              {selectedDistrict || 'Select District'}
             </p>
           </div>
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
@@ -151,31 +151,31 @@ export default function HeaderSearch() {
             >
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">Country</label>
+                  <label className="text-[11px] font-bold text-gray-400 uppercase">State</label>
                   <select 
                     className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
                   >
-                    <option value="">Choose Country</option>
-                    {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="">Choose State</option>
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">City</label>
+                  <label className="text-[11px] font-bold text-gray-400 uppercase">District</label>
                   <div className="relative">
                     <select 
                       className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
-                      value={selectedCity}
+                      value={selectedDistrict}
                       onChange={(e) => {
-                        setSelectedCity(e.target.value);
+                        setSelectedDistrict(e.target.value);
                         setIsLocationOpen(false);
                       }}
-                      disabled={!selectedCountry || isLoadingLocations}
+                      disabled={!selectedState || isLoadingLocations}
                     >
-                      <option value="">{isLoadingLocations ? 'Loading...' : 'Choose City'}</option>
-                      {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{isLoadingLocations ? 'Loading...' : 'Choose District'}</option>
+                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                     {isLoadingLocations && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -185,7 +185,7 @@ export default function HeaderSearch() {
                   </div>
                 </div>
 
-                {!selectedCity && (
+                {!selectedDistrict && (
                   <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
                     <Navigation size={18} />
                     <p className="text-xs font-bold leading-tight">
@@ -218,7 +218,7 @@ export default function HeaderSearch() {
         </div>
 
         <AnimatePresence>
-          {showSuggestions && query.length >= 2 && (
+          {showSuggestions && (query.length >= 2 || suggestions.length > 0) && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -226,6 +226,20 @@ export default function HeaderSearch() {
               className="absolute top-full left-0 right-0 mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
             >
               <div className="max-h-[400px] overflow-y-auto p-2">
+                {suggestions.length > 0 && query.length < 2 && (
+                  <div className="px-4 py-2 text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 rounded-xl mb-2 mx-1">
+                    Recommended Nearby Doctors
+                  </div>
+                )}
+                
+                {suggestions.some(doc => doc.isFallback) && (
+                  <div className="px-4 py-3 bg-amber-50 rounded-2xl border border-amber-100 mb-3 mx-1">
+                    <p className="text-[11px] font-bold text-amber-800 leading-tight">
+                      No clinics available in {selectedDistrict || 'your area'}. You can visit these nearby doctors:
+                    </p>
+                  </div>
+                )}
+
                 {suggestions.length > 0 ? (
                   suggestions.map((doc) => (
                     <button 
@@ -253,6 +267,11 @@ export default function HeaderSearch() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
+                        {doc.distance !== undefined && (
+                          <p className="text-[10px] font-bold text-primary mt-0.5">
+                            {(doc.distance / 1000).toFixed(1)} km away
+                          </p>
+                        )}
                       </div>
                       <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
                         VIEW
@@ -261,7 +280,10 @@ export default function HeaderSearch() {
                   ))
                 ) : !isLoadingSuggestions && (
                   <div className="p-8 text-center">
-                    <p className="text-sm font-bold text-gray-400">No matches found for "{query}"</p>
+                    <p className="text-sm font-bold text-gray-400 mb-1">No matches found for "{query}"</p>
+                    <p className="text-[11px] font-medium text-gray-300">
+                      Try searching with a broader name or check in another location.
+                    </p>
                   </div>
                 )}
               </div>

@@ -8,8 +8,8 @@ export interface IDoctor extends Document {
   bio: string;
   consultationFee: number;
   address: string;
-  city: string;
-  country: string;
+  district: string;
+  state: string;
   availability: {
     day: string;
     slots: string[];
@@ -35,8 +35,8 @@ const doctorSchema = new Schema<IDoctor>(
     bio: { type: String },
     consultationFee: { type: Number, required: true },
     address: { type: String },
-    city: { type: String },
-    country: { type: String },
+    district: { type: String },
+    state: { type: String },
     availability: [
       {
         day: { type: String, required: true },

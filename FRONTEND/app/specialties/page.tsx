@@ -22,7 +22,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5
 
 export default function SpecialtiesPage() {
   const searchParams = useSearchParams();
-  const { selectedCity, selectedCountry, latitude, longitude } = useLocation();
+  const { selectedDistrict, selectedState, latitude, longitude } = useLocation();
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +53,9 @@ export default function SpecialtiesPage() {
         params.append('lat', latitude.toString());
         params.append('lng', longitude.toString());
         params.append('radius', '60000'); // 60km limit
-      } else if (selectedCity) {
-        params.append('city', selectedCity);
-        if (selectedCountry) params.append('country', selectedCountry);
+      } else if (selectedDistrict) {
+        params.append('district', selectedDistrict);
+        if (selectedState) params.append('state', selectedState);
       }
       
       const res = await fetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
@@ -72,11 +72,11 @@ export default function SpecialtiesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedSpecialty, selectedCity, selectedCountry, latitude, longitude]);
+  }, [selectedSpecialty, selectedDistrict, selectedState, latitude, longitude]);
 
   useEffect(() => {
     fetchDoctors();
-  }, [fetchDoctors, selectedCity, selectedCountry, latitude, longitude]);
+  }, [fetchDoctors, selectedDistrict, selectedState, latitude, longitude]);
 
   const handleSpecialtySelect = (name: string) => {
     if (selectedSpecialty === name) {
@@ -201,23 +201,33 @@ export default function SpecialtiesPage() {
               </button>
             </div>
           ) : filteredDoctors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredDoctors.map((doctor: any) => (
-                <DoctorCard 
-                  key={doctor._id}
-                  id={doctor._id}
-                  name={doctor.user.name}
-                  specialization={doctor.specialty}
-                  experience={doctor.experience}
-                  rating={4.8} // Default since not in schema
-                  reviews={120} // Default since not in schema
-                  avatarUrl={doctor.user.avatar}
-                  location={`${doctor.city}, ${doctor.country}`}
-                  availability="Available Today"
-                  distance={doctor.distance}
-                />
-              ))}
-            </div>
+            <>
+              {filteredDoctors.some((d: any) => d.isFallback) && (
+                <div className="bg-amber-50 border border-amber-100 p-6 rounded-[2.5rem] mb-10 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+                  <p className="text-amber-800 font-bold">
+                    No specialists currently available in {selectedDistrict || 'your selected area'}. 
+                    Showing nearest available experts:
+                  </p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredDoctors.map((doctor: any) => (
+                  <DoctorCard 
+                    key={doctor._id}
+                    id={doctor._id}
+                    name={doctor.user.name}
+                    specialization={doctor.specialty}
+                    experience={doctor.experience}
+                    rating={4.8} // Default since not in schema
+                    reviews={120} // Default since not in schema
+                    avatarUrl={doctor.user.avatar}
+                    location={`${doctor.district}, ${doctor.state}`}
+                    availability="Available Today"
+                    distance={doctor.distance}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="bg-white rounded-[2.5rem] p-32 text-center border-2 border-dashed border-gray-100">
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -225,7 +235,7 @@ export default function SpecialtiesPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No Specialists Found</h3>
               <p className="text-gray-500 max-w-sm mx-auto mb-8">
-                We couldn't find any healthcare professionals {selectedSpecialty ? `in ${selectedSpecialty}` : ''} at the moment.
+                We couldn't find any {selectedSpecialty ? `${selectedSpecialty}` : 'healthcare'} professionals in your selected area at the moment.
               </p>
               <button 
                 onClick={() => setSelectedSpecialty('')}

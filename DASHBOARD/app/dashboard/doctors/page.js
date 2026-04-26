@@ -1,16 +1,16 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, 
-  Search, 
-  MoreVertical, 
-  Trash2, 
-  Edit, 
-  Mail, 
-  Stethoscope, 
-  Briefcase, 
-  MapPin, 
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Trash2,
+  Edit,
+  Mail,
+  Stethoscope,
+  Briefcase,
+  MapPin,
   DollarSign,
   AlertCircle,
   Loader2,
@@ -21,7 +21,7 @@ import {
   CalendarCheck,
   Shield
 } from 'lucide-react';
-import { usersApi, doctorsApi } from '@/lib/api';
+import { usersApi, doctorsApi, utilityApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 
@@ -45,9 +45,9 @@ export default function DoctorsPage() {
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [viewingDoctor, setViewingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'sub_admin';
-  
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -59,66 +59,60 @@ export default function DoctorsPage() {
     consultationFee: '',
     bio: '',
     address: '',
-    city: '',
-    country: '',
+    district: '',
+    state: '',
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [countriesList, setCountriesList] = useState([]);
-  const [citiesList, setCitiesList] = useState([]);
-  const [isFetchingCountries, setIsFetchingCountries] = useState(false);
-  const [isFetchingCities, setIsFetchingCities] = useState(false);
+  const [statesList, setStatesList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
+  const [isFetchingStates, setIsFetchingStates] = useState(false);
+  const [isFetchingDistricts, setIsFetchingDistricts] = useState(false);
 
-  const fetchCountries = async () => {
+  const fetchStates = async () => {
     try {
-      setIsFetchingCountries(true);
-      const res = await fetch('https://countriesnow.space/api/v0.1/countries/iso');
-      const result = await res.json();
-      if (!result.error) {
-        setCountriesList(result.data.map(c => c.name).sort());
+      setIsFetchingStates(true);
+      const res = await utilityApi.getStates();
+      if (res.status === 'success') {
+        setStatesList(res.data);
       }
     } catch (err) {
-      console.error('Failed to fetch countries:', err);
+      console.error('Failed to fetch states:', err);
     } finally {
-      setIsFetchingCountries(false);
+      setIsFetchingStates(false);
     }
   };
 
-  const fetchCities = async (countryName) => {
-    if (!countryName) return;
+  const fetchDistricts = async (stateName) => {
+    if (!stateName) return;
     try {
-      setIsFetchingCities(true);
-      const res = await fetch('https://countriesnow.space/api/v0.1/countries/cities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country: countryName }),
-      });
-      const result = await res.json();
-      if (!result.error) {
-        setCitiesList(result.data.sort());
+      setIsFetchingDistricts(true);
+      const res = await utilityApi.getDistricts(stateName);
+      if (res.status === 'success') {
+        setDistrictsList(res.data);
       } else {
-        setCitiesList([]);
+        setDistrictsList([]);
       }
     } catch (err) {
-      console.error('Failed to fetch cities:', err);
-      setCitiesList([]);
+      console.error('Failed to fetch districts:', err);
+      setDistrictsList([]);
     } finally {
-      setIsFetchingCities(false);
+      setIsFetchingDistricts(false);
     }
   };
 
-  const handleCountryChange = (e) => {
-    const country = e.target.value;
+  const handleStateChange = (e) => {
+    const state = e.target.value;
     setFormData({
       ...formData,
-      country: country,
-      city: '' // Clear city when country changes
+      state: state,
+      district: '' // Clear district when state changes
     });
-    setCitiesList([]);
-    if (country) {
-      fetchCities(country);
+    setDistrictsList([]);
+    if (state) {
+      fetchDistricts(state);
     }
   };
 
@@ -136,22 +130,22 @@ export default function DoctorsPage() {
 
   useEffect(() => {
     fetchDoctors();
-    fetchCountries();
+    fetchStates();
   }, [fetchDoctors]);
 
-  // When editing, fetch cities for the initial country
+  // When editing, fetch districts for the initial state
   useEffect(() => {
-    if (editingDoctor && formData.country) {
-      fetchCities(formData.country);
+    if (editingDoctor && formData.state) {
+      fetchDistricts(formData.state);
     }
   }, [editingDoctor]);
 
   const handleOpenAddModal = () => {
     setEditingDoctor(null);
     setFormData({
-      name: '', email: '', avatar: '', password: '', specialty: '', 
-      experience: '', consultationFee: '', bio: '', 
-      address: '', city: '', country: ''
+      name: '', email: '', avatar: '', password: '', specialty: '',
+      experience: '', consultationFee: '', bio: '',
+      address: '', district: '', state: ''
     });
     setSelectedFile(null);
     setPreviewUrl('');
@@ -170,8 +164,8 @@ export default function DoctorsPage() {
       consultationFee: doc.consultationFee?.toString() || '',
       bio: doc.bio || '',
       address: doc.address || '',
-      city: doc.city || '',
-      country: doc.country || '',
+      district: doc.district || '',
+      state: doc.state || '',
     });
     setSelectedFile(null);
     setPreviewUrl(doc.user?.avatar || '');
@@ -221,8 +215,8 @@ export default function DoctorsPage() {
             consultationFee: Number(formData.consultationFee),
             bio: formData.bio,
             address: formData.address,
-            city: formData.city,
-            country: formData.country,
+            district: formData.district,
+            state: formData.state,
           }
         };
 
@@ -246,8 +240,8 @@ export default function DoctorsPage() {
             consultationFee: Number(formData.consultationFee),
             bio: formData.bio,
             address: formData.address,
-            city: formData.city,
-            country: formData.country,
+            district: formData.district,
+            state: formData.state,
             qualifications: ["MBBS", "MD"]
           }
         };
@@ -275,7 +269,7 @@ export default function DoctorsPage() {
     }
   };
 
-  const filteredDoctors = doctors.filter(doc => 
+  const filteredDoctors = doctors.filter(doc =>
     doc.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.specialty?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -289,7 +283,7 @@ export default function DoctorsPage() {
           <p className="text-slate-500 mt-1 font-medium">Add, edit, or remove healthcare professionals from the system.</p>
         </div>
         {canManage && (
-          <Button 
+          <Button
             onClick={handleOpenAddModal}
             className="h-12 px-6 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2"
           >
@@ -302,8 +296,8 @@ export default function DoctorsPage() {
       <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search by name, specialty or clinic..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -353,7 +347,7 @@ export default function DoctorsPage() {
                           {doc.user?.avatar ? (
                             <img src={getFullImageUrl(doc.user.avatar)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            doc.user?.name?.split(' ').map(n=>n[0]).join('')
+                            doc.user?.name?.split(' ').map(n => n[0]).join('')
                           )}
                         </div>
                         <div>
@@ -382,7 +376,7 @@ export default function DoctorsPage() {
                     {canManage && (
                       <td className="px-8 py-5 text-right">
                         <div className="flex items-center justify-end gap-2 transition-opacity">
-                          <button 
+                          <button
                             onClick={() => handleOpenViewModal(doc)}
                             className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
                             title="View Details"
@@ -390,7 +384,7 @@ export default function DoctorsPage() {
                             <Eye size={18} />
                           </button>
                           {canManage && (
-                            <button 
+                            <button
                               onClick={() => handleOpenEditModal(doc)}
                               className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
                             >
@@ -398,7 +392,7 @@ export default function DoctorsPage() {
                             </button>
                           )}
                           {canManage && (
-                            <button 
+                            <button
                               onClick={() => setDoctorToDelete(doc)}
                               className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
                             >
@@ -417,55 +411,55 @@ export default function DoctorsPage() {
       </div>
 
       {/* Doctor Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingDoctor ? "Edit Healthcare Professional" : "Add Healthcare Professional"}
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              label="Full Name" 
+            <Input
+              label="Full Name"
               placeholder="Dr. Julian Casablancas"
               value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required 
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
             />
-            <Input 
-              label="Email Address" 
-              type="email" 
+            <Input
+              label="Email Address"
+              type="email"
               placeholder="julian@hospital.com"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required 
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              label="Specialty" 
+            <Input
+              label="Specialty"
               placeholder="Cardiology"
               value={formData.specialty}
-              onChange={(e) => setFormData({...formData, specialty: e.target.value})}
-              required 
+              onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+              required
             />
-            <Input 
-              label="Experience (Years)" 
-              type="number" 
+            <Input
+              label="Experience (Years)"
+              type="number"
               placeholder="12"
               value={formData.experience}
-              onChange={(e) => setFormData({...formData, experience: e.target.value})}
-              required 
+              onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+              required
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              label="Consultation Fee ($)" 
-              type="number" 
+            <Input
+              label="Consultation Fee ($)"
+              type="number"
               placeholder="150"
               value={formData.consultationFee}
-              onChange={(e) => setFormData({...formData, consultationFee: e.target.value})}
-              required 
+              onChange={(e) => setFormData({ ...formData, consultationFee: e.target.value })}
+              required
             />
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">
@@ -481,9 +475,9 @@ export default function DoctorsPage() {
                   <div className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600">
                     <Plus size={16} /> {selectedFile ? selectedFile.name : 'Choose DP'}
                   </div>
-                  <input 
-                    type="file" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    className="hidden"
                     accept="image/*"
                     onChange={handleFileChange}
                   />
@@ -491,39 +485,39 @@ export default function DoctorsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">
-                Country <span className="text-red-500">*</span>
+                State <span className="text-red-500">*</span>
               </label>
-              <select 
+              <select
                 className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium appearance-none disabled:opacity-50"
-                value={formData.country}
-                onChange={handleCountryChange}
-                disabled={isFetchingCountries}
+                value={formData.state}
+                onChange={handleStateChange}
+                disabled={isFetchingStates}
               >
-                <option value="">{isFetchingCountries ? 'Loading countries...' : 'Select Country'}</option>
-                {countriesList.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="">{isFetchingStates ? 'Loading states...' : 'Select State'}</option>
+                {statesList.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">
-                City <span className="text-red-500">*</span>
+                District <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input 
-                  list="city-options"
-                  placeholder={isFetchingCities ? 'Loading cities...' : 'Select or Search City'}
+                <input
+                  list="district-options"
+                  placeholder={isFetchingDistricts ? 'Loading districts...' : 'Select or Search District'}
                   className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium disabled:opacity-50"
-                  value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  disabled={!formData.country || isFetchingCities}
+                  value={formData.district}
+                  onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                  disabled={!formData.state || isFetchingDistricts}
                 />
-                <datalist id="city-options">
-                  {citiesList.map(city => <option key={city} value={city} />)}
+                <datalist id="district-options">
+                  {districtsList.map(district => <option key={district} value={district} />)}
                 </datalist>
-                {isFetchingCities && (
+                {isFetchingDistricts && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <Loader2 size={18} className="animate-spin text-blue-600" />
                   </div>
@@ -532,20 +526,20 @@ export default function DoctorsPage() {
             </div>
           </div>
 
-          <Input 
-            label="Full Address" 
+          <Input
+            label="Full Address"
             placeholder="123 Medical Plaza, Suite 400"
             value={formData.address}
-            onChange={(e) => setFormData({...formData, address: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             required
           />
 
           <div className="grid grid-cols-1 gap-4">
-            <Input 
+            <Input
               label={editingDoctor ? "Password (leave blank to keep current)" : "Password"}
-              type="password" 
+              type="password"
               value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required={!editingDoctor}
             />
           </div>
@@ -553,17 +547,17 @@ export default function DoctorsPage() {
             <label className="text-sm font-bold text-slate-700 ml-1">
               Professional Bio
             </label>
-            <textarea 
+            <textarea
               className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium h-32"
               placeholder="Write a brief overview of the doctor's expertise..."
               value={formData.bio}
-              onChange={(e) => setFormData({...formData, bio: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
             ></textarea>
           </div>
           <div className="flex gap-4 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isUploading}
               className="flex-[2] h-12 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-70"
             >
@@ -589,8 +583,8 @@ export default function DoctorsPage() {
           </p>
           <div className="flex gap-4 mt-8">
             <Button variant="outline" onClick={() => setDoctorToDelete(null)} className="flex-1 h-14 rounded-2xl font-bold">Keep Doctor</Button>
-            <Button 
-              onClick={handleDeleteDoctor} 
+            <Button
+              onClick={handleDeleteDoctor}
               disabled={isDeleting}
               className="flex-1 h-14 bg-red-500 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-600 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
             >
@@ -621,16 +615,16 @@ export default function DoctorsPage() {
               <h3 className="text-2xl font-black text-slate-900 leading-tight">Dr. {viewingDoctor.user?.name}</h3>
               <p className="text-slate-500 font-medium">{viewingDoctor.user?.email}</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                 <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
-                   <Stethoscope size={14} />
-                   {viewingDoctor.specialty}
-                 </span>
-                 <span className="px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-black border border-blue-100 uppercase tracking-wider">
-                   {viewingDoctor.experience} Years Exp.
-                 </span>
-                 <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black border border-emerald-100 uppercase tracking-wider">
-                   ${viewingDoctor.consultationFee} Fee
-                 </span>
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
+                  <Stethoscope size={14} />
+                  {viewingDoctor.specialty}
+                </span>
+                <span className="px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-black border border-blue-100 uppercase tracking-wider">
+                  {viewingDoctor.experience} Years Exp.
+                </span>
+                <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black border border-emerald-100 uppercase tracking-wider">
+                  ${viewingDoctor.consultationFee} Fee
+                </span>
               </div>
             </div>
 
@@ -675,15 +669,15 @@ export default function DoctorsPage() {
               <div className="space-y-1 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm md:col-span-2">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinic Address</p>
                 <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <MapPin size={16} className="text-slate-300" /> {viewingDoctor.address || 'N/A'}{viewingDoctor.city ? `, ${viewingDoctor.city}` : ''}{viewingDoctor.country ? `, ${viewingDoctor.country}` : ''}
+                  <MapPin size={16} className="text-slate-300" /> {viewingDoctor.address || 'N/A'}{viewingDoctor.district ? `, ${viewingDoctor.district}` : ''}{viewingDoctor.state ? `, ${viewingDoctor.state}` : ''}
                 </p>
               </div>
             </div>
 
             <div className="pt-2">
-               <Button onClick={() => setViewingDoctor(null)} className="w-full h-14 bg-slate-100 text-slate-900 font-bold rounded-2xl hover:bg-slate-200 transition-all">
-                 Close Details
-               </Button>
+              <Button onClick={() => setViewingDoctor(null)} className="w-full h-14 bg-slate-100 text-slate-900 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                Close Details
+              </Button>
             </div>
           </div>
         )}

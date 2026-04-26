@@ -50,7 +50,7 @@ app.use('/api/v1/clinics', clinicRoutes);
 app.use('/api/v1/appointments', appointmentRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/upload', uploadRoutes);
-app.use('/api/v1/utils', utilityRoutes);
+app.use('/api/v1/utility', utilityRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
