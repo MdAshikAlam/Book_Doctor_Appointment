@@ -218,7 +218,7 @@ export default function HeaderSearch() {
         </div>
 
         <AnimatePresence>
-          {showSuggestions && (query.length >= 2 || suggestions.length > 0) && (
+          {showSuggestions && query.length >= 2 && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -226,65 +226,79 @@ export default function HeaderSearch() {
               className="absolute top-full left-0 right-0 mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
             >
               <div className="max-h-[400px] overflow-y-auto p-2">
-                {suggestions.length > 0 && query.length < 2 && (
-                  <div className="px-4 py-2 text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 rounded-xl mb-2 mx-1">
-                    Recommended Nearby Doctors
-                  </div>
-                )}
-                
-                {suggestions.some(doc => doc.isFallback) && (
-                  <div className="px-4 py-3 bg-amber-50 rounded-2xl border border-amber-100 mb-3 mx-1">
-                    <p className="text-[11px] font-bold text-amber-800 leading-tight">
-                      No clinics available in {selectedDistrict || 'your area'}. You can visit these nearby doctors:
+                {!latitude && !longitude && !selectedDistrict ? (
+                  <div className="p-8 text-center animate-in fade-in zoom-in duration-300">
+                    <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+                      <MapPin size={24} />
+                    </div>
+                    <p className="text-sm font-black text-gray-900 mb-1 uppercase tracking-tight">Location Required</p>
+                    <p className="text-[11px] font-bold text-gray-400 leading-relaxed px-4">
+                      Please select your state and district first to find specialists in your area.
                     </p>
                   </div>
-                )}
+                ) : (
+                  <>
+                    {suggestions.length > 0 && query.length < 2 && (
+                      <div className="px-4 py-2 text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 rounded-xl mb-2 mx-1">
+                        Recommended Nearby Doctors
+                      </div>
+                    )}
+                    
+                    {suggestions.some(doc => doc.isFallback) && (
+                      <div className="px-4 py-3 bg-amber-50 rounded-2xl border border-amber-100 mb-3 mx-1">
+                        <p className="text-[11px] font-bold text-amber-800 leading-tight">
+                          No clinics available in {selectedDistrict || 'your area'}. You can visit these nearby doctors:
+                        </p>
+                      </div>
+                    )}
 
-                {suggestions.length > 0 ? (
-                  suggestions.map((doc) => (
-                    <button 
-                      key={doc._id}
-                      onClick={() => {
-                        window.location.href = `/doctors/${doc._id}`;
-                        setShowSuggestions(false);
-                      }}
-                      className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all overflow-hidden font-bold">
-                        {doc.user.avatar ? (
-                          <img
-                            src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = getAvatarFallback(doc.user.name);
-                            }}
-                          />
-                        ) : (
-                          doc.user.name[0]
-                        )}
+                    {suggestions.length > 0 ? (
+                      suggestions.map((doc) => (
+                        <button 
+                          key={doc._id}
+                          onClick={() => {
+                            window.location.href = `/doctors/${doc._id}`;
+                            setShowSuggestions(false);
+                          }}
+                          className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all overflow-hidden font-bold">
+                            {doc.user.avatar ? (
+                              <img
+                                src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = getAvatarFallback(doc.user.name);
+                                }}
+                              />
+                            ) : (
+                              doc.user.name[0]
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
+                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
+                            {doc.distance !== undefined && (
+                              <p className="text-[10px] font-bold text-primary mt-0.5">
+                                {(doc.distance / 1000).toFixed(1)} km away
+                              </p>
+                            )}
+                          </div>
+                          <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                            VIEW
+                          </div>
+                        </button>
+                      ))
+                    ) : !isLoadingSuggestions && (
+                      <div className="p-8 text-center">
+                        <p className="text-sm font-bold text-gray-400 mb-1">No matches found for "{query}"</p>
+                        <p className="text-[11px] font-medium text-gray-300">
+                          Try searching with a broader name or check in another location.
+                        </p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
-                        {doc.distance !== undefined && (
-                          <p className="text-[10px] font-bold text-primary mt-0.5">
-                            {(doc.distance / 1000).toFixed(1)} km away
-                          </p>
-                        )}
-                      </div>
-                      <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                        VIEW
-                      </div>
-                    </button>
-                  ))
-                ) : !isLoadingSuggestions && (
-                  <div className="p-8 text-center">
-                    <p className="text-sm font-bold text-gray-400 mb-1">No matches found for "{query}"</p>
-                    <p className="text-[11px] font-medium text-gray-300">
-                      Try searching with a broader name or check in another location.
-                    </p>
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>

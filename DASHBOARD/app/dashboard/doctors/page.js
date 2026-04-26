@@ -24,6 +24,19 @@ import {
 import { usersApi, doctorsApi, utilityApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const SPECIALTIES = [
+  'General Physician',
+  'Cardiologist',
+  'Dermatologist',
+  'Pediatrician',
+  'Gynecologist',
+  'Orthopedic',
+  'ENT',
+  'Neurologist',
+  'Dentist',
+  'Psychiatrist',
+  'Eye Specialist (Ophthalmologist)'
+];
 
 const getFullImageUrl = (path) => {
   if (!path) return null;
@@ -436,13 +449,19 @@ export default function DoctorsPage() {
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Specialty"
-              placeholder="Cardiology"
-              value={formData.specialty}
-              onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-              required
-            />
+            <div className="space-y-0">
+              <Input
+                label="Specialty"
+                placeholder="Select or type specialty"
+                value={formData.specialty}
+                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                required
+                list="specialty-options"
+              />
+              <datalist id="specialty-options">
+                {SPECIALTIES.map(s => <option key={s} value={s} />)}
+              </datalist>
+            </div>
             <Input
               label="Experience (Years)"
               type="number"
