@@ -23,16 +23,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [longitude, setLongitude] = useState<number | null>(null);
 
   useEffect(() => {
-    // Load from localStorage
-    const state = localStorage.getItem('selectedState');
-    const district = localStorage.getItem('selectedDistrict');
-    const lat = localStorage.getItem('latitude');
-    const lng = localStorage.getItem('longitude');
-    
-    if (state) setSelectedState(state);
-    if (district) setSelectedDistrict(district);
-    if (lat) setLatitude(parseFloat(lat));
-    if (lng) setLongitude(parseFloat(lng));
+    // Session-based location. No auto-loading from localStorage to prevent "automatic" selection.
   }, []);
 
   const handleSetState = (state: string) => {
@@ -40,18 +31,10 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedDistrict(''); 
     setLatitude(null);
     setLongitude(null);
-    localStorage.setItem('selectedState', state);
-    localStorage.removeItem('selectedDistrict');
-    localStorage.removeItem('latitude');
-    localStorage.removeItem('longitude');
   };
 
   const handleSetDistrict = async (district: string) => {
     setSelectedDistrict(district);
-    localStorage.setItem('selectedDistrict', district);
-    
-    // We'll leave geocoding for later or remove if not needed. 
-    // The user didn't provide a way to geocode from state/district yet.
   };
 
   const clearLocation = () => {
@@ -59,10 +42,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedDistrict('');
     setLatitude(null);
     setLongitude(null);
-    localStorage.removeItem('selectedState');
-    localStorage.removeItem('selectedDistrict');
-    localStorage.removeItem('latitude');
-    localStorage.removeItem('longitude');
   };
 
   return (

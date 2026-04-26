@@ -39,7 +39,7 @@ export const specialties = [
   { name: "Pediatrics", icon: Baby, count: 210 },
   { name: "Orthopedics", icon: Bone, count: 95 },
   { name: "Dermatology", icon: Activity, count: 150 },
-  { name: "Ophthalmology", icon: Eye, count: 70 },
+  { name: "Eye Specialist (Ophthalmologist)", icon: Eye, count: 70 },
 ];
 
 export const testimonials = [
