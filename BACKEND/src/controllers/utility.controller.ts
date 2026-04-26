@@ -1,22 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
-import { geocodeAddress } from '../utils/geocoder';
+import fs from 'fs';
+import path from 'path';
 
-export const geocodeCity = async (req: Request, res: Response, next: NextFunction) => {
+const dataPath = path.join(__dirname, '../data/india_states_districts.json');
+
+export const getStates = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { city, country } = req.query;
-
-    if (!city || !country) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'City and Country are required'
-      });
-    }
-
-    const { lat, lng } = await geocodeAddress('', city as string, country as string);
+    const rawData = fs.readFileSync(dataPath, 'utf8');
+    const data = JSON.parse(rawData);
+    const states = Object.keys(data).sort();
 
     res.status(200).json({
       status: 'success',
-      data: { lat, lng }
+      data: states
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDistricts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { state } = req.query;
+    if (!state) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'State is required'
+      });
+    }
+
+    const rawData = fs.readFileSync(dataPath, 'utf8');
+    const data = JSON.parse(rawData);
+    const districts = data[state as string] || [];
+
+    res.status(200).json({
+      status: 'success',
+      data: districts.sort()
     });
   } catch (error) {
     next(error);

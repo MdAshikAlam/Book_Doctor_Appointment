@@ -15,7 +15,7 @@ import { useLocation } from '@/context/LocationContext';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function Home() {
-  const { selectedCity, selectedCountry, latitude, longitude } = useLocation();
+  const { selectedDistrict, selectedState, latitude, longitude } = useLocation();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,9 +40,9 @@ export default function Home() {
         params.append('lat', latitude.toString());
         params.append('lng', longitude.toString());
         params.append('radius', '60000'); 
-      } else if (selectedCity) {
-        params.append('city', selectedCity);
-        if (selectedCountry) params.append('country', selectedCountry);
+      } else if (selectedDistrict) {
+        params.append('district', selectedDistrict);
+        if (selectedState) params.append('state', selectedState);
       }
       
       const res = await fetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
@@ -59,11 +59,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [searchRadius, selectedCity, selectedCountry, latitude, longitude]);
+  }, [searchRadius, selectedDistrict, selectedState, latitude, longitude]);
 
   useEffect(() => {
     fetchDoctors();
-  }, [fetchDoctors, selectedCity, selectedCountry, latitude, longitude]);
+  }, [fetchDoctors, selectedDistrict, selectedState, latitude, longitude]);
 
   const handleFindNearby = () => {
     if (!navigator.geolocation) {
@@ -157,22 +157,33 @@ export default function Home() {
               <p className="text-gray-500 font-medium">Searching for best results...</p>
             </div>
           ) : doctors.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {doctors.map((doctor: any) => (
-                <DoctorCard 
-                  key={doctor._id}
-                  name={doctor.user.name}
-                  specialization={doctor.specialty}
-                  experience={doctor.experience}
-                  rating={4.8} // Mocked as not in schema
-                  reviews={120} // Mocked as not in schema
-                  avatarUrl={doctor.user.avatar}
-                  location={`${doctor.city}, ${doctor.country}`}
-                  availability="Available Today"
-                  distance={doctor.distance}
-                />
-              ))}
-            </div>
+            <>
+              {doctors.some((d: any) => d.isFallback) && (
+                <div className="bg-amber-50 border border-amber-100 p-6 rounded-3xl mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+                  <p className="text-amber-800 font-bold">
+                    No doctors currently available in {selectedDistrict || 'your selected area'}. 
+                    Showing nearest available specialists:
+                  </p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {doctors.map((doctor: any) => (
+                  <DoctorCard 
+                    key={doctor._id}
+                    id={doctor._id}
+                    name={doctor.user.name}
+                    specialization={doctor.specialty}
+                    experience={doctor.experience}
+                    rating={4.8} // Mocked as not in schema
+                    reviews={120} // Mocked as not in schema
+                    avatarUrl={doctor.user.avatar}
+                    location={`${doctor.district}, ${doctor.state}`}
+                    availability="Available Today"
+                    distance={doctor.distance}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-100">
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">

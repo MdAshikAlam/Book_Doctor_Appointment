@@ -55,8 +55,8 @@ const doctorProfileSchema = z.object({
   bio: z.string().optional(),
   consultationFee: z.number(),
   address: z.string(),
-  city: z.string(),
-  country: z.string(),
+  district: z.string(),
+  state: z.string(),
   location: z.object({
     type: z.literal('Point'),
     coordinates: z.array(z.number()).length(2),
@@ -110,8 +110,8 @@ export const adminCreateDoctor = async (req: Request, res: Response, next: NextF
     if (!validatedData.profileData.location) {
       const { lat, lng } = await geocodeAddress(
         validatedData.profileData.address,
-        validatedData.profileData.city,
-        validatedData.profileData.country
+        validatedData.profileData.district,
+        validatedData.profileData.state
       );
       validatedData.profileData.location = {
         type: 'Point',
@@ -168,11 +168,11 @@ export const adminUpdateDoctor = async (req: Request, res: Response, next: NextF
       // Re-geocode if address components changed and location not provided
       const p = validatedData.profileData;
       const d = doctor as any;
-      if (!p.location && (p.address || p.city || p.country)) {
+      if (!p.location && (p.address || p.district || p.state)) {
           const { lat, lng } = await geocodeAddress(
             p.address || d.address,
-            p.city || d.city,
-            p.country || d.country
+            p.district || d.district,
+            p.state || d.state
           );
           p.location = {
             type: 'Point',
