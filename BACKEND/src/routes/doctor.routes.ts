@@ -60,6 +60,13 @@ router.get('/:id', doctorController.getDoctor);
  *       201:
  *         description: Profile created/updated
  */
+router.get(
+  '/me',
+  protect,
+  restrictTo(UserRole.DOCTOR),
+  doctorController.getMyProfile
+);
+
 router.post(
   '/profile',
   protect,

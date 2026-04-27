@@ -15,6 +15,8 @@ export interface IUser extends Document {
   password?: string;
   role: UserRole;
   phone?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: Date;
   avatar?: string;
   isEmailVerified: boolean;
   refreshToken?: string;
@@ -33,6 +35,8 @@ const userSchema = new Schema<IUser>(
     password: { type: String, select: false },
     role: { type: String, enum: Object.values(UserRole), default: UserRole.PATIENT },
     phone: { type: String, trim: true },
+    gender: { type: String, enum: ['male', 'female', 'other'] },
+    dob: { type: Date },
     avatar: { type: String },
     isEmailVerified: { type: Boolean, default: false },
     refreshToken: { type: String, select: false },

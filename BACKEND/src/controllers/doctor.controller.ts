@@ -50,8 +50,11 @@ export const getDoctor = async (req: Request, res: Response, next: NextFunction)
 
 const doctorProfileSchema = z.object({
   specialty: z.string(),
+  subSpecialization: z.string().optional(),
   experience: z.number(),
   qualifications: z.array(z.string()),
+  licenseNumber: z.string(),
+  medicalCouncil: z.string(),
   bio: z.string().optional(),
   consultationFee: z.number(),
   address: z.string(),
@@ -97,6 +100,8 @@ const adminDoctorCreateSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8),
     phone: z.string().optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    dob: z.string().optional(), // Date string from frontend
     avatar: z.string().optional(),
   }),
   profileData: doctorProfileSchema,
@@ -140,6 +145,8 @@ const adminDoctorUpdateSchema = z.object({
     email: z.string().email().optional(),
     password: z.string().min(8).optional(),
     phone: z.string().optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    dob: z.string().optional(),
     avatar: z.string().optional(),
   }).optional(),
   profileData: doctorProfileSchema.partial().optional(),
@@ -188,6 +195,17 @@ export const adminUpdateDoctor = async (req: Request, res: Response, next: NextF
     res.status(200).json({
       status: 'success',
       data: { doctor: updatedDoctor },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getMyProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const doctor = await doctorService.getDoctorByUserId(req.user!.id as string);
+    res.status(200).json({
+      status: 'success',
+      data: { doctor },
     });
   } catch (error) {
     next(error);

@@ -22,7 +22,7 @@ export default function Home() {
   const [isLocating, setIsLocating] = useState(false);
   const [searchRadius, setSearchRadius] = useState(5000); // 5km default for browser locate
 
-  const fetchDoctors = useCallback(async (lat?: number, lng?: number) => {
+  const fetchDoctors = useCallback(async (lat?: number, lng?: number, searchName?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -30,6 +30,10 @@ export default function Home() {
       let url = `${API_BASE_URL}/doctors`;
       const params = new URLSearchParams();
       
+      if (searchName) {
+        params.append('name', searchName);
+      }
+
       if (lat && lng) {
         // From browser geolocation
         params.append('lat', lat.toString());
@@ -61,6 +65,12 @@ export default function Home() {
     }
   }, [searchRadius, selectedDistrict, selectedState, latitude, longitude]);
 
+  const handleSearch = (query: string, location: string) => {
+    // If location is provided in search bar, we could geocode it or just pass as name/district
+    // For now, let's just use query for name/specialty/clinic
+    fetchDoctors(undefined, undefined, query);
+  };
+
   useEffect(() => {
     fetchDoctors();
   }, [fetchDoctors, selectedDistrict, selectedState, latitude, longitude]);
@@ -89,7 +99,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <Hero />
+      <Hero onSearch={handleSearch} />
 
       {/* Specialties Overview */}
       <section className="py-24 bg-white">
