@@ -23,6 +23,7 @@ const router = Router();
  *         description: List of clinics
  */
 router.get('/', optionalProtect, clinicController.getClinics);
+router.get('/:id', optionalProtect, clinicController.getClinic);
 
 /**
  * @swagger
@@ -47,6 +48,20 @@ router.post(
   protect,
   restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
   clinicController.createClinic
+);
+
+router.patch(
+  '/:id',
+  protect,
+  restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
+  clinicController.updateClinic
+);
+
+router.patch(
+  '/:id/verify',
+  protect,
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  clinicController.verifyClinic
 );
 
 export default router;

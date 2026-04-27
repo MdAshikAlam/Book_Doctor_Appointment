@@ -6,7 +6,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Input = React.forwardRef(({ className, label, error, type = 'text', icon, ...props }, ref) => {
+const Input = React.forwardRef(({ className, label, error, type = 'text', icon: Icon, ...props }, ref) => {
   return (
     <div className="w-full space-y-1.5">
       {label && (
@@ -16,16 +16,16 @@ const Input = React.forwardRef(({ className, label, error, type = 'text', icon, 
         </label>
       )}
       <div className="relative group">
-        {icon && (
+        {Icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-            {icon}
+            {React.isValidElement(Icon) ? Icon : <Icon size={18} />}
           </div>
         )}
         <input
           type={type}
           className={cn(
             "flex h-10 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50",
-            icon && "pl-10",
+            Icon && "pl-10",
             error && "border-red-500 focus:ring-red-200 focus:border-red-500",
             className
           )}

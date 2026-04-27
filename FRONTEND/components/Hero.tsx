@@ -5,11 +5,13 @@ interface HeroProps {
   title?: string;
   subtitle?: string;
   ctaText?: string;
+  onSearch?: (query: string, location: string) => void;
 }
 
 const Hero = ({ 
   title = "Your Health Is Our Top Priority", 
   subtitle = "Find and book appointments with top-rated doctors in your city. Quick, easy, and secure healthcare at your fingertips.",
+  onSearch
 }: HeroProps) => {
   return (
     <section className="relative overflow-hidden bg-white pt-16 pb-20 lg:pt-24 lg:pb-32">
@@ -36,7 +38,7 @@ const Hero = ({
             </p>
             
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-              <SearchBar />
+              <SearchBar onSearch={onSearch} />
             </div>
             
             <div className="mt-8 flex items-center justify-center lg:justify-start space-x-8">

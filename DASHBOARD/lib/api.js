@@ -66,6 +66,7 @@ export const doctorsApi = {
     method: 'POST',
     body: formData,
   }),
+  getMe: () => apiCall('/doctors/me'),
 };
 
 export const appointmentsApi = {
@@ -101,4 +102,23 @@ export const usersApi = {
 export const utilityApi = {
   getStates: () => apiCall('/utility/states'),
   getDistricts: (state) => apiCall(`/utility/districts?state=${state}`),
+};
+
+export const clinicsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiCall(`/clinics?${query}`);
+  },
+  create: (data) => apiCall('/clinics', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  approve: (id) => apiCall(`/clinics/${id}/verify`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'Approved' }),
+  }),
+  update: (id, data) => apiCall(`/clinics/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
 };

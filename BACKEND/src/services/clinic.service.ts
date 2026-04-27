@@ -2,8 +2,12 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5000 } = query;
+  const { lat, lng, radius = 5000, name } = query;
   const filter: any = {};
+
+  if (name) {
+    filter.name = { $regex: name, $options: 'i' };
+  }
 
   if (lat && lng) {
     filter.location = {
@@ -30,8 +34,18 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
   return await Clinic.find(filter).populate('owner', 'name email');
 };
 
-export const getClinicById = async (id: string) => {
-  const clinic = await Clinic.findById(id).populate('owner', 'name email');
+export const getClinicById = async (idOrSlug: string) => {
+  const mongoose = require('mongoose');
+  const isId = mongoose.Types.ObjectId.isValid(idOrSlug);
+  
+  const query = isId ? { _id: idOrSlug } : { slug: idOrSlug };
+  const clinic = await Clinic.findOne(query)
+    .populate('owner', 'name email')
+    .populate({
+      path: 'doctors',
+      populate: { path: 'user', select: 'name avatar specialty' }
+    });
+
   if (!clinic) {
     throw new AppError('Clinic not found', 404);
   }
@@ -75,5 +89,19 @@ export const updateClinic = async (id: string, ownerId: string, data: Partial<IC
   if (!clinic) {
     throw new AppError('Clinic not found or you are not authorized', 404);
   }
+  return clinic;
+};
+
+export const updateClinicStatus = async (id: string, status: string) => {
+  const clinic = await Clinic.findByIdAndUpdate(
+    id,
+    { verificationStatus: status },
+    { new: true, runValidators: true }
+  );
+
+  if (!clinic) {
+    throw new AppError('Clinic not found', 404);
+  }
+
   return clinic;
 };

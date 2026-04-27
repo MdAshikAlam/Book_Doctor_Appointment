@@ -13,7 +13,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   Stethoscope,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -26,6 +27,7 @@ function cn(...inputs) {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },
   { icon: Shield, label: 'Admins & Staff', href: '/dashboard/staff', roles: ['super_admin', 'admin', 'sub_admin'] },
+  { icon: Home, label: 'Clinics', href: '/dashboard/clinics', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },
   { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors', roles: ['super_admin', 'admin', 'sub_admin', 'patient'] },
   { icon: Users, label: 'Patients', href: '/dashboard/patients', roles: ['super_admin', 'admin', 'sub_admin', 'doctor'] },
   { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', roles: ['super_admin', 'admin', 'sub_admin', 'doctor', 'patient'] },

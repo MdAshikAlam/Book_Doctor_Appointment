@@ -32,6 +32,7 @@ type DoctorDetails = {
     city?: string;
     country?: string;
     image?: string;
+    slug?: string;
   };
 };
 
@@ -145,7 +146,12 @@ export default function DoctorProfilePage() {
               <div className="space-y-3 text-sm text-gray-700">
                 <p className="flex items-start gap-2">
                   <Hospital className="w-4 h-4 mt-0.5" />
-                  <span>{doctor.clinic?.name || "Clinic name not provided"}</span>
+                  <Link 
+                    href={`/clinics/${doctor.clinic?.slug || (doctor.clinic as any)?._id}`}
+                    className="font-black text-primary hover:underline transition-all"
+                  >
+                    {doctor.clinic?.name || "Clinic name not provided"}
+                  </Link>
                 </p>
                 <p className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 mt-0.5" />

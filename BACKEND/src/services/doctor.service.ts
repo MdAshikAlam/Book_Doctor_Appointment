@@ -32,6 +32,18 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
   });
   pipeline.push({ $unwind: '$user' });
 
+  // 2.1 Lookup clinic to allow matching by clinic name
+  pipeline.push({
+    $lookup: {
+      from: 'clinics',
+      localField: 'clinic',
+      foreignField: '_id',
+      as: 'clinic_info',
+    },
+  });
+  // Note: We don't unwind clinic_info yet to avoid losing doctors without a primary clinic
+  // But we can match against the array
+
   // 3. Build Match Stage
   const match: any = {};
   if (specialty) {
@@ -44,10 +56,11 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
     match.state = { $regex: state, $options: 'i' };
   }
   if (name) {
-    // Search by doctor name OR specialty (now smarter for global search)
+    // Search by doctor name OR specialty OR clinic name
     match.$or = [
       { 'user.name': { $regex: name, $options: 'i' } },
-      { specialty: { $regex: name, $options: 'i' } }
+      { specialty: { $regex: name, $options: 'i' } },
+      { 'clinic_info.name': { $regex: name, $options: 'i' } }
     ];
   }
   if (creatorId) {
@@ -210,4 +223,11 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
   } as any);
 
   return { user, doctor };
+};
+export const getDoctorByUserId = async (userId: string) => {
+  const doctor = await Doctor.findOne({ user: userId }).populate('user', 'name email avatar').populate('clinic');
+  if (!doctor) {
+    throw new AppError('Doctor profile not found', 404);
+  }
+  return doctor;
 };

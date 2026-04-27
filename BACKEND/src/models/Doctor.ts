@@ -3,8 +3,11 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IDoctor extends Document {
   user: mongoose.Types.ObjectId;
   specialty: string;
+  subSpecialization?: string;
   experience: number;
   qualifications: string[];
+  licenseNumber: string;
+  medicalCouncil: string;
   bio: string;
   consultationFee: number;
   address: string;
@@ -21,6 +24,7 @@ export interface IDoctor extends Document {
     coordinates: number[]; // [longitude, latitude]
   };
   clinic: mongoose.Types.ObjectId;
+  clinics: mongoose.Types.ObjectId[];
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentSubAdmin?: mongoose.Types.ObjectId;
@@ -30,8 +34,11 @@ const doctorSchema = new Schema<IDoctor>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     specialty: { type: String, required: true },
+    subSpecialization: { type: String },
     experience: { type: Number, required: true },
-    qualifications: [{ type: String }],
+    qualifications: [{ type: String, required: true }],
+    licenseNumber: { type: String, required: true },
+    medicalCouncil: { type: String, required: true },
     bio: { type: String },
     consultationFee: { type: Number, required: true },
     address: { type: String },
@@ -50,6 +57,7 @@ const doctorSchema = new Schema<IDoctor>(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
+    clinics: [{ type: Schema.Types.ObjectId, ref: 'Clinic' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },

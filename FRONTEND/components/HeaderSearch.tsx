@@ -16,7 +16,7 @@ export default function HeaderSearch() {
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<{ doctors: any[], clinics: any[] }>({ doctors: [], clinics: [] });
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
@@ -88,14 +88,14 @@ export default function HeaderSearch() {
     const fetchSuggestions = async () => {
       // If no query and no location, don't show anything
       if (query.length < 2 && !latitude && !longitude && !selectedDistrict) {
-        setSuggestions([]);
+        setSuggestions({ doctors: [], clinics: [] });
         return;
       }
 
       try {
         setIsLoadingSuggestions(true);
-        // If query is present, search by name, otherwise just get nearby
-        let url = `${API_BASE_URL}/doctors?${query.length >= 2 ? `name=${encodeURIComponent(query)}` : ''}`;
+        // Fetch Search Suggestions (Doctors and Clinics)
+        let url = `${API_BASE_URL}/search?${query.length >= 2 ? `name=${encodeURIComponent(query)}` : ''}`;
         
         // Add geographical filters if available
         if (latitude && longitude) {
@@ -108,7 +108,9 @@ export default function HeaderSearch() {
         const res = await fetch(url);
         const data = await res.json();
         if (data.status === 'success') {
-          setSuggestions(data.data.doctors.slice(0, 5));
+          // Combine or store separately. Let's store separately in suggestions.
+          // We'll update the render logic below.
+          setSuggestions(data.data);
         }
       } catch (err) {
         console.error('Failed to fetch suggestions:', err);
@@ -238,58 +240,83 @@ export default function HeaderSearch() {
                   </div>
                 ) : (
                   <>
-                    {suggestions.length > 0 && query.length < 2 && (
-                      <div className="px-4 py-2 text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 rounded-xl mb-2 mx-1">
-                        Recommended Nearby Doctors
-                      </div>
-                    )}
-                    
-                    {suggestions.some(doc => doc.isFallback) && (
-                      <div className="px-4 py-3 bg-amber-50 rounded-2xl border border-amber-100 mb-3 mx-1">
-                        <p className="text-[11px] font-bold text-amber-800 leading-tight">
-                          No clinics available in {selectedDistrict || 'your area'}. You can visit these nearby doctors:
-                        </p>
-                      </div>
-                    )}
-
-                    {suggestions.length > 0 ? (
-                      suggestions.map((doc) => (
-                        <button 
-                          key={doc._id}
-                          onClick={() => {
-                            window.location.href = `/doctors/${doc._id}`;
-                            setShowSuggestions(false);
-                          }}
-                          className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all overflow-hidden font-bold">
-                            {doc.user.avatar ? (
-                              <img
-                                src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
-                                alt=""
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src = getAvatarFallback(doc.user.name);
+                    {(suggestions.doctors.length > 0 || suggestions.clinics.length > 0) ? (
+                      <>
+                        {/* Clinics Section */}
+                        {suggestions.clinics.length > 0 && (
+                          <div className="mb-4">
+                            <div className="px-4 py-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 rounded-xl mb-2 mx-1">
+                              Clinics & Hospitals
+                            </div>
+                            {suggestions.clinics.map((clinic) => (
+                              <button 
+                                key={clinic._id}
+                                onClick={() => {
+                                  window.location.href = `/clinics/${clinic.slug || clinic._id}`;
+                                  setShowSuggestions(false);
                                 }}
-                              />
-                            ) : (
-                              doc.user.name[0]
-                            )}
+                                className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
+                              >
+                                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-emerald-600 group-hover:text-white transition-all overflow-hidden font-bold">
+                                  {clinic.images?.[0] ? (
+                                    <img src={resolveImageUrl(clinic.images[0]) || ''} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Search size={20} />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-extrabold text-gray-900 truncate">{clinic.name}</p>
+                                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{clinic.clinicType}</p>
+                                </div>
+                                <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all">
+                                  VISIT
+                                </div>
+                              </button>
+                            ))}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
-                            {doc.distance !== undefined && (
-                              <p className="text-[10px] font-bold text-primary mt-0.5">
-                                {(doc.distance / 1000).toFixed(1)} km away
-                              </p>
-                            )}
+                        )}
+
+                        {/* Doctors Section */}
+                        {suggestions.doctors.length > 0 && (
+                          <div>
+                            <div className="px-4 py-2 text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 rounded-xl mb-2 mx-1">
+                              Doctors & Specialists
+                            </div>
+                            {suggestions.doctors.map((doc) => (
+                              <button 
+                                key={doc._id}
+                                onClick={() => {
+                                  window.location.href = `/doctors/${doc._id}`;
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all group text-left"
+                              >
+                                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all overflow-hidden font-bold">
+                                  {doc.user.avatar ? (
+                                    <img
+                                      src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = getAvatarFallback(doc.user.name);
+                                      }}
+                                    />
+                                  ) : (
+                                    doc.user.name[0]
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
+                                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
+                                </div>
+                                <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                  BOOK
+                                </div>
+                              </button>
+                            ))}
                           </div>
-                          <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                            VIEW
-                          </div>
-                        </button>
-                      ))
+                        )}
+                      </>
                     ) : !isLoadingSuggestions && (
                       <div className="p-8 text-center">
                         <p className="text-sm font-bold text-gray-400 mb-1">No matches found for "{query}"</p>
