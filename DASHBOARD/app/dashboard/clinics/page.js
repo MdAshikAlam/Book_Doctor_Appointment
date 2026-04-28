@@ -27,6 +27,7 @@ import { clinicsApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
@@ -43,6 +44,7 @@ const SERVICES = ['OPD', 'Emergency', 'Lab Test', 'Pharmacy'];
 const FACILITIES = ['ICU', 'Ambulance', 'Parking', 'Wheelchair Access'];
 
 export default function ClinicsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [clinics, setClinics] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -56,6 +58,21 @@ export default function ClinicsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Slot Modal State
+  const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
+  const [isGeneratingSlots, setIsGeneratingSlots] = useState(false);
+  const [slotFormData, setSlotFormData] = useState({
+    doctorId: '',
+    days: [],
+    startTime: '',
+    endTime: '',
+    duration: 20,
+    breakStart: '',
+    breakEnd: ''
+  });
+  const [slotFormError, setSlotFormError] = useState(null);
+  const [slotSuccessMsg, setSlotSuccessMsg] = useState(null);
 
   const handleApprove = async (id) => {
     try {
@@ -256,6 +273,37 @@ export default function ClinicsPage() {
     }
   };
 
+  const handleSlotSubmit = async (e) => {
+    e.preventDefault();
+    if (!slotFormData.doctorId || slotFormData.days.length === 0 || !slotFormData.startTime || !slotFormData.endTime) {
+      setSlotFormError('Please fill in all required fields.');
+      return;
+    }
+    
+    setIsGeneratingSlots(true);
+    setSlotFormError(null);
+    try {
+      await doctorsApi.generateAvailability(slotFormData.doctorId, {
+        days: slotFormData.days,
+        startTime: slotFormData.startTime,
+        endTime: slotFormData.endTime,
+        duration: Number(slotFormData.duration),
+        breakStart: slotFormData.breakStart || undefined,
+        breakEnd: slotFormData.breakEnd || undefined,
+      });
+      setSlotSuccessMsg('Time slots successfully generated and saved!');
+      setTimeout(() => {
+        setIsSlotModalOpen(false);
+        setSlotSuccessMsg(null);
+        fetchData();
+      }, 2000);
+    } catch (err) {
+      setSlotFormError(err.message || 'Failed to generate slots');
+    } finally {
+      setIsGeneratingSlots(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -269,17 +317,21 @@ export default function ClinicsPage() {
       if (editingClinicId) {
         await clinicsApi.update(editingClinicId, payload);
         setSuccessMsg('Clinic updated successfully!');
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setSuccessMsg(null);
+          setEditingClinicId(null);
+          fetchData();
+        }, 2000);
       } else {
         await clinicsApi.create(payload);
-        setSuccessMsg('Clinic registered successfully!');
+        setSuccessMsg('Clinic registered successfully! Redirecting to add doctors...');
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setSuccessMsg(null);
+          router.push('/dashboard/doctors');
+        }, 2000);
       }
-
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setSuccessMsg(null);
-        setEditingClinicId(null);
-        fetchData();
-      }, 2000);
     } catch (err) {
       setFormError(err.message || 'Failed to process request');
     } finally {
@@ -297,30 +349,20 @@ export default function ClinicsPage() {
           </h1>
           <p className="text-slate-500 mt-1 font-medium text-lg">Search for partner clinics and view their registered medical teams.</p>
         </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          className="h-12 px-6 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-100 flex items-center gap-2"
-        >
-          <Plus size={20} /> Register Clinic
-        </Button>
+        {(user?.role === 'super_admin' || clinics.length === 0) && (
+          <Button 
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="h-12 px-6 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-100 flex items-center gap-2"
+          >
+            <Plus size={20} /> Register Clinic
+          </Button>
+        )}
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-100 border border-slate-100">
-        <div className="relative group max-w-2xl mx-auto">
-          <Search size={22} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search clinics by name or location..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-lg shadow-inner"
-          />
-        </div>
-      </div>
+
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -328,21 +370,20 @@ export default function ClinicsPage() {
           <p className="text-slate-400 mt-4 font-bold text-lg">Fetching medical facilities...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {filteredClinics.length > 0 ? filteredClinics.map((clinic) => {
             const clinicDoctors = getDoctorsInClinic(clinic._id);
             const isSelected = selectedClinic?._id === clinic._id;
 
             return (
-              <motion.div 
-                layout
+              <div
                 key={clinic._id}
-                className={`group bg-white rounded-[2.5rem] border-2 transition-all overflow-hidden ${isSelected ? 'border-blue-500 shadow-2xl shadow-blue-100 ring-4 ring-blue-50' : 'border-slate-100 hover:border-blue-200 shadow-xl shadow-slate-100'}`}
+                className="group bg-white rounded-[2.5rem] border-2 transition-all overflow-hidden border-slate-100 hover:border-blue-200 shadow-xl shadow-slate-100"
               >
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-5">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-105 overflow-hidden ${isSelected ? 'bg-blue-600' : 'bg-slate-900'}`}>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-105 overflow-hidden bg-slate-900">
                         {clinic.images?.[0] ? (
                           <img src={getFullImageUrl(clinic.images[0])} alt={clinic.name} className="w-full h-full object-cover" />
                         ) : (
@@ -366,12 +407,6 @@ export default function ClinicsPage() {
                           <Pencil size={20} />
                         </button>
                       )}
-                      <button 
-                        onClick={() => setSelectedClinic(isSelected ? null : clinic)}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isSelected ? 'bg-blue-600 text-white rotate-90' : 'bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600'}`}
-                      >
-                        <ChevronRight size={24} />
-                      </button>
                     </div>
                   </div>
 
@@ -392,15 +427,7 @@ export default function ClinicsPage() {
                     </div>
                   </div>
 
-                  <AnimatePresence>
-                    {isSelected && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pt-6 border-t border-slate-100">
+                  <div className="pt-6 border-t border-slate-100">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                              <div>
                                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
@@ -431,9 +458,22 @@ export default function ClinicsPage() {
                              </div>
                           </div>
 
-                          <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <Stethoscope size={14} /> Doctors in this Clinic
-                          </h4>
+                          <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                              <Stethoscope size={14} /> Doctors in this Clinic
+                            </h4>
+                            {clinicDoctors.length > 0 && (
+                              <button 
+                                onClick={() => {
+                                  setSlotFormData(prev => ({...prev, doctorId: clinicDoctors[0]._id}));
+                                  setIsSlotModalOpen(true);
+                                }}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 uppercase tracking-wider"
+                              >
+                                <Clock size={12} /> Set Time Slots
+                              </button>
+                            )}
+                          </div>
                           <div className="space-y-3">
                             {clinicDoctors.length > 0 ? clinicDoctors.map((doc) => (
                               <div key={doc._id} className="p-4 rounded-2xl bg-slate-50 hover:bg-white border border-transparent hover:border-blue-100 hover:shadow-md transition-all flex items-center justify-between group/doc">
@@ -457,11 +497,8 @@ export default function ClinicsPage() {
                             )}
                           </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+                      </div>
+                    </div>
             );
           }) : (
             <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
@@ -781,6 +818,155 @@ export default function ClinicsPage() {
                   className="flex-[2] h-14 bg-blue-600 text-white font-extrabold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
                 >
                   {isSaving ? <Loader2 size={24} className="animate-spin" /> : 'Register Clinic'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Set Doctor Time Slots Modal */}
+      <AnimatePresence>
+        {isSlotModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSlotModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">👉 Set Doctor Time Slots</h2>
+                  <p className="text-sm text-slate-500 font-medium">Generate availability slots for the selected doctor.</p>
+                </div>
+                <button 
+                  onClick={() => setIsSlotModalOpen(false)}
+                  className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <form onSubmit={handleSlotSubmit} className="space-y-6">
+                  {/* Doctor Name */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Doctor Name</label>
+                    <select
+                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
+                      value={slotFormData.doctorId}
+                      onChange={(e) => setSlotFormData({...slotFormData, doctorId: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Doctor</option>
+                      {doctors.filter(d => selectedClinic && (d.clinic?._id === selectedClinic._id || (Array.isArray(d.clinics) && d.clinics.includes(selectedClinic._id)))).map(doc => (
+                        <option key={doc._id} value={doc._id}>Dr. {doc.user?.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Available Days */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Available Days</label>
+                    <div className="flex flex-wrap gap-2">
+                      {WORKING_DAYS.map(day => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            setSlotFormData(prev => ({
+                              ...prev,
+                              days: prev.days.includes(day) ? prev.days.filter(d => d !== day) : [...prev.days, day]
+                            }))
+                          }}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            slotFormData.days.includes(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Start Time & End Time */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Start Time" name="startTime" type="time" required value={slotFormData.startTime} onChange={e => setSlotFormData({...slotFormData, startTime: e.target.value})} />
+                    <Input label="End Time" name="endTime" type="time" required value={slotFormData.endTime} onChange={e => setSlotFormData({...slotFormData, endTime: e.target.value})} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Slot Duration (minutes)</label>
+                    <input 
+                      type="number" 
+                      min="5" max="120"
+                      required
+                      value={slotFormData.duration}
+                      onChange={e => setSlotFormData({...slotFormData, duration: Number(e.target.value)})}
+                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
+                      placeholder="Custom duration..."
+                    />
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[10, 15, 20, 30, 45, 60].map(mins => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setSlotFormData({...slotFormData, duration: mins})}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            slotFormData.duration === mins 
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          }`}
+                        >
+                          {mins} mins
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Optional Breaks */}
+                  <div className="pt-4 border-t border-slate-100">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">⚙️ Optional Settings</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input label="Break Start Time" name="breakStart" type="time" value={slotFormData.breakStart} onChange={e => setSlotFormData({...slotFormData, breakStart: e.target.value})} />
+                      <Input label="Break End Time" name="breakEnd" type="time" value={slotFormData.breakEnd} onChange={e => setSlotFormData({...slotFormData, breakEnd: e.target.value})} />
+                    </div>
+                  </div>
+
+                  {slotFormError && (
+                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-bold flex items-center gap-3">
+                       <AlertCircle size={20} /> {slotFormError}
+                    </div>
+                  )}
+                  {slotSuccessMsg && (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm font-bold flex items-center gap-3">
+                       <CheckCircle2 size={20} /> {slotSuccessMsg}
+                    </div>
+                  )}
+                </form>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 bg-white flex gap-4 sticky bottom-0 z-10">
+                <Button 
+                  onClick={() => setIsSlotModalOpen(false)}
+                  className="flex-1 h-14 rounded-2xl border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSlotSubmit}
+                  disabled={isGeneratingSlots || slotFormData.days.length === 0}
+                  className="flex-[2] h-14 bg-blue-600 text-white font-extrabold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isGeneratingSlots ? <Loader2 size={24} className="animate-spin" /> : '🔥 Generate & Save Slots'}
                 </Button>
               </div>
             </motion.div>

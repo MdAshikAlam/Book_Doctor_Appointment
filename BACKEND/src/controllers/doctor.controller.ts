@@ -6,6 +6,7 @@ import { AppError } from '../middlewares/error';
 import { z } from 'zod';
 import { UserRole } from '../models/User';
 import { geocodeAddress } from '../utils/geocoder';
+import Doctor from '../models/Doctor';
 
 export const getDoctors = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -206,6 +207,122 @@ export const getMyProfile = async (req: AuthRequest, res: Response, next: NextFu
     res.status(200).json({
       status: 'success',
       data: { doctor },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generateAvailabilitySchema = z.object({
+  days: z.array(z.string()),
+  startTime: z.string(),
+  endTime: z.string(),
+  duration: z.number(),
+  breakStart: z.string().optional(),
+  breakEnd: z.string().optional()
+});
+
+export const generateAvailability = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = generateAvailabilitySchema.parse(req.body);
+    const doctor = await doctorService.getDoctorById(id);
+    
+    const { days, startTime, endTime, duration, breakStart, breakEnd } = validatedData;
+    
+    const generateSlots = (start: string, end: string, dur: number, bStart?: string, bEnd?: string) => {
+      const slots: string[] = [];
+      const parseTime = (time: string) => {
+        const parts = time.split(':');
+        const h = parseInt(parts[0] || '0', 10);
+        const m = parseInt(parts[1] || '0', 10);
+        return h * 60 + m;
+      };
+      
+      let current = parseTime(start);
+      const endMins = parseTime(end);
+      const breakS = bStart ? parseTime(bStart) : -1;
+      const breakE = bEnd ? parseTime(bEnd) : -1;
+
+      const formatTime = (mins: number) => {
+        const h = Math.floor(mins / 60).toString().padStart(2, '0');
+        const m = (mins % 60).toString().padStart(2, '0');
+        return `${h}:${m}`;
+      };
+
+      while (current + dur <= endMins) {
+        const slotEnd = current + dur;
+        const isBreak = breakS !== -1 && breakE !== -1 && ((current >= breakS && current < breakE) || (slotEnd > breakS && slotEnd <= breakE) || (current <= breakS && slotEnd >= breakE));
+        
+        if (!isBreak) {
+          slots.push(`${formatTime(current)} - ${formatTime(slotEnd)}`);
+        }
+        current = slotEnd;
+      }
+      return slots;
+    };
+
+    const slots = generateSlots(startTime, endTime, duration, breakStart, breakEnd);
+    
+    const newAvailability = [...(doctor.availability || [])];
+    
+    for (const day of days) {
+      const existingIdx = newAvailability.findIndex(a => a.day === day);
+      if (existingIdx !== -1 && newAvailability[existingIdx]) {
+        newAvailability[existingIdx]!.slots = slots;
+      } else {
+        newAvailability.push({ day, slots });
+      }
+    }
+    
+    const updatedDoctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      { availability: newAvailability },
+      { new: true }
+    );
+    
+    if (!updatedDoctor) {
+      return next(new AppError('Doctor not found', 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: { availability: updatedDoctor.availability }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addLeave = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { startDate, endDate, reason } = req.body;
+
+    if (!startDate || !endDate) {
+      return next(new AppError('Please provide leave start and end dates', 400));
+    }
+
+    const updatedDoctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          leaves: {
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            reason
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedDoctor) {
+      return next(new AppError('Doctor not found', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { leaves: updatedDoctor.leaves }
     });
   } catch (error) {
     next(error);

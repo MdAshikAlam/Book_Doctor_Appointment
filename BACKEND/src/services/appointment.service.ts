@@ -24,6 +24,25 @@ export const bookAppointment = async (data: Partial<IAppointment>) => {
     status: { $ne: AppointmentStatus.CANCELLED },
   });
 
+  // Check if doctor is on leave
+  const checkDoctor = await Doctor.findById(doctorId);
+  if (checkDoctor?.leaves && checkDoctor.leaves.length > 0) {
+    const bookingDate = new Date(date);
+    bookingDate.setHours(0, 0, 0, 0); // Normalize booking date
+    
+    const isOnLeave = checkDoctor.leaves.some(leave => {
+      const start = new Date(leave.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(leave.endDate);
+      end.setHours(23, 59, 59, 999);
+      return bookingDate >= start && bookingDate <= end;
+    });
+    
+    if (isOnLeave) {
+      throw new AppError('The doctor is on leave on this date. Please select another date.', 400);
+    }
+  }
+
   if (existing) {
     throw new AppError('This slot is already booked', 400);
   }

@@ -22,7 +22,7 @@ import {
   Shield,
   Award
 } from 'lucide-react';
-import { usersApi, doctorsApi, utilityApi } from '@/lib/api';
+import { usersApi, doctorsApi, utilityApi, clinicsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 const SPECIALTIES = [
@@ -52,6 +52,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function DoctorsPage() {
   const { user: currentUser } = useAuth();
   const [doctors, setDoctors] = useState([]);
+  const [clinicsCount, setClinicsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -91,6 +92,76 @@ export default function DoctorsPage() {
   const [districtsList, setDistrictsList] = useState([]);
   const [isFetchingStates, setIsFetchingStates] = useState(false);
   const [isFetchingDistricts, setIsFetchingDistricts] = useState(false);
+
+  // Slot Form State
+  const [slotFormData, setSlotFormData] = useState({
+    days: [],
+    startTime: '',
+    endTime: '',
+    duration: 20,
+    breakStart: '',
+    breakEnd: ''
+  });
+  const [isGeneratingSlots, setIsGeneratingSlots] = useState(false);
+  const [slotFormError, setSlotFormError] = useState(null);
+  const [slotSuccessMsg, setSlotSuccessMsg] = useState(null);
+  const WORKING_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const handleGenerateSlots = async () => {
+    if (!slotFormData.days.length || !slotFormData.startTime || !slotFormData.endTime) {
+      setSlotFormError('Please fill in required fields (days, start time, end time).');
+      return;
+    }
+    setIsGeneratingSlots(true);
+    setSlotFormError(null);
+    try {
+      await doctorsApi.generateAvailability(editingDoctor._id, {
+        days: slotFormData.days,
+        startTime: slotFormData.startTime,
+        endTime: slotFormData.endTime,
+        duration: Number(slotFormData.duration),
+        breakStart: slotFormData.breakStart || undefined,
+        breakEnd: slotFormData.breakEnd || undefined,
+      });
+      setSlotSuccessMsg('Slots generated and saved successfully!');
+      setTimeout(() => setSlotSuccessMsg(null), 3000);
+      fetchDoctors();
+    } catch (err) {
+      setSlotFormError(err.message || 'Failed to generate slots');
+    } finally {
+      setIsGeneratingSlots(false);
+    }
+  };
+
+  // Leave Form State
+  const [leaveFormData, setLeaveFormData] = useState({
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+  const [isApplyingLeave, setIsApplyingLeave] = useState(false);
+  const [leaveFormError, setLeaveFormError] = useState(null);
+  const [leaveSuccessMsg, setLeaveSuccessMsg] = useState(null);
+
+  const handleApplyLeave = async () => {
+    if (!leaveFormData.startDate || !leaveFormData.endDate) {
+      setLeaveFormError('Please provide both start and end dates.');
+      return;
+    }
+    setIsApplyingLeave(true);
+    setLeaveFormError(null);
+    try {
+      await doctorsApi.addLeave(editingDoctor._id, leaveFormData);
+      setLeaveSuccessMsg('Leave marked successfully!');
+      setTimeout(() => setLeaveSuccessMsg(null), 3000);
+      setLeaveFormData({ startDate: '', endDate: '', reason: '' });
+      fetchDoctors();
+    } catch (err) {
+      setLeaveFormError(err.message || 'Failed to apply leave');
+    } finally {
+      setIsApplyingLeave(false);
+    }
+  };
 
   const fetchStates = async () => {
     try {
@@ -140,8 +211,12 @@ export default function DoctorsPage() {
   const fetchDoctors = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await doctorsApi.getAll({ dashboard: true });
+      const [res, clinicsRes] = await Promise.all([
+        doctorsApi.getAll({ dashboard: true }),
+        clinicsApi.getAll()
+      ]);
       setDoctors(res.data.doctors || []);
+      setClinicsCount(clinicsRes.data.clinics?.length || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -237,18 +312,18 @@ export default function DoctorsPage() {
             name: formData.name,
             email: formData.email,
             avatar: currentAvatarUrl,
-            phone: formData.phone,
-            gender: formData.gender,
-            dob: formData.dob,
+            phone: formData.phone || undefined,
+            gender: formData.gender ? formData.gender.toLowerCase() : undefined,
+            dob: formData.dob || undefined,
           },
           profileData: {
             specialty: formData.specialty,
             subSpecialization: formData.subSpecialization,
-            experience: Number(formData.experience),
-            consultationFee: Number(formData.consultationFee),
+            experience: Number(formData.experience) || 0,
+            consultationFee: Number(formData.consultationFee) || 0,
             licenseNumber: formData.licenseNumber,
             medicalCouncil: formData.medicalCouncil,
-            qualifications: formData.qualifications.split(',').map(s => s.trim()).filter(s => s),
+            qualifications: formData.qualifications ? formData.qualifications.split(',').map(s => s.trim()).filter(s => s) : [],
             bio: formData.bio,
             address: formData.address,
             district: formData.district,
@@ -269,9 +344,9 @@ export default function DoctorsPage() {
             email: formData.email,
             avatar: currentAvatarUrl,
             password: formData.password || 'password123',
-            phone: formData.phone,
-            gender: formData.gender,
-            dob: formData.dob,
+            phone: formData.phone || undefined,
+            gender: formData.gender ? formData.gender.toLowerCase() : undefined,
+            dob: formData.dob || undefined,
           },
           profileData: {
             specialty: formData.specialty,
@@ -325,12 +400,22 @@ export default function DoctorsPage() {
           <p className="text-slate-500 mt-1 font-medium">Add, edit, or remove healthcare professionals from the system.</p>
         </div>
         {canManage && (
-          <Button
-            onClick={handleOpenAddModal}
-            className="h-12 px-6 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2"
-          >
-            <Plus size={20} /> Add New Doctor
-          </Button>
+          <div className="flex flex-col items-end">
+            <Button
+              onClick={handleOpenAddModal}
+              disabled={clinicsCount === 0}
+              className={`h-12 px-6 rounded-2xl text-white font-bold shadow-lg transition-all flex items-center gap-2 ${
+                clinicsCount === 0 
+                  ? 'bg-slate-400 shadow-none cursor-not-allowed' 
+                  : 'bg-blue-600 shadow-blue-200 hover:bg-blue-700'
+              }`}
+            >
+              <Plus size={20} /> Add New Doctor
+            </Button>
+            {clinicsCount === 0 && !loading && (
+              <p className="text-xs text-red-500 font-bold mt-2">Please register a clinic first</p>
+            )}
+          </div>
         )}
       </div>
 
@@ -457,7 +542,7 @@ export default function DoctorsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingDoctor ? "Edit Healthcare Professional" : "Add Healthcare Professional"}
-        size="lg"
+        size="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information Section */}
@@ -679,13 +764,139 @@ export default function DoctorsPage() {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
             <Button
               type="submit"
               disabled={isUploading}
-              className="flex-[2] h-12 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-70"
+              className="w-full h-14 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-70"
             >
-              {isUploading ? 'Uploading...' : (editingDoctor ? 'Update Doctor' : 'Confirm & Add Doctor')}
+              {isUploading ? 'Uploading...' : (editingDoctor ? 'Save Core Profile Details' : 'Confirm & Add Doctor')}
+            </Button>
+          </div>
+
+          {/* Availability & Time Slots Section */}
+          {editingDoctor && (
+            <div className="space-y-4 pt-4 border-t border-slate-100 mt-4">
+              <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                <CalendarCheck size={14} /> Availability & Time Slots
+              </h4>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Available Days</label>
+                <div className="flex flex-wrap gap-2">
+                  {WORKING_DAYS.map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        setSlotFormData(prev => ({
+                          ...prev,
+                          days: prev.days.includes(day) ? prev.days.filter(d => d !== day) : [...prev.days, day]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        slotFormData.days.includes(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Start Time" type="time" value={slotFormData.startTime} onChange={e => setSlotFormData({...slotFormData, startTime: e.target.value})} />
+                <Input label="End Time" type="time" value={slotFormData.endTime} onChange={e => setSlotFormData({...slotFormData, endTime: e.target.value})} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Slot Duration (minutes)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="5"
+                    max="120"
+                    required
+                    value={slotFormData.duration}
+                    onChange={e => setSlotFormData({...slotFormData, duration: Number(e.target.value)})}
+                    className="flex-1 h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
+                    placeholder="Custom duration..."
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {[10, 15, 20, 30, 45, 60].map(mins => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setSlotFormData({...slotFormData, duration: mins})}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        slotFormData.duration === mins 
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {mins} mins
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Break Start Time (Optional)" type="time" value={slotFormData.breakStart} onChange={e => setSlotFormData({...slotFormData, breakStart: e.target.value})} />
+                <Input label="Break End Time (Optional)" type="time" value={slotFormData.breakEnd} onChange={e => setSlotFormData({...slotFormData, breakEnd: e.target.value})} />
+              </div>
+
+              {slotFormError && (
+                <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm font-bold">{slotFormError}</div>
+              )}
+              {slotSuccessMsg && (
+                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 text-sm font-bold">{slotSuccessMsg}</div>
+              )}
+
+              <Button
+                type="button"
+                onClick={handleGenerateSlots}
+                disabled={isGeneratingSlots || slotFormData.days.length === 0}
+                className="w-full h-12 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isGeneratingSlots ? <Loader2 size={20} className="animate-spin" /> : '👉 Generate Slots'}
+              </Button>
+
+              <div className="pt-6 mt-6 border-t border-slate-100">
+                <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-4">
+                  <AlertCircle size={14} /> Mark Leave / Block Dates
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <Input label="Leave Start Date" type="date" value={leaveFormData.startDate} onChange={e => setLeaveFormData({...leaveFormData, startDate: e.target.value})} />
+                  <Input label="Leave End Date" type="date" value={leaveFormData.endDate} onChange={e => setLeaveFormData({...leaveFormData, endDate: e.target.value})} />
+                </div>
+                
+                <div className="mb-4">
+                  <Input label="Reason (Optional)" placeholder="e.g., Sick leave, Vacation" value={leaveFormData.reason} onChange={e => setLeaveFormData({...leaveFormData, reason: e.target.value})} />
+                </div>
+
+                {leaveFormError && (
+                  <div className="p-3 mb-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold">{leaveFormError}</div>
+                )}
+                {leaveSuccessMsg && (
+                  <div className="p-3 mb-4 rounded-xl bg-emerald-50 text-emerald-600 text-sm font-bold">{leaveSuccessMsg}</div>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={handleApplyLeave}
+                  disabled={isApplyingLeave || !leaveFormData.startDate || !leaveFormData.endDate}
+                  className="w-full h-12 bg-amber-500 text-white font-bold rounded-xl shadow-lg hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isApplyingLeave ? <Loader2 size={20} className="animate-spin" /> : '👉 Apply Leave'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-4 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="w-full h-14 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent">
+              Close Window
             </Button>
           </div>
         </form>

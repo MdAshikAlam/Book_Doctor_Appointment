@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth';
 import { z } from 'zod';
 import { ClinicType } from '../models/Clinic';
 import { geocodeAddress } from '../utils/geocoder';
+import { AppError } from '../middlewares/error';
 
 export const getClinics = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -83,6 +84,13 @@ const clinicSchema = z.object({
 export const createClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedData = clinicSchema.parse(req.body);
+
+    if (req.user!.role !== 'super_admin') {
+      const existingClinic = await clinicService.getAllClinics({}, req.user!.id);
+      if (existingClinic.length > 0) {
+        return next(new AppError('You have already registered a clinic. You can only update it.', 400));
+      }
+    }
     
     let coordinates = validatedData.location?.coordinates;
 

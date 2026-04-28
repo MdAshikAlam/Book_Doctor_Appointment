@@ -17,6 +17,11 @@ export interface IDoctor extends Document {
     day: string;
     slots: string[];
   }[];
+  leaves: {
+    startDate: Date;
+    endDate: Date;
+    reason?: string;
+  }[];
   rating: number;
   numReviews: number;
   location: {
@@ -48,6 +53,13 @@ const doctorSchema = new Schema<IDoctor>(
       {
         day: { type: String, required: true },
         slots: [{ type: String }],
+      },
+    ],
+    leaves: [
+      {
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, required: true },
+        reason: { type: String },
       },
     ],
     rating: { type: Number, default: 0 },
