@@ -97,4 +97,20 @@ router.delete(
   doctorController.deleteDoctor
 );
 
+router.post(
+  '/:id/availability/generate',
+  protect,
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  checkDoctorOwnership,
+  doctorController.generateAvailability
+);
+
+router.post(
+  '/:id/leave',
+  protect,
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  checkDoctorOwnership,
+  doctorController.addLeave
+);
+
 export default router;

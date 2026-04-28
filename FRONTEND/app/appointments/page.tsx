@@ -206,11 +206,51 @@ export default function Appointments() {
               </div>
               <div className="input-group">
                 <label htmlFor="appointmentDate">Appointment Date <span>*</span></label>
-                <input type="date" id="appointmentDate" name="appointmentDate" value={formData.appointmentDate} onChange={handleChange} required className="form-control-custom" />
+                <input type="date" id="appointmentDate" name="appointmentDate" value={formData.appointmentDate} onChange={handleChange} required className="form-control-custom" min={new Date().toISOString().split("T")[0]} />
               </div>
               <div className="input-group">
                 <label htmlFor="appointmentTime">Appointment Time <span>*</span></label>
-                <input type="time" id="appointmentTime" name="appointmentTime" value={formData.appointmentTime} onChange={handleChange} required className="form-control-custom" />
+                {(() => {
+                  if (!formData.appointmentDate || !doctorInfo) {
+                    return <div className="form-control-custom flex items-center bg-gray-50 text-gray-400">Please select a date first</div>;
+                  }
+
+                  const selectedDate = new Date(formData.appointmentDate);
+                  selectedDate.setHours(0, 0, 0, 0);
+
+                  // Check if doctor is on leave
+                  const isLeave = doctorInfo.leaves?.some((leave: any) => {
+                    const start = new Date(leave.startDate);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(leave.endDate);
+                    end.setHours(23, 59, 59, 999);
+                    return selectedDate >= start && selectedDate <= end;
+                  });
+
+                  if (isLeave) {
+                    return <div className="form-control-custom flex items-center bg-red-50 text-red-500 font-bold">Doctor is not available on this day.</div>;
+                  }
+
+                  // Find available slots for the day of the week
+                  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                  const dayName = days[selectedDate.getDay()];
+                  
+                  const dayAvailability = doctorInfo.availability?.find((a: any) => a.day === dayName);
+                  const availableSlots = dayAvailability?.slots || [];
+
+                  if (availableSlots.length === 0) {
+                    return <div className="form-control-custom flex items-center bg-gray-50 text-red-500 font-bold">Doctor is not available on this day.</div>;
+                  }
+
+                  return (
+                    <select id="appointmentTime" name="appointmentTime" value={formData.appointmentTime} onChange={handleChange} required className="form-control-custom">
+                      <option value="">Select a time slot</option>
+                      {availableSlots.map((slot: string) => (
+                        <option key={slot} value={slot}>{slot}</option>
+                      ))}
+                    </select>
+                  );
+                })()}
               </div>
             </div>
           </section>

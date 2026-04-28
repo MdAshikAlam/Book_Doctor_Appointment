@@ -67,6 +67,14 @@ export const doctorsApi = {
     body: formData,
   }),
   getMe: () => apiCall('/doctors/me'),
+  generateAvailability: (id, data) => apiCall(`/doctors/${id}/availability/generate`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  addLeave: (id, data) => apiCall(`/doctors/${id}/leave`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };
 
 export const appointmentsApi = {
