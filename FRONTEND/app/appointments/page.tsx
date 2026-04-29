@@ -33,8 +33,7 @@ export default function Appointments() {
   useEffect(() => {
     const doctorId = searchParams.get("doctorId");
     if (doctorId) {
-      setFormData(prev => ({ ...prev, doctor: doctorId }));
-      // Fetch doctor details
+      // Fetch doctor details (doctorId can be an ID or a slug)
       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/doctors/${doctorId}`)
         .then(res => res.json())
         .then(data => {
@@ -43,8 +42,8 @@ export default function Appointments() {
             setDoctorInfo(doc);
             
             // Try to extract city/country from address if they are missing
-            let detectedCity = doc.city;
-            let detectedCountry = doc.country;
+            let detectedCity = doc.district;
+            let detectedCountry = doc.state;
             
             if (!detectedCity && doc.address) {
               const parts = doc.address.split(',').map((p: string) => p.trim());
@@ -58,11 +57,19 @@ export default function Appointments() {
 
             setFormData(prev => ({ 
               ...prev, 
+              doctor: doc._id,
               department: doc.specialty || prev.department,
               city: detectedCity || prev.city,
               country: detectedCountry || prev.country,
               address: doc.address || prev.address
             }));
+
+            // Auto-update URL to use slug
+            if (doc.slug && doctorId !== doc.slug) {
+              const url = new URL(window.location.href);
+              url.searchParams.set("doctorId", doc.slug);
+              window.history.replaceState(null, '', url.toString());
+            }
           }
         })
         .catch(err => console.error("Error fetching doctor:", err));
@@ -206,7 +213,16 @@ export default function Appointments() {
               </div>
               <div className="input-group">
                 <label htmlFor="appointmentDate">Appointment Date <span>*</span></label>
-                <input type="date" id="appointmentDate" name="appointmentDate" value={formData.appointmentDate} onChange={handleChange} required className="form-control-custom" min={new Date().toISOString().split("T")[0]} />
+                <input 
+                  type="date" 
+                  id="appointmentDate" 
+                  name="appointmentDate" 
+                  value={formData.appointmentDate} 
+                  onChange={handleChange} 
+                  required 
+                  className="form-control-custom" 
+                  min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
+                />
               </div>
               <div className="input-group">
                 <label htmlFor="appointmentTime">Appointment Time <span>*</span></label>
@@ -279,7 +295,16 @@ export default function Appointments() {
               </div>
               <div className="input-group">
                 <label htmlFor="dob">Date of Birth <span>*</span></label>
-                <input type="date" id="dob" name="dob" value={formData.dob} onChange={handleChange} required className="form-control-custom" />
+                <input 
+                  type="date" 
+                  id="dob" 
+                  name="dob" 
+                  value={formData.dob} 
+                  onChange={handleChange} 
+                  required 
+                  className="form-control-custom" 
+                  max={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
+                />
               </div>
             </div>
             <div className="grid-2">

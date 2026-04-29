@@ -72,12 +72,22 @@ export const createClinic = async (data: Partial<IClinic>, creatorId?: string) =
     }
   }
 
-  return await Clinic.create({ 
+  const clinic = await Clinic.create({ 
     ...data, 
     createdBy: creatorId,
     parentAdmin,
     parentSubAdmin 
   } as any);
+
+  if (data.doctors && data.doctors.length > 0) {
+    const Doctor = (await import('../models/Doctor')).default;
+    await Doctor.updateMany(
+      { _id: { $in: data.doctors } },
+      { $set: { clinic: clinic._id }, $addToSet: { clinics: clinic._id } }
+    );
+  }
+
+  return clinic;
 };
 
 export const updateClinic = async (id: string, ownerId: string, data: Partial<IClinic>) => {
@@ -89,6 +99,26 @@ export const updateClinic = async (id: string, ownerId: string, data: Partial<IC
   if (!clinic) {
     throw new AppError('Clinic not found or you are not authorized', 404);
   }
+
+  if (data.doctors !== undefined) {
+    const Doctor = (await import('../models/Doctor')).default;
+    await Doctor.updateMany(
+      { clinic: clinic._id, _id: { $nin: data.doctors } },
+      { $unset: { clinic: 1 } }
+    );
+    await Doctor.updateMany(
+      { clinics: clinic._id, _id: { $nin: data.doctors } },
+      { $pull: { clinics: clinic._id } }
+    );
+
+    if (data.doctors.length > 0) {
+      await Doctor.updateMany(
+        { _id: { $in: data.doctors } },
+        { $set: { clinic: clinic._id }, $addToSet: { clinics: clinic._id } }
+      );
+    }
+  }
+
   return clinic;
 };
 

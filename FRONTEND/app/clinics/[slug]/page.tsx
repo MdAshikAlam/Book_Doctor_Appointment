@@ -38,6 +38,7 @@ type ClinicDetails = {
   slug: string;
   doctors: {
     _id: string;
+    slug?: string;
     specialty: string;
     user: {
       name: string;
@@ -205,7 +206,7 @@ export default function ClinicDetailsPage() {
                    </h3>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {clinic.doctors?.map((doc) => (
-                        <Link href={`/doctors/${doc._id}`} key={doc._id} className="flex items-center gap-4 p-4 border border-gray-100 rounded-3xl hover:border-primary hover:shadow-lg transition-all group">
+                        <Link href={`/doctors/${doc.slug || doc._id}`} key={doc._id} className="flex items-center gap-4 p-4 border border-gray-100 rounded-3xl hover:border-primary hover:shadow-lg transition-all group">
                            <img 
                               src={doc.user.avatar ? resolveImageUrl(doc.user.avatar) || "" : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.user.name)}&background=random`} 
                               alt={doc.user.name}

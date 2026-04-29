@@ -215,6 +215,7 @@ export default function SpecialtiesPage() {
                   <DoctorCard 
                     key={doctor._id}
                     id={doctor._id}
+                    slug={doctor.slug}
                     name={doctor.user.name}
                     specialization={doctor.specialty}
                     experience={doctor.experience}

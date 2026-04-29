@@ -8,10 +8,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import { LocationProvider } from "@/context/LocationContext";
 
 export const metadata: Metadata = {
-  title: "BookMyDoctor – Your Health, Our Priority",
-  description: "Connect with top doctors and book appointments online with ease.",
-  keywords: ["doctor appointment", "healthcare", "book doctor online", "medical services"],
-  authors: [{ name: "BookMyDoctor Team" }],
+  title: "HouseMed – Professional Diagnosis in Your Neighborhood",
+  description: "Connect with top experts in all major fields and book your appointment today.",
+  keywords: ["doctor appointment", "healthcare", "HouseMed", "medical services"],
+  authors: [{ name: "HouseMed Team" }],
 };
 
 export default function RootLayout({

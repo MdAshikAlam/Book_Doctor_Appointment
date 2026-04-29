@@ -24,6 +24,13 @@ export const apiCall = async (endpoint, options = {}) => {
   const data = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      window.location.href = '/';
+    }
     throw new Error(data.message || 'Something went wrong');
   }
 
@@ -105,6 +112,10 @@ export const usersApi = {
   }),
   getPatients: () => apiCall('/users/patients'),
   getPatientDetails: (id) => apiCall(`/users/patients/${id}`),
+  updatePatientStatus: (id, patientStatus) => apiCall(`/users/patients/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ patientStatus }),
+  }),
 };
 
 export const utilityApi = {

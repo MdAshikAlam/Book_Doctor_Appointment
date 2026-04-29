@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Calendar, 
   Clock, 
@@ -30,13 +31,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('pending'); // all, confirmed, pending, cancelled
+  const [filter, setFilter] = useState('all'); // all, confirmed, pending, cancelled
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingAppointment, setViewingAppointment] = useState(null);
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [rescheduleData, setRescheduleData] = useState({ date: '', slot: '' });
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -57,7 +60,11 @@ export default function AppointmentsPage() {
   const handleStatusUpdate = async (id, status) => {
     try {
       await appointmentsApi.updateStatus(id, status);
-      fetchAppointments();
+      if (status === 'completed') {
+        router.push('/dashboard/patients');
+      } else {
+        fetchAppointments();
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -257,9 +264,100 @@ export default function AppointmentsPage() {
                             </button>
                           </>
                         )}
-                        <button className="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-50 transition-all flex items-center justify-center">
-                          <MoreVertical size={20} />
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenu(activeMenu === app._id ? null : app._id);
+                            }}
+                            className={cn(
+                              "w-10 h-10 rounded-xl transition-all flex items-center justify-center",
+                              activeMenu === app._id ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"
+                            )}
+                          >
+                            <MoreVertical size={20} />
+                          </button>
+
+                          <AnimatePresence>
+                            {activeMenu === app._id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-10" 
+                                  onClick={() => setActiveMenu(null)}
+                                />
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden"
+                                >
+                                  <div className="p-2">
+                                    <button 
+                                      onClick={() => {
+                                        setViewingAppointment(app);
+                                        setActiveMenu(null);
+                                      }}
+                                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                                    >
+                                      <Eye size={18} className="text-slate-400" />
+                                      Full Details
+                                    </button>
+                                    
+                                    {(app.status === 'pending' || app.status === 'confirmed') && (
+                                      <button 
+                                        onClick={() => {
+                                          setReschedulingAppointment(app);
+                                          setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
+                                          setActiveMenu(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                                      >
+                                        <Calendar size={18} className="text-slate-400" />
+                                        Reschedule
+                                      </button>
+                                    )}
+
+                                    {app.status === 'confirmed' && (
+                                      <button 
+                                        onClick={() => {
+                                          handleStatusUpdate(app._id, 'completed');
+                                          setActiveMenu(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                      >
+                                        <CheckCircle2 size={18} />
+                                        Mark Completed
+                                      </button>
+                                    )}
+
+                                    <div className="h-px bg-slate-50 my-2" />
+
+                                    <a 
+                                      href={`tel:${app.phone}`}
+                                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                                    >
+                                      <Phone size={18} className="text-slate-400" />
+                                      Call Patient
+                                    </a>
+
+                                    {(app.status === 'pending' || app.status === 'confirmed') && (
+                                      <button 
+                                        onClick={() => {
+                                          handleStatusUpdate(app._id, 'cancelled');
+                                          setActiveMenu(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                      >
+                                        <XCircle size={18} />
+                                        Cancel Appointment
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     </div>
                   </div>

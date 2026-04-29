@@ -146,8 +146,10 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
   return doctors;
 };
 
-export const getDoctorById = async (id: string) => {
-  const doctor = await Doctor.findById(id).populate('user', 'name email avatar').populate('clinic');
+export const getDoctorById = async (idOrSlug: string) => {
+  const isId = mongoose.Types.ObjectId.isValid(idOrSlug);
+  const query = isId ? { _id: idOrSlug } : { slug: idOrSlug };
+  const doctor = await Doctor.findOne(query).populate('user', 'name email avatar phone').populate('clinic');
   if (!doctor) {
     throw new AppError('Doctor not found', 404);
   }
@@ -214,9 +216,18 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     parentSubAdmin
   } as any);
 
+  let slugBase = userData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
+  let slug = `dr-${slugBase}`;
+  let counter = 1;
+  while (await Doctor.findOne({ slug })) {
+    slug = `dr-${slugBase}-${counter}`;
+    counter++;
+  }
+
   const doctor = await Doctor.create({
     ...profileData,
     user: user._id,
+    slug,
     createdBy: creatorId,
     parentAdmin,
     parentSubAdmin

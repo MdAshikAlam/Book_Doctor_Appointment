@@ -33,6 +33,7 @@ export interface IDoctor extends Document {
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentSubAdmin?: mongoose.Types.ObjectId;
+  slug: string;
 }
 
 const doctorSchema = new Schema<IDoctor>(
@@ -73,6 +74,7 @@ const doctorSchema = new Schema<IDoctor>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    slug: { type: String, unique: true, sparse: true, index: true },
   },
   { timestamps: true }
 );

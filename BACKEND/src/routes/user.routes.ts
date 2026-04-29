@@ -16,6 +16,7 @@ router.use(protect);
 
 router.get('/me', userController.getMe);
 router.get('/patients', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.getPatients);
+router.patch('/patients/:id/status', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.updatePatientStatus);
 router.get('/patients/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.getPatientById);
 router.get('/hierarchy', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.getHierarchy);
 router.get('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN), userController.getStaff);
