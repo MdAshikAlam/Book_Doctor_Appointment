@@ -25,16 +25,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Keep track of the timeout so we can clear it on logout
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const clearTokenTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const setupTokenTimer = (token: string) => {
+    clearTokenTimer();
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiry = payload.exp * 1000;
+      const timeUntilExpiry = expiry - Date.now();
+      
+      if (timeUntilExpiry <= 0) {
+        logout();
+      } else {
+        timerRef.current = setTimeout(() => {
+          logout();
+          alert("Your session has expired. Please log in again.");
+          window.location.href = '/login';
+        }, timeUntilExpiry);
+      }
+    } catch (e) {
+      // Ignore if malformed
+    }
+  };
 
   useEffect(() => {
-    // Check for stored user and token on initial load
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('accessToken');
     
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiry = payload.exp * 1000;
+        
+        if (Date.now() >= expiry) {
+          // Token already expired
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setUser(null);
+        } else {
+          setUser(JSON.parse(storedUser));
+          setupTokenTimer(token);
+        }
+      } catch (e) {
+        setUser(JSON.parse(storedUser));
+      }
     }
     setLoading(false);
+    
+    return () => clearTokenTimer();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -53,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
+        setupTokenTimer(accessToken);
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Login failed' };
@@ -91,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    clearTokenTimer();
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('accessToken');

@@ -7,61 +7,49 @@ import { z } from 'zod';
 export const getPatients = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = (req as any).user;
-    let query: any = { role: UserRole.PATIENT };
+    const Patient = (await import('../models/Patient')).default;
+    const Doctor = (await import('../models/Doctor')).default;
+    let doctorIds: mongoose.Types.ObjectId[] = [];
 
-    if (currentUser.role === UserRole.ADMIN) {
-      query.parentAdmin = new mongoose.Types.ObjectId(currentUser.id);
-    } else if (currentUser.role === UserRole.SUB_ADMIN) {
-      const userDoc = await User.findById(currentUser.id);
-      query.parentAdmin = userDoc?.parentAdmin || new mongoose.Types.ObjectId(currentUser.id);
+    // 1. Determine allowed doctors for this user
+    if (currentUser.role === UserRole.SUPER_ADMIN || currentUser.role === UserRole.ADMIN) {
+      const allDoctors = await Doctor.find().select('_id');
+      doctorIds = allDoctors.map(d => d._id as mongoose.Types.ObjectId);
     } else if (currentUser.role === UserRole.DOCTOR) {
-      // Doctors only see patients who have appointments with them
-      const Appointment = (await import('../models/Appointment')).default;
-      const Doctor = (await import('../models/Doctor')).default;
-      
       const doctorProfile = await Doctor.findOne({ user: currentUser.id });
-      if (doctorProfile) {
-        const appointments = await Appointment.find({ doctor: doctorProfile._id }).select('patient');
-        const patientIds = appointments.map(app => app.patient);
-        query._id = { $in: patientIds };
-      } else {
-        query._id = { $in: [] }; // No profile, no patients
-      }
+      if (doctorProfile) doctorIds = [doctorProfile._id as mongoose.Types.ObjectId];
+    } else {
+      // Sub-Admins only see their own doctors
+      const doctorProfiles = await Doctor.find({
+        parentSubAdmin: currentUser.id
+      }).select('_id');
+      doctorIds = doctorProfiles.map(d => d._id as mongoose.Types.ObjectId);
     }
 
-    const patients = await User.aggregate([
-      { $match: query },
-      {
-        $lookup: {
-          from: 'appointments',
-          let: { patientId: '$_id' },
-          pipeline: [
-            { $match: { $expr: { $eq: ['$patient', '$$patientId'] } } },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 }
-          ],
-          as: 'latestBooking'
-        }
-      },
-      {
-        $addFields: {
-          latestBooking: { $arrayElemAt: ['$latestBooking', 0] }
-        }
-      },
-      {
-        $addFields: {
-          aadhaar: '$latestBooking.aadhaar',
-          dob: '$latestBooking.dob',
-          gender: '$latestBooking.gender',
-          address: '$latestBooking.address',
-          city: '$latestBooking.city',
-          country: '$latestBooking.country',
-          visitedBefore: '$latestBooking.visitedBefore',
-          fullName: '$latestBooking.fullName'
-        }
-      },
-      { $project: { password: 0, latestBooking: 0 } }
-    ]);
+    // 2. Fetch from Patients collection
+    const query: any = {};
+    if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+      query.doctorId = { $in: doctorIds };
+    }
+    
+    console.log('Fetching patients with query:', JSON.stringify(query));
+    
+    const patientsData = await Patient.find(query).sort({ createdAt: -1 });
+
+    console.log(`Fetched ${patientsData.length} patients from Patients collection for doctors:`, doctorIds);
+
+    // Map to the format expected by the frontend if necessary
+    const patients = patientsData.map(p => {
+      const obj = p.toObject();
+      return {
+        ...obj,
+        name: obj.patientName || 'Unknown Patient',
+        fullName: obj.patientName || 'Unknown Patient',
+        email: obj.email || '',
+        phone: obj.phone || '',
+        patientStatus: obj.patientStatus || 'Active'
+      };
+    });
 
     res.status(200).json({
       status: 'success',
@@ -139,7 +127,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
   try {
     const currentUser = (req as any).user;
     const validatedData = createStaffSchema.parse(req.body);
-    
+
     // Permission Checks for creation
     if (currentUser.role === UserRole.ADMIN) {
       if (validatedData.role === UserRole.SUPER_ADMIN) {
@@ -284,12 +272,12 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     } else if (requester.role === UserRole.DOCTOR) {
       throw new AppError('Doctors cannot delete users', 403);
     }
-    
+
     if (user.role === UserRole.DOCTOR) {
       const Doctor = (await import('../models/Doctor')).default;
       await Doctor.findOneAndDelete({ user: id });
     }
-    
+
     await User.findByIdAndDelete(id);
 
     res.status(204).json({
@@ -305,7 +293,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const userId = (req as any).user.id;
     const user = await User.findById(userId).select('-password');
-    
+
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -323,14 +311,14 @@ export const getPatientById = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
     const patient = await User.findById(id).select('-password');
-    
+
     if (!patient || patient.role !== UserRole.PATIENT) {
       throw new AppError('Patient not found', 404);
     }
 
-    // Fetch appointments for this patient
+    // Fetch upcoming/pending appointments for this patient
     const Appointment = (await import('../models/Appointment')).default;
-    const appointments = await Appointment.find({ patient: id as any })
+    const activeAppointments = await Appointment.find({ patient: id as any })
       .populate({
         path: 'doctor',
         populate: { path: 'user', select: 'name email avatar' }
@@ -338,11 +326,22 @@ export const getPatientById = async (req: Request, res: Response, next: NextFunc
       .populate('clinic')
       .sort('-date');
 
+    // Fetch past completed visits from Patients collection
+    const Patient = (await import('../models/Patient')).default;
+    const pastVisits = await Patient.find({ patientId: id as any })
+      .sort('-date');
+
+    // Combine them for a full history
+    const history = [
+      ...activeAppointments.map(a => ({ ...a.toObject(), type: 'appointment' })),
+      ...pastVisits.map(p => ({ ...p.toObject(), type: 'visit', status: 'completed' }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     res.status(200).json({
       status: 'success',
-      data: { 
+      data: {
         patient,
-        appointments
+        appointments: history
       },
     });
   } catch (error) {
@@ -353,7 +352,7 @@ export const getPatientById = async (req: Request, res: Response, next: NextFunc
 export const getHierarchy = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = (req as any).user;
-    
+
     // Aggregation stages
     const stages: any[] = [];
 
@@ -374,9 +373,9 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
         from: 'users',
         let: { adminId: '$_id' },
         pipeline: [
-          { 
-            $match: { 
-              $expr: { 
+          {
+            $match: {
+              $expr: {
                 $and: [
                   { $eq: ['$role', UserRole.SUB_ADMIN] },
                   { $eq: ['$parentAdmin', '$$adminId'] }
@@ -443,6 +442,27 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
     res.status(200).json({
       status: 'success',
       data: { hierarchy },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePatientStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { patientStatus } = req.body;
+    const Patient = (await import('../models/Patient')).default;
+
+    const patient = await Patient.findByIdAndUpdate(id, { patientStatus }, { new: true });
+
+    if (!patient) {
+      throw new AppError('Patient not found', 404);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { patient },
     });
   } catch (error) {
     next(error);

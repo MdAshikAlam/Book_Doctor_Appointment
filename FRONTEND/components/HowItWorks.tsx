@@ -23,28 +23,28 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section className="py-24 bg-gray-50/50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">How It Works</h2>
-          <h3 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-6">3 Simple Steps to Better Health</h3>
-          <p className="text-gray-500 text-lg">We&apos;ve simplified the process of seeking medical care, so you can focus on what matters most—your recovery.</p>
+    <section className="py-24 bg-white relative overflow-hidden">
+      <div className="container mx-auto px-6 lg:px-12">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">How It Works</h2>
+          <h3 className="text-4xl lg:text-5xl font-black text-slate-900 mb-6">3 simple steps to better health</h3>
+          <p className="text-slate-500 text-lg font-medium">We&apos;ve simplified the process of seeking medical care, so you can focus on what matters most—your recovery.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 relative">
           {/* Connector Line (Desktop) */}
-          <div className="hidden md:block absolute top-24 left-1/4 right-1/4 h-0.5 border-t-2 border-dashed border-gray-200 -z-10" />
+          <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-1 bg-slate-50 -z-10 rounded-full" />
           
           {steps.map((step, index) => (
             <div key={index} className="flex flex-col items-center text-center group">
-              <div className={`w-20 h-20 ${step.color} rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-current/5 group-hover:scale-110 transition-transform duration-300 relative bg-white`}>
-                <step.icon className="w-10 h-10" />
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl shadow-slate-200/50 group-hover:scale-110 transition-all duration-500 relative border-4 border-slate-50 group-hover:border-[#00B5B5]/20">
+                <step.icon size={36} className="text-[#00B5B5]" />
+                <div className="absolute -top-3 -right-3 w-10 h-10 bg-[#00B5B5] text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg shadow-[#00B5B5]/20">
                   {index + 1}
                 </div>
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">{step.title}</h4>
-              <p className="text-gray-500 leading-relaxed max-w-xs">{step.description}</p>
+              <h4 className="text-2xl font-black text-slate-900 mb-4">{step.title}</h4>
+              <p className="text-slate-500 leading-relaxed max-w-xs font-medium">{step.description}</p>
             </div>
           ))}
         </div>

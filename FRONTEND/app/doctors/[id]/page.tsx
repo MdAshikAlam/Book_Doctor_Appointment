@@ -10,13 +10,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5
 
 type DoctorDetails = {
   _id: string;
+  slug?: string;
   specialty?: string;
   experience?: number;
   bio?: string;
   consultationFee?: number;
   address?: string;
-  city?: string;
-  country?: string;
+  district?: string;
+  state?: string;
   qualifications?: string[];
   availability?: { day: string; slots: string[] }[];
   rating?: number;
@@ -24,14 +25,17 @@ type DoctorDetails = {
   user?: {
     name?: string;
     email?: string;
+    phone?: string;
     avatar?: string;
   };
   clinic?: {
     name?: string;
-    address?: string;
-    city?: string;
+    addressLine1?: string;
+    district?: string;
+    state?: string;
     country?: string;
-    image?: string;
+    phone?: string;
+    images?: string[];
     slug?: string;
   };
 };
@@ -67,6 +71,13 @@ export default function DoctorProfilePage() {
     }
   }, [id]);
 
+  // Handle auto-redirect if ID is used instead of slug
+  useEffect(() => {
+    if (doctor && id && doctor.slug && id !== doctor.slug) {
+      window.history.replaceState(null, '', `/doctors/${doctor.slug}`);
+    }
+  }, [doctor, id]);
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -88,9 +99,9 @@ export default function DoctorProfilePage() {
   }
 
   const fullAddress =
-    [doctor.address, doctor.city, doctor.country].filter(Boolean).join(", ") || "Address not provided";
+    [doctor.address, doctor.district, doctor.state].filter(Boolean).join(", ") || "Address not provided";
   const clinicAddress =
-    [doctor.clinic?.address, doctor.clinic?.city, doctor.clinic?.country].filter(Boolean).join(", ") ||
+    [doctor.clinic?.addressLine1, doctor.clinic?.district, doctor.clinic?.state, doctor.clinic?.country].filter(Boolean).join(", ") ||
     "Clinic address not provided";
 
   return (
@@ -137,6 +148,7 @@ export default function DoctorProfilePage() {
                   <span>{fullAddress}</span>
                 </p>
                 <p><strong>Email:</strong> {doctor.user?.email || "Not provided"}</p>
+                <p><strong>Phone:</strong> {doctor.user?.phone || "Not provided"}</p>
                 <p><strong>Qualifications:</strong> {doctor.qualifications?.length ? doctor.qualifications.join(", ") : "Not provided"}</p>
               </div>
             </section>
@@ -157,9 +169,12 @@ export default function DoctorProfilePage() {
                   <MapPin className="w-4 h-4 mt-0.5" />
                   <span>{clinicAddress}</span>
                 </p>
-                {doctor.clinic?.image && (
+                {doctor.clinic?.phone && (
+                  <p><strong>Phone:</strong> {doctor.clinic.phone}</p>
+                )}
+                {doctor.clinic?.images?.[0] && (
                   <img
-                    src={resolveImageUrl(doctor.clinic.image) || doctor.clinic.image}
+                    src={resolveImageUrl(doctor.clinic.images[0]) || doctor.clinic.images[0]}
                     alt={doctor.clinic?.name || "Clinic"}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
@@ -171,28 +186,11 @@ export default function DoctorProfilePage() {
             </section>
           </div>
 
-          <section className="bg-gray-50 rounded-2xl p-6 mt-6">
-            <h2 className="text-lg font-extrabold text-gray-900 mb-4">Availability</h2>
-            {doctor.availability?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {doctor.availability.map((item) => (
-                  <div key={item.day} className="bg-white border border-gray-100 rounded-xl p-4">
-                    <p className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4" />
-                      {item.day}
-                    </p>
-                    <p className="text-gray-600 text-sm">{item.slots?.length ? item.slots.join(", ") : "No slots listed"}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">No availability schedule added yet.</p>
-            )}
-          </section>
+
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href={`/appointments?doctorId=${doctor._id}`}
+              href={`/appointments?doctorId=${doctor.slug || doctor._id}`}
               className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
             >
               Book appointment

@@ -85,7 +85,9 @@ export const getMyAppointments = async (userId: string, role: string) => {
 
 export const updateAppointmentStatus = async (id: string, userId: string, role: string, status: AppointmentStatus) => {
   const filter: any = { _id: id };
-  if (role === 'doctor') {
+  if (role === 'patient' || role === 'user') {
+    filter.patient = userId;
+  } else if (role === 'doctor') {
     const doctor = await Doctor.findOne({ user: userId });
     if (!doctor) throw new AppError('Doctor profile not found', 404);
     filter.doctor = doctor._id;
@@ -105,10 +107,52 @@ export const updateAppointmentStatus = async (id: string, userId: string, role: 
     }
   }
 
-  const appointment = await Appointment.findOneAndUpdate(filter, { status }, { new: true });
+  const appointment = await Appointment.findOneAndUpdate(filter, { status }, { new: true })
+    .populate({
+      path: 'doctor',
+      populate: { path: 'user', select: 'name' }
+    });
+
   if (!appointment) {
     throw new AppError('Appointment not found or unauthorized', 404);
   }
+
+  // If status is completed, move to Patients collection and remove from Appointments
+  if (status === AppointmentStatus.COMPLETED) {
+    console.log('--- Migrating Appointment to Patient collection ---');
+    console.log('Appointment ID:', appointment._id);
+    console.log('Doctor Data:', appointment.doctor);
+    
+    const Patient = (await import('../models/Patient')).default;
+    
+    const patientRecord = await Patient.create({
+      patientName: appointment.fullName,
+      email: appointment.email,
+      phone: appointment.phone,
+      doctorName: (appointment.doctor as any).user?.name || 'Unknown Doctor',
+      date: appointment.date,
+      timeSlot: appointment.slot,
+      reason: appointment.reason,
+      location: `${appointment.city}, ${appointment.country}`,
+      status: 'visited',
+      patientStatus: 'Active',
+      patientId: appointment.patient,
+      doctorId: appointment.doctor._id,
+      aadhaar: appointment.aadhaar,
+      dob: appointment.dob,
+      gender: appointment.gender,
+      address: appointment.address,
+      city: appointment.city,
+      country: appointment.country
+    });
+
+    console.log('Patient record created successfully:', patientRecord._id);
+
+    // Option 1: Delete the appointment (as requested)
+    await Appointment.findByIdAndDelete(appointment._id);
+    console.log('Appointment record deleted successfully:', appointment._id);
+  }
+
   return appointment;
 };
 

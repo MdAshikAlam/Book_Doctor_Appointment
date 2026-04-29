@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Navigation, MapPin, Loader2, Search } from 'lucide-react';
+import { Navigation, MapPin, Loader2, Search, ArrowRight } from 'lucide-react';
 import Hero from '@/components/Hero';
 import SpecialtyCard from '@/components/SpecialtyCard';
 import DoctorCard from '@/components/DoctorCard';
@@ -106,13 +106,15 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Specialties</h2>
-              <h3 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight">
-                Our Specialists are Trained in Modern Medicine
+              <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">Specialties</h2>
+              <h3 className="text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1]">
+                Specialists trained in <br />
+                <span className="text-[#00B5B5]">modern medicine</span>
               </h3>
             </div>
-            <button className="bg-gray-50 hover:bg-gray-100 text-gray-900 px-8 py-3 rounded-2xl font-bold transition-all border border-gray-100 shadow-sm">
+            <button className="bg-white hover:bg-[#F0FDFD] text-slate-900 px-10 h-16 rounded-full font-black transition-all border-2 border-slate-100 hover:border-[#00B5B5] shadow-sm flex items-center gap-2">
               View All Specialties
+              <ArrowRight size={20} />
             </button>
           </div>
 
@@ -132,9 +134,9 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Top Rated</h2>
-              <h3 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight">
-                {isLocating ? 'Finding Nearby Doctors...' : 'Meet Our Highly Experienced Doctors'}
+              <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">Top Rated</h2>
+              <h3 className="text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1]">
+                {isLocating ? 'Finding Nearby...' : <>Meet our highly <br /><span className="text-[#00B5B5]">experienced</span> doctors</>}
               </h3>
             </div>
             <div className="flex flex-wrap gap-4">
@@ -152,7 +154,7 @@ export default function Home() {
                 <button 
                   onClick={handleFindNearby}
                   disabled={isLocating}
-                  className="bg-primary text-white px-6 py-2 rounded-xl font-bold transition-all flex items-center gap-2 hover:bg-primary-dark disabled:opacity-70"
+                  className="bg-[#00B5B5] text-white px-8 py-3 rounded-xl font-black transition-all flex items-center gap-2 hover:bg-[#009A9A] disabled:opacity-70 shadow-lg shadow-[#00B5B5]/20"
                 >
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
                   Find Nearby
@@ -181,6 +183,7 @@ export default function Home() {
                   <DoctorCard 
                     key={doctor._id}
                     id={doctor._id}
+                    slug={doctor.slug}
                     name={doctor.user.name}
                     specialization={doctor.specialty}
                     experience={doctor.experience}
@@ -211,10 +214,10 @@ export default function Home() {
       {/* Testimonials */}
       <section className="py-24 bg-healthcare-blue/30 relative overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Patient Stories</h2>
-            <h3 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-6">Real Results from Real Patients</h3>
-            <p className="text-gray-500 text-lg">Hear what our patients have to say about their experience with BookMyDoctor.</p>
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">Patient Stories</h2>
+            <h3 className="text-4xl lg:text-5xl font-black text-slate-900 mb-6">Real results from real patients</h3>
+            <p className="text-slate-500 text-lg font-medium">Hear what our patients have to say about their exceptional care experience with HouseMed.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

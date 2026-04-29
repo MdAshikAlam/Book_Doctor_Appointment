@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, ArrowRight } from 'lucide-react';
 
 interface SpecialtyCardProps {
   name: string;
@@ -12,32 +12,41 @@ const SpecialtyCard = ({ name, icon: Icon, count, onClick, isActive }: Specialty
   return (
     <div 
       onClick={onClick}
-      className={`bg-white rounded-3xl p-8 border transition-all duration-300 group cursor-pointer text-center ${
+      className={`bg-white rounded-[2.5rem] p-10 border-2 transition-all duration-500 group cursor-pointer text-center relative overflow-hidden ${
         isActive 
-          ? 'border-primary shadow-2xl shadow-primary/10 ring-1 ring-primary/20' 
-          : 'border-gray-100 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5'
+          ? 'border-[#00B5B5] shadow-2xl shadow-[#00B5B5]/10 bg-[#F0FDFD]' 
+          : 'border-slate-50 hover:border-[#00B5B5]/30 hover:shadow-2xl hover:shadow-[#00B5B5]/5'
       }`}
     >
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 shadow-inner ${
-        isActive ? 'bg-primary text-white' : 'bg-gray-50 text-gray-900 group-hover:bg-primary group-hover:text-white'
+      <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 transition-all duration-500 relative z-10 ${
+        isActive ? 'bg-[#00B5B5] text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-[#00B5B5] group-hover:text-white group-hover:shadow-xl group-hover:shadow-[#00B5B5]/20'
       }`}>
-        <Icon className="w-8 h-8 group-hover:scale-110 transition-transform" />
+        <Icon size={32} className="group-hover:rotate-12 transition-all duration-500" />
       </div>
-      <h3 className={`text-xl font-extrabold mb-2 transition-colors ${
-        isActive ? 'text-primary' : 'text-gray-900 group-hover:text-primary'
+
+      <h3 className={`text-xl font-black mb-3 transition-colors relative z-10 ${
+        isActive ? 'text-slate-900' : 'text-slate-900 group-hover:text-[#00B5B5]'
       }`}>
         {name}
       </h3>
-      <p className="text-gray-500 text-sm font-medium">
+
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 text-slate-400 text-xs font-black uppercase tracking-widest group-hover:bg-[#E0F7F7] group-hover:text-[#00B5B5] transition-all relative z-10">
         {count}+ Doctors
-      </p>
-      <div className={`mt-6 pt-6 border-t border-gray-50 transition-all ${
-        isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      </div>
+
+      <div className={`mt-8 pt-8 border-t border-slate-50 transition-all duration-500 relative z-10 ${
+        isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0'
       }`}>
-        <span className="text-primary text-sm font-bold flex items-center justify-center">
-          {isActive ? 'Selected' : 'View Specialists'} <span className="ml-2">→</span>
+        <span className="text-[#00B5B5] text-sm font-black flex items-center justify-center gap-2 uppercase tracking-widest">
+          {isActive ? 'Selected Specialty' : 'Find Specialists'} 
+          <ArrowRight size={16} />
         </span>
       </div>
+
+      {/* Decorative Gradient Background on Active */}
+      {isActive && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#00B5B5]/5 rounded-full blur-3xl -mr-16 -mt-16" />
+      )}
     </div>
   );
 };
