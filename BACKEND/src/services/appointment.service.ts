@@ -59,19 +59,24 @@ export const getMyAppointments = async (userId: string, role: string) => {
     const doctor = await Doctor.findOne({ user: userId });
     if (doctor) filter.doctor = doctor._id;
   } else if (role === 'admin' || role === 'sub_admin') {
-    // Find doctors in this admin's hierarchy
-    // We need to look at the User role and parents
+    // If user belongs to a specific clinic, filter by that clinic
     const User = (await import('../models/User')).default;
-    const usersInHierarchy = await User.find({
-      $or: [
-        { parentAdmin: userId },
-        { parentSubAdmin: userId }
-      ],
-      role: 'doctor'
-    }).select('_id');
-    
-    const doctors = await Doctor.find({ user: { $in: usersInHierarchy.map(u => u._id) } }).select('_id');
-    filter.doctor = { $in: doctors.map(d => d._id) };
+    const user = await User.findById(userId);
+    if (user?.clinic) {
+      filter.clinic = user.clinic;
+    } else {
+      // Fallback to legacy hierarchy filtering
+      const usersInHierarchy = await User.find({
+        $or: [
+          { parentAdmin: userId },
+          { parentSubAdmin: userId }
+        ],
+        role: 'doctor'
+      }).select('_id');
+      
+      const doctors = await Doctor.find({ user: { $in: usersInHierarchy.map(u => u._id) } }).select('_id');
+      filter.doctor = { $in: doctors.map(d => d._id) };
+    }
   }
   
   return await Appointment.find(filter)
@@ -138,6 +143,7 @@ export const updateAppointmentStatus = async (id: string, userId: string, role: 
       patientStatus: 'Active',
       patientId: appointment.patient,
       doctorId: appointment.doctor._id,
+      clinic: appointment.clinic,
       aadhaar: appointment.aadhaar,
       dob: appointment.dob,
       gender: appointment.gender,

@@ -16,6 +16,7 @@ import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
 import utilityRoutes from './routes/utility.routes';
 import searchRoutes from './routes/search.routes';
+import analyticsRoutes from './routes/analytics.routes';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/utility', utilityRoutes);
 app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

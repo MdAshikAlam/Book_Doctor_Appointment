@@ -6,7 +6,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Card = ({ children, className, title, subtitle, footer, action }) => {
+const Card = ({ children, className, title, subtitle, footer, action, noPadding }) => {
   return (
     <div className={cn("bg-card rounded-xl border border-border card-shadow flex flex-col", className)}>
       {(title || subtitle || action) && (
@@ -18,7 +18,7 @@ const Card = ({ children, className, title, subtitle, footer, action }) => {
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className="flex-1 p-6 overflow-visible">
+      <div className={cn("flex-1 p-6 overflow-visible", noPadding && "p-0")}>
         {children}
       </div>
       {footer && (

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as clinicController from '../controllers/clinic.controller';
+import * as reviewController from '../controllers/review.controller';
 import { protect, restrictTo, optionalProtect } from '../middlewares/auth';
 import { UserRole } from '../models/User';
 
@@ -63,5 +64,9 @@ router.patch(
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   clinicController.verifyClinic
 );
+
+// Review Routes
+router.post('/:clinicId/reviews', protect, reviewController.createReview);
+router.get('/:clinicId/reviews', optionalProtect, reviewController.getClinicReviews);
 
 export default router;

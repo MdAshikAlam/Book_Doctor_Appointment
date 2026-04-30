@@ -9,6 +9,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     role: UserRole;
+    clinicId?: string;
   };
 }
 
@@ -41,6 +42,7 @@ export const protect = async (
     req.user = {
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
+      clinicId: currentUser.clinic?.toString(),
     };
     next();
   } catch (error: any) {
@@ -81,6 +83,7 @@ export const optionalProtect = async (
     req.user = {
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
+      clinicId: currentUser.clinic?.toString(),
     };
     next();
   } catch (error: any) {

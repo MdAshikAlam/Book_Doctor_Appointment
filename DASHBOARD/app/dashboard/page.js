@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Users, 
   Stethoscope, 
@@ -101,33 +101,84 @@ function cn(...inputs) {
   return Array.from(new Set(inputs.flat().filter(Boolean))).join(' ');
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+
+const iconMap = {
+  Users: Users,
+  Stethoscope: Stethoscope,
+  CalendarCheck: CalendarCheck,
+  DollarSign: DollarSign
+};
+
 export default function DashboardPage() {
+  const [stats, setStats] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('accessToken');
+        const res = await fetch(`${API_BASE_URL}/analytics/dashboard-stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+          setStats(data.data.stats);
+          setChartData(data.data.appointmentChartData);
+          setAppointments(data.data.recentAppointments);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-500 font-medium animate-pulse">Loading Analytics...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Healthcare Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Welcome back, Dr. John Doe. Here's what's happening today.</p>
+          <p className="text-sm text-slate-500 mt-1">Welcome back. Here's what's happening across the platform.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
             Filter
           </Button>
           <Button variant="outline" size="sm" leftIcon={<Download size={16} />}>
-            Export
+            Export Data
           </Button>
           <Button size="sm" leftIcon={<Plus size={16} />}>
-            New Appointment
+            Create Alert
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsData.map((stat, i) => (
-          <DashboardCard key={i} {...stat} />
-        ))}
+        {stats.map((stat, i) => {
+          const Icon = iconMap[stat.icon] || Users;
+          return <DashboardCard key={i} {...stat} icon={Icon} />;
+        })}
       </div>
 
       {/* Charts Section */}
@@ -135,14 +186,14 @@ export default function DashboardPage() {
         <Card 
           title="Appointments Over Time" 
           subtitle="Weekly appointment volume tracking"
-          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">View Details</Button>}
+          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Details</Button>}
         >
-          <Chart type="line" data={appointmentChartData} dataKey="appointments" color="#0284c7" />
+          <Chart type="line" data={chartData} dataKey="appointments" color="#0284c7" />
         </Card>
         <Card 
-          title="Revenue Analysis" 
-          subtitle="Monthly hospital revenue growth"
-          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">View Details</Button>}
+          title="Platform Activity" 
+          subtitle="Patient registration & engagement"
+          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Analytics</Button>}
         >
           <Chart type="bar" data={revenueChartData} dataKey="revenue" color="#10b981" />
         </Card>
@@ -153,10 +204,10 @@ export default function DashboardPage() {
         {/* Recent Patients Table */}
         <div className="xl:col-span-2">
           <Card 
-            title="Patient Directory" 
-            subtitle="Overview of recently admitted patients"
+            title="Recent Patients" 
+            subtitle="Latest patient registrations"
             className="h-full"
-            action={<Button variant="ghost" size="sm" rightIcon={<ArrowRight size={16} />}>See All</Button>}
+            action={<Button variant="ghost" size="sm" rightIcon={<ArrowRight size={16} />}>View All</Button>}
           >
             <Table columns={patientTableColumns} data={patientData} />
           </Card>
@@ -165,19 +216,19 @@ export default function DashboardPage() {
         {/* Recent Appointments List */}
         <div className="xl:col-span-1">
           <Card 
-            title="Recent Appointments" 
-            subtitle="Today's scheduled checkups"
+            title="Recent Bookings" 
+            subtitle="Latest scheduled appointments"
             className="h-full"
             action={<Button variant="ghost" size="sm">Manage</Button>}
           >
             <div className="space-y-4">
-              {recentAppointments.map((appointment) => (
+              {appointments.map((appointment) => (
                 <AppointmentCard key={appointment.id} {...appointment} />
               ))}
             </div>
             <div className="mt-6">
               <Button variant="outline" className="w-full text-slate-600 border-slate-200">
-                View Full Calendar
+                View Full Logs
               </Button>
             </div>
           </Card>

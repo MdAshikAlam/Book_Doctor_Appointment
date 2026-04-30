@@ -28,7 +28,9 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
 
     // 2. Fetch from Patients collection
     const query: any = {};
-    if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+    if (currentUser.clinicId) {
+      query.clinic = currentUser.clinicId;
+    } else if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
       query.doctorId = { $in: doctorIds };
     }
     
@@ -69,7 +71,9 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
     };
 
     // Data Isolation & Hierarchy
-    if (currentUser.role === UserRole.ADMIN) {
+    if (currentUser.clinicId) {
+      query.clinic = new mongoose.Types.ObjectId(currentUser.clinicId);
+    } else if (currentUser.role === UserRole.ADMIN) {
       // Admin only sees users where they are the parentAdmin
       query.parentAdmin = new mongoose.Types.ObjectId(currentUser.id);
       // Exclude themselves from the "staff" list if desired, but here we show all under them
@@ -161,6 +165,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
     const user = await User.create({
       ...validatedData,
       isEmailVerified: true,
+      clinic: currentUser.clinicId,
       createdBy: currentUser.id,
       parentAdmin,
       parentSubAdmin
@@ -178,6 +183,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
           type: 'Point',
           coordinates: [0, 0] // Default location
         },
+        clinic: currentUser.clinicId,
         createdBy: currentUser.id,
         parentAdmin,
         parentSubAdmin
