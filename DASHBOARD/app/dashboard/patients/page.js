@@ -164,6 +164,8 @@ export default function PatientsPage() {
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
           row.patientStatus === 'Discharged'
             ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+            : row.patientStatus === 'Deactivated'
+            ? 'bg-rose-50 text-rose-600 border border-rose-100'
             : 'bg-blue-50 text-blue-600 border border-blue-100'
         }`}>
           {row.patientStatus || 'Active'}
@@ -224,8 +226,9 @@ export default function PatientsPage() {
                 <button
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                   onClick={() => {
-                    alert("Account Deactivated");
-                    setActiveMenu(null);
+                    if (confirm("Are you sure you want to deactivate this patient record?")) {
+                      handleStatusUpdate(row._id, 'Deactivated');
+                    }
                   }}
                 >
                   Deactivate
@@ -281,7 +284,7 @@ export default function PatientsPage() {
               />
             </div>
             <div className="flex bg-white p-1 rounded-2xl border border-slate-200 w-full sm:w-auto h-14">
-              {['all', 'Active', 'Discharged'].map((s) => (
+              {['all', 'Active', 'Discharged', 'Deactivated'].map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
@@ -321,7 +324,7 @@ export default function PatientsPage() {
           </Button>
         </div>
       ) : (
-        <Card className="p-0 border-none shadow-sm overflow-hidden rounded-[2rem]">
+        <Card noPadding className="border-none shadow-sm overflow-hidden rounded-[2rem]">
           <Table
             columns={columns}
             data={filteredPatients}

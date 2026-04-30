@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -10,6 +11,8 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +27,7 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
         if (onClose) {
           setTimeout(onClose, 1500);
         } else {
-          window.location.href = '/';
+          window.location.href = redirect || '/';
         }
       } else {
         setStatus({ type: 'error', message: result.message || 'Invalid credentials' });

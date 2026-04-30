@@ -65,6 +65,8 @@ export interface IClinic extends Document {
   parentSubAdmin?: mongoose.Types.ObjectId;
   isActive: boolean;
   isDeleted: boolean;
+  averageRating: number;
+  reviewCount: number;
 }
 
 const clinicSchema = new Schema<IClinic>(
@@ -131,6 +133,8 @@ const clinicSchema = new Schema<IClinic>(
     parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
+    averageRating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

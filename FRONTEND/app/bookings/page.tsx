@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, User, Hospital } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, User, Hospital, Lock } from "lucide-react";
 
 type Appointment = {
   _id: string;
@@ -102,7 +102,7 @@ export default function MyAppointmentsPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || (isAuthenticated && loading)) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -114,10 +114,18 @@ export default function MyAppointmentsPage() {
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto px-4 py-32 text-center min-h-[70vh] flex flex-col items-center justify-center">
-        <h1 className="text-3xl font-black text-gray-900 mb-4">Access Denied</h1>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto">Please log in to view your appointments.</p>
-        <Link href="/login" className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/25 hover:scale-105 transition-all">
-          Log In
+        <div className="w-24 h-24 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-8 animate-bounce-subtle">
+          <Lock size={40} />
+        </div>
+        <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Login Required</h1>
+        <p className="text-gray-500 mb-10 max-w-md mx-auto text-lg font-medium leading-relaxed">
+          You need to be logged in to view and manage your appointments. Please sign in to access your dashboard.
+        </p>
+        <Link href="/login?redirect=/bookings" className="group relative inline-flex items-center gap-3 bg-primary text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
+          Sign In to Access
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+            <CheckCircle2 size={18} />
+          </div>
         </Link>
       </div>
     );

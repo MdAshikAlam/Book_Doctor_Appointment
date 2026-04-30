@@ -10,14 +10,14 @@ function cn(...inputs) {
 const Table = ({ columns, data, pagination = true, emptyMessage = "No data available." }) => {
   return (
     <div className="w-full">
-      <div className="overflow-visible min-h-[400px]">
+      <div className="overflow-x-auto min-h-[400px]">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-border bg-slate-50/50">
               {columns.map((column, index) => (
                 <th 
                   key={index} 
-                  className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap"
+                  className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap"
                 >
                   {column.header}
                 </th>
@@ -32,7 +32,7 @@ const Table = ({ columns, data, pagination = true, emptyMessage = "No data avail
                   className="hover:bg-slate-50/80 transition-colors group"
                 >
                   {columns.map((column, colIndex) => (
-                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
+                    <td key={colIndex} className="px-4 py-4 whitespace-nowrap">
                       {column.render ? column.render(row) : (
                         <span className="text-sm font-medium text-slate-700">
                           {row[column.accessor]}

@@ -22,6 +22,7 @@ export interface IUser extends Document {
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  clinic?: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentSubAdmin?: mongoose.Types.ObjectId;
@@ -42,6 +43,7 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
