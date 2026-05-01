@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler } from './middlewares/error';
 import logger from './utils/logger';
+import { branchHandler } from './middlewares/branchHandler';
 
 import authRoutes from './routes/auth.routes';
 import doctorRoutes from './routes/doctor.routes';
@@ -32,6 +33,7 @@ app.use(
 );
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
+app.use(branchHandler);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rate Limiting

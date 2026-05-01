@@ -9,7 +9,8 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     role: UserRole;
-    clinicId?: string;
+    branchId?: string | undefined;
+    clinicId?: string | undefined;
   };
 }
 
@@ -42,6 +43,7 @@ export const protect = async (
     req.user = {
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
+      branchId: currentUser.branchId?.toString(),
       clinicId: currentUser.clinic?.toString(),
     };
     next();
@@ -83,6 +85,7 @@ export const optionalProtect = async (
     req.user = {
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
+      branchId: currentUser.branchId?.toString(),
       clinicId: currentUser.clinic?.toString(),
     };
     next();
@@ -110,9 +113,6 @@ export const checkAdminOwnership = async (req: AuthRequest, res: Response, next:
 
     if (!requester) return next(new AppError('Unauthorized', 401));
 
-    // Super Admin has full access
-    if (requester.role === UserRole.SUPER_ADMIN) return next();
-
     const targetUser = await User.findById(targetId);
     if (!targetUser) return next(new AppError('User not found', 404));
 
@@ -125,11 +125,11 @@ export const checkAdminOwnership = async (req: AuthRequest, res: Response, next:
       }
     }
 
-    // Sub Admin Ownership Check
-    if (requester.role === UserRole.SUB_ADMIN) {
-      // Sub Admin can only access doctors they manage (where they are parentSubAdmin)
+    // Receptionist Ownership Check
+    if (requester.role === UserRole.RECEPTIONIST) {
+      // Receptionist can only access doctors they manage (where they are parentReceptionist)
       // OR themselves
-      if (targetUser.parentSubAdmin?.toString() === requester.id || targetUser._id.toString() === requester.id) {
+      if (targetUser.parentReceptionist?.toString() === requester.id || targetUser._id.toString() === requester.id) {
         return next();
       }
     }
@@ -147,9 +147,6 @@ export const checkDoctorOwnership = async (req: AuthRequest, res: Response, next
 
     if (!requester) return next(new AppError('Unauthorized', 401));
 
-    // Super Admin has full access
-    if (requester.role === UserRole.SUPER_ADMIN) return next();
-
     const Doctor = mongoose.model('Doctor');
     const doctor = await Doctor.findById(doctorId).populate('user');
     if (!doctor) return next(new AppError('Doctor not found', 404));
@@ -164,9 +161,9 @@ export const checkDoctorOwnership = async (req: AuthRequest, res: Response, next
       }
     }
 
-    // Sub Admin Ownership Check
-    if (requester.role === UserRole.SUB_ADMIN) {
-      if (targetUser.parentSubAdmin?.toString() === requester.id) {
+    // Receptionist Ownership Check
+    if (requester.role === UserRole.RECEPTIONIST) {
+      if (targetUser.parentReceptionist?.toString() === requester.id) {
         return next();
       }
     }

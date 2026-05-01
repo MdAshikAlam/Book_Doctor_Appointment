@@ -19,9 +19,9 @@ router.get('/patients', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRol
 router.patch('/patients/:id/status', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.updatePatientStatus);
 router.get('/patients/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.getPatientById);
 router.get('/hierarchy', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.getHierarchy);
-router.get('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN), userController.getStaff);
-router.post('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN), userController.createStaff);
-router.patch('/staff/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN), checkAdminOwnership, userController.updateStaff);
-router.delete('/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN), checkAdminOwnership, userController.deleteUser);
+router.get('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.getStaff);
+router.post('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.createStaff);
+router.patch('/staff/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.updateStaff);
+router.delete('/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.deleteUser);
 
 export default router;

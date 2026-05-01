@@ -36,7 +36,7 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
   }
 
   if (isDashboard) {
-    const staffRoles = [UserRole.DOCTOR, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUB_ADMIN];
+    const staffRoles: string[] = [UserRole.DOCTOR, UserRole.ADMIN, UserRole.RECEPTIONIST, 'super_admin'];
     if (!staffRoles.includes(user.role)) {
       throw new AppError('Email not registered.', 401);
     }
@@ -58,7 +58,7 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
 
 export const forgotPassword = async (email: string) => {
   // Only allow staff/doctors to reset from dashboard
-  const staffRoles = [UserRole.DOCTOR, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUB_ADMIN];
+  const staffRoles: string[] = [UserRole.DOCTOR, UserRole.ADMIN, UserRole.RECEPTIONIST, 'super_admin'];
   
   const user = await User.findOne({ 
     email: email.toLowerCase(),

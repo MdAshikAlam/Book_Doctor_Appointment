@@ -22,14 +22,16 @@ const appointmentSchema = z.object({
   visitedBefore: z.boolean().optional().default(false),
 });
 
-export const bookAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const bookAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = appointmentSchema.parse(req.body);
+    const branchId = (req as any).branchId || (req as any).user.branchId;
     const appointment = await appointmentService.bookAppointment({
       ...validatedData,
-      patient: req.user!.id as any,
+      patient: (req as any).user.id as any,
       doctor: validatedData.doctor as any,
       clinic: validatedData.clinic as any,
+      branchId: branchId,
     });
 
     res.status(201).json({
@@ -41,9 +43,11 @@ export const bookAppointment = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
-export const getMyAppointments = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getMyAppointments = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const appointments = await appointmentService.getMyAppointments(req.user!.id, req.user!.role);
+    const { id: userId, role } = (req as any).user;
+    const branchId = (req as any).branchId;
+    const appointments = await appointmentService.getMyAppointments(userId, role, branchId);
     res.status(200).json({
       status: 'success',
       results: appointments.length,

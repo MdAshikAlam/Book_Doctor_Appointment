@@ -61,7 +61,7 @@ export default function DoctorsPage() {
   const [viewingDoctor, setViewingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'sub_admin';
+  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'receptionist';
 
   // Form State
   const [formData, setFormData] = useState({

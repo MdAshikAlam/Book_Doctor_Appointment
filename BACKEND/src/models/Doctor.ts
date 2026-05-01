@@ -29,10 +29,11 @@ export interface IDoctor extends Document {
     coordinates: number[]; // [longitude, latitude]
   };
   clinic: mongoose.Types.ObjectId;
+  branchId: mongoose.Types.ObjectId;
   clinics: mongoose.Types.ObjectId[];
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
-  parentSubAdmin?: mongoose.Types.ObjectId;
+  parentReceptionist?: mongoose.Types.ObjectId;
   slug: string;
 }
 
@@ -70,10 +71,11 @@ const doctorSchema = new Schema<IDoctor>(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
     clinics: [{ type: Schema.Types.ObjectId, ref: 'Clinic' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
-    parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
     slug: { type: String, unique: true, sparse: true, index: true },
   },
   { timestamps: true }

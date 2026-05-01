@@ -21,14 +21,25 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
     };
   }
   if (creatorId) {
-    const mongoose = require('mongoose');
-    const creatorObjectId = new mongoose.Types.ObjectId(creatorId);
-    filter.$or = [
-      { owner: creatorObjectId },
-      { createdBy: creatorObjectId },
-      { parentAdmin: creatorObjectId },
-      { parentSubAdmin: creatorObjectId }
-    ];
+    const User = (await import('../models/User')).default;
+    const user = await User.findById(creatorId);
+    
+    if (user?.organization) {
+      filter.$or = [
+        { organizationId: user.organization },
+        { organizationId: { $exists: false } },
+        { organizationId: null }
+      ];
+    } else {
+      const mongoose = require('mongoose');
+      const creatorObjectId = new mongoose.Types.ObjectId(creatorId);
+      filter.$or = [
+        { owner: creatorObjectId },
+        { createdBy: creatorObjectId },
+        { parentAdmin: creatorObjectId },
+        { parentReceptionist: creatorObjectId }
+      ];
+    }
   }
 
   return await Clinic.find(filter).populate('owner', 'name email');
@@ -54,7 +65,7 @@ export const getClinicById = async (idOrSlug: string) => {
 
 export const createClinic = async (data: Partial<IClinic>, creatorId?: string) => {
   let parentAdmin: any = undefined;
-  let parentSubAdmin: any = undefined;
+  let parentReceptionist: any = undefined;
 
   if (creatorId) {
     const User = (await import('../models/User')).default;
@@ -62,12 +73,12 @@ export const createClinic = async (data: Partial<IClinic>, creatorId?: string) =
     if (creator) {
       if (creator.role === 'admin') {
         parentAdmin = creator._id;
-      } else if (creator.role === 'sub_admin') {
+      } else if (creator.role === 'receptionist') {
         parentAdmin = creator.parentAdmin;
-        parentSubAdmin = creator._id;
+        parentReceptionist = creator._id;
       } else if (creator.role === 'doctor') {
         parentAdmin = creator.parentAdmin;
-        parentSubAdmin = creator.parentSubAdmin;
+        parentReceptionist = creator.parentReceptionist;
       }
     }
   }
@@ -76,7 +87,7 @@ export const createClinic = async (data: Partial<IClinic>, creatorId?: string) =
     ...data, 
     createdBy: creatorId,
     parentAdmin,
-    parentSubAdmin 
+    parentReceptionist 
   } as any);
 
   if (data.doctors && data.doctors.length > 0) {

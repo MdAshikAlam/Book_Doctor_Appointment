@@ -13,6 +13,7 @@ export enum VerificationStatus {
 
 export interface IClinic extends Document {
   name: string;
+  organizationId: mongoose.Types.ObjectId;
   clinicType: ClinicType;
   description?: string;
   images: string[];
@@ -62,7 +63,7 @@ export interface IClinic extends Document {
   owner: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
-  parentSubAdmin?: mongoose.Types.ObjectId;
+  parentReceptionist?: mongoose.Types.ObjectId;
   isActive: boolean;
   isDeleted: boolean;
   averageRating: number;
@@ -72,6 +73,7 @@ export interface IClinic extends Document {
 const clinicSchema = new Schema<IClinic>(
   {
     name: { type: String, required: true, trim: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     clinicType: { 
       type: String, 
       enum: Object.values(ClinicType), 
@@ -130,7 +132,7 @@ const clinicSchema = new Schema<IClinic>(
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
-    parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     averageRating: { type: Number, default: 0 },

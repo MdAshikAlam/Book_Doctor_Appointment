@@ -11,6 +11,7 @@ export interface IAppointment extends Document {
   patient: mongoose.Types.ObjectId;
   doctor: mongoose.Types.ObjectId;
   clinic?: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   date: Date;
   slot: string;
   status: AppointmentStatus;
@@ -37,6 +38,7 @@ const appointmentSchema = new Schema<IAppointment>(
     patient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     doctor: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
     date: { type: Date, required: true },
     slot: { type: String, required: true },
     status: {

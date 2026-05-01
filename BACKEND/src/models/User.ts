@@ -5,8 +5,7 @@ export enum UserRole {
   PATIENT = 'patient',
   DOCTOR = 'doctor',
   ADMIN = 'admin',
-  SUPER_ADMIN = 'super_admin',
-  SUB_ADMIN = 'sub_admin',
+  RECEPTIONIST = 'receptionist',
 }
 
 export interface IUser extends Document {
@@ -22,10 +21,12 @@ export interface IUser extends Document {
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
-  clinic?: mongoose.Types.ObjectId;
+  organization?: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
+  clinic?: mongoose.Types.ObjectId; // Keeping for compatibility
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
-  parentSubAdmin?: mongoose.Types.ObjectId;
+  parentReceptionist?: mongoose.Types.ObjectId;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -34,7 +35,11 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, select: false },
-    role: { type: String, enum: Object.values(UserRole), default: UserRole.PATIENT },
+    role: { 
+      type: String, 
+      enum: [...Object.values(UserRole), 'super_admin'], 
+      default: UserRole.PATIENT 
+    },
     phone: { type: String, trim: true },
     gender: { type: String, enum: ['male', 'female', 'other'] },
     dob: { type: Date },
@@ -43,10 +48,18 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
-    clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
+    organization: { type: Schema.Types.ObjectId, ref: 'Organization' },
+    branchId: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'Clinic', 
+      required: function(this: any) { 
+        return this.role !== 'super_admin'; 
+      } 
+    },
+    clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' }, // Keeping for compatibility
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
-    parentSubAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
+    parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

@@ -35,7 +35,7 @@ async function sync() {
           location: { type: 'Point', coordinates: [0, 0] },
           createdBy: user.createdBy,
           parentAdmin: user.parentAdmin,
-          parentSubAdmin: user.parentSubAdmin
+          parentReceptionist: user.parentReceptionist
         });
         createdCount++;
       }

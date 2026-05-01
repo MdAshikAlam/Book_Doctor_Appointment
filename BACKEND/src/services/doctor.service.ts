@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Doctor, { IDoctor } from '../models/Doctor';
 import { AppError } from '../middlewares/error';
 
-export const getAllDoctors = async (query: any, creatorId?: string) => {
+export const getAllDoctors = async (query: any, creatorId?: string, branchId?: string) => {
   const { specialty, name, lat, lng, radius = 5000, district, state } = query;
   const pipeline: any[] = [];
 
@@ -70,11 +70,16 @@ export const getAllDoctors = async (query: any, creatorId?: string) => {
         $or: [
           { 'user._id': creatorObjectId },
           { 'parentAdmin': creatorObjectId },
-          { 'parentSubAdmin': creatorObjectId },
+          { 'parentReceptionist': creatorObjectId },
           { 'createdBy': creatorObjectId }
         ]
       }
     });
+  }
+
+  if (branchId) {
+    const branchObjectId = new mongoose.Types.ObjectId(branchId);
+    match.branchId = branchObjectId;
   }
 
   if (Object.keys(match).length > 0) {
@@ -184,7 +189,7 @@ export const deleteDoctorProfile = async (id: string) => {
   return await Doctor.findByIdAndDelete(id);
 };
 
-export const createDoctorWithUser = async (userData: any, profileData: any, creatorId?: string) => {
+export const createDoctorWithUser = async (userData: any, profileData: any, creatorId?: string, branchId?: string) => {
   const User = mongoose.model('User');
   
   const existingUser = await User.findOne({ email: userData.email });
@@ -194,16 +199,16 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
 
   // Determine Parents for hierarchy
   let parentAdmin: any = undefined;
-  let parentSubAdmin: any = undefined;
+  let parentReceptionist: any = undefined;
 
   if (creatorId) {
     const creator = await User.findById(creatorId);
     if (creator) {
       if (creator.role === 'admin') {
         parentAdmin = creator._id;
-      } else if (creator.role === 'sub_admin') {
+      } else if (creator.role === 'receptionist') {
         parentAdmin = creator.parentAdmin;
-        parentSubAdmin = creator._id;
+        parentReceptionist = creator._id;
       }
     }
   }
@@ -213,7 +218,8 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     role: 'doctor',
     createdBy: creatorId,
     parentAdmin,
-    parentSubAdmin
+    parentReceptionist,
+    branchId: branchId || undefined
   } as any);
 
   let slugBase = userData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
@@ -230,7 +236,8 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     slug,
     createdBy: creatorId,
     parentAdmin,
-    parentSubAdmin
+    parentReceptionist,
+    branchId: branchId || undefined
   } as any);
 
   return { user, doctor };
