@@ -17,6 +17,7 @@ import Table from '@/components/dashboard/Table';
 import AppointmentCard from '@/components/dashboard/AppointmentCard';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
+import { useAuth } from '@/context/AuthContext';
 
 const statsData = [
   { title: 'Total Patients', value: '42,908', icon: Users, growth: 12.5, isIncrease: true, color: 'blue' },
@@ -111,10 +112,13 @@ const iconMap = {
 };
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const isReceptionist = user?.role === 'receptionist';
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -158,18 +162,21 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Healthcare Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Welcome back. Here's what's happening across the platform.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {isReceptionist 
+              ? "Welcome back. Here's your appointment overview." 
+              : "Welcome back. Here's what's happening across the platform."}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
             Filter
           </Button>
-          <Button variant="outline" size="sm" leftIcon={<Download size={16} />}>
-            Export Data
-          </Button>
-          <Button size="sm" leftIcon={<Plus size={16} />}>
-            Create Alert
-          </Button>
+          {!isReceptionist && (
+            <Button variant="outline" size="sm" leftIcon={<Download size={16} />}>
+              Export Data
+            </Button>
+          )}
         </div>
       </div>
 
@@ -190,31 +197,35 @@ export default function DashboardPage() {
         >
           <Chart type="line" data={chartData} dataKey="appointments" color="#0284c7" />
         </Card>
-        <Card 
-          title="Platform Activity" 
-          subtitle="Patient registration & engagement"
-          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Analytics</Button>}
-        >
-          <Chart type="bar" data={revenueChartData} dataKey="revenue" color="#10b981" />
-        </Card>
+        {!isReceptionist && (
+          <Card 
+            title="Platform Activity" 
+            subtitle="Patient registration & engagement"
+            action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Analytics</Button>}
+          >
+            <Chart type="bar" data={revenueChartData} dataKey="revenue" color="#10b981" />
+          </Card>
+        )}
       </div>
 
       {/* Tables and List Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Patients Table */}
-        <div className="xl:col-span-2">
-          <Card 
-            title="Recent Patients" 
-            subtitle="Latest patient registrations"
-            className="h-full"
-            action={<Button variant="ghost" size="sm" rightIcon={<ArrowRight size={16} />}>View All</Button>}
-          >
-            <Table columns={patientTableColumns} data={patientData} />
-          </Card>
-        </div>
+      <div className={cn("grid grid-cols-1 gap-6", isReceptionist ? "xl:grid-cols-1" : "xl:grid-cols-3")}>
+        {/* Recent Patients Table - Hidden for Receptionists */}
+        {!isReceptionist && (
+          <div className="xl:col-span-2">
+            <Card 
+              title="Recent Patients" 
+              subtitle="Latest patient registrations"
+              className="h-full"
+              action={<Button variant="ghost" size="sm" rightIcon={<ArrowRight size={16} />}>View All</Button>}
+            >
+              <Table columns={patientTableColumns} data={patientData} />
+            </Card>
+          </div>
+        )}
 
         {/* Recent Appointments List */}
-        <div className="xl:col-span-1">
+        <div className={cn(isReceptionist ? "w-full" : "xl:col-span-1")}>
           <Card 
             title="Recent Bookings" 
             subtitle="Latest scheduled appointments"
@@ -222,9 +233,13 @@ export default function DashboardPage() {
             action={<Button variant="ghost" size="sm">Manage</Button>}
           >
             <div className="space-y-4">
-              {appointments.map((appointment) => (
-                <AppointmentCard key={appointment.id} {...appointment} />
-              ))}
+              {appointments.length > 0 ? (
+                appointments.map((appointment) => (
+                  <AppointmentCard key={appointment.id} {...appointment} />
+                ))
+              ) : (
+                <p className="text-center text-slate-400 py-10 italic">No recent appointments found.</p>
+              )}
             </div>
             <div className="mt-6">
               <Button variant="outline" className="w-full text-slate-600 border-slate-200">

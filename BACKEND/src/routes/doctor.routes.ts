@@ -77,14 +77,14 @@ router.post(
 router.post(
   '/',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   doctorController.adminCreateDoctor
 );
 
 router.patch(
   '/:id',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.adminUpdateDoctor
 );
@@ -92,7 +92,7 @@ router.patch(
 router.delete(
   '/:id',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.deleteDoctor
 );
@@ -100,7 +100,7 @@ router.delete(
 router.post(
   '/:id/availability/generate',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.generateAvailability
 );
@@ -108,7 +108,7 @@ router.post(
 router.post(
   '/:id/leave',
   protect,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUB_ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.addLeave
 );

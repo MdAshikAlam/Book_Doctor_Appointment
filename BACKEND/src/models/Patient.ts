@@ -14,6 +14,7 @@ export interface IPatient extends Document {
   patientId?: mongoose.Types.ObjectId;
   doctorId?: mongoose.Types.ObjectId;
   clinic?: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   aadhaar?: string;
   dob?: Date;
   gender?: string;
@@ -39,6 +40,7 @@ const patientSchema = new Schema<IPatient>(
     patientId: { type: Schema.Types.ObjectId, ref: 'User' },
     doctorId: { type: Schema.Types.ObjectId, ref: 'Doctor' },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
     aadhaar: { type: String },
     dob: { type: Date },
     gender: { type: String },

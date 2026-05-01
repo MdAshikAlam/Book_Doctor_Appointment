@@ -51,7 +51,7 @@ export default function StaffManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: 'sub_admin',
+    role: 'receptionist',
     phone: '',
   });
 
@@ -80,7 +80,7 @@ export default function StaffManagementPage() {
     setEditingUser(null);
     setFormData({ 
       name: '', email: '', password: '', 
-      role: currentUser?.role === 'super_admin' ? 'admin' : 'sub_admin', 
+      role: currentUser?.role === 'super_admin' ? 'admin' : 'receptionist', 
       phone: '' 
     });
     setIsModalOpen(true);
@@ -92,7 +92,7 @@ export default function StaffManagementPage() {
       name: member.name || '',
       email: member.email || '',
       password: '', // Optional for edit
-      role: member.role || 'sub_admin',
+      role: member.role || 'receptionist',
       phone: member.phone || '',
     });
     setIsModalOpen(true);
@@ -147,7 +147,7 @@ export default function StaffManagementPage() {
     switch (role) {
       case 'super_admin': return { label: 'Super Admin', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: ShieldAlert };
       case 'admin': return { label: 'Admin', color: 'bg-blue-50 text-blue-600 border-blue-100', icon: ShieldCheck };
-      case 'sub_admin': return { label: 'Sub Admin', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: Shield };
+      case 'receptionist': return { label: 'Receptionist', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: Shield };
       case 'doctor': return { label: 'Doctor', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: Users };
       default: return { label: role, color: 'bg-slate-50 text-slate-600 border-slate-100', icon: Users };
     }
@@ -159,9 +159,9 @@ export default function StaffManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admins & Staff Management</h1>
-          <p className="text-slate-500 mt-1 font-medium">Manage platform administrators, sub-admins, and medical staff permissions.</p>
+          <p className="text-slate-500 mt-1 font-medium">Manage platform administrators, receptionists, and medical staff permissions.</p>
         </div>
-        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && (
+        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (
           <Button 
             onClick={handleOpenAddModal}
             className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2"
@@ -299,7 +299,7 @@ export default function StaffManagementPage() {
                             >
                               <Eye size={18} />
                             </button>
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (
                               <button 
                                 onClick={() => handleOpenEditModal(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
@@ -307,7 +307,7 @@ export default function StaffManagementPage() {
                                 <Edit size={18} />
                               </button>
                             )}
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'sub_admin') && currentUser?._id !== member._id && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && currentUser?._id !== member._id && (
                               <button 
                                 onClick={() => setUserToDelete(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
@@ -368,7 +368,7 @@ export default function StaffManagementPage() {
               >
                 {currentUser?.role === 'super_admin' && <option value="super_admin">Super Admin</option>}
                 {currentUser?.role === 'super_admin' && <option value="admin">Administrator</option>}
-                {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="sub_admin">Sub Admin</option>}
+                {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="receptionist">Receptionist</option>}
                 <option value="doctor">Doctor</option>
               </select>
             </div>
@@ -513,12 +513,12 @@ function AdminTree({ admin, onEdit, onDelete }) {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Sub Admins */}
-        {admin.subAdmins?.length > 0 && (
+        {/* Receptionists */}
+        {admin.receptionists?.length > 0 && (
           <div className="space-y-4">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-4">Sub Administrators</h4>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-4">Receptionists</h4>
             <div className="grid grid-cols-1 gap-4">
-              {admin.subAdmins.map((sub) => (
+              {admin.receptionists.map((sub) => (
                 <div key={sub._id} className="border border-slate-100 rounded-3xl p-5 ml-4 bg-slate-50/30">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -527,7 +527,7 @@ function AdminTree({ admin, onEdit, onDelete }) {
                       </div>
                       <div>
                         <p className="font-bold text-slate-900 leading-none">{sub.name}</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">SUB ADMIN</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">RECEPTIONIST</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -536,7 +536,7 @@ function AdminTree({ admin, onEdit, onDelete }) {
                     </div>
                   </div>
                   
-                  {/* Doctors under Sub Admin */}
+                  {/* Doctors under Receptionist */}
                   {sub.doctors?.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ml-2">
                       {sub.doctors.map(doc => (
@@ -564,7 +564,7 @@ function AdminTree({ admin, onEdit, onDelete }) {
           </div>
         )}
 
-        {(!admin.subAdmins?.length && !admin.doctors?.length) && (
+        {(!admin.receptionists?.length && !admin.doctors?.length) && (
           <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-[2rem]">
             <p className="text-slate-400 font-bold text-sm italic">This administrator hasn't added any staff yet.</p>
           </div>

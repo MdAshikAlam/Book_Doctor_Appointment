@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Bell, Menu, LogOut, User, Settings as SettingsIcon, HelpCircle } from 'lucide-react';
+import { Search, Bell, Menu, LogOut, User, Settings as SettingsIcon, HelpCircle, Stethoscope } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAuth } from '@/context/AuthContext';
@@ -76,14 +76,14 @@ const Navbar = () => {
                     <p className="text-sm font-semibold text-slate-900">{user?.name}</p>
                     <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                   </div>
-                                   <Link href="/dashboard/profile" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
+                  <Link href="/dashboard/profile" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
                     <User size={16} /> View Profile
                   </Link>
                   <Link href="/dashboard/profile/edit" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
                     <SettingsIcon size={16} /> Edit Profile
                   </Link>
                   <Link href="/" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-                    <HelpCircle size={16} /> Login
+                    <HelpCircle size={16} /> Help Center
                   </Link>
                   
                   <div className="h-px bg-border my-1"></div>

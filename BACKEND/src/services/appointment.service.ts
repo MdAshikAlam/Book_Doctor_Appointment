@@ -26,7 +26,19 @@ export const bookAppointment = async (data: Partial<IAppointment>) => {
 
   // Check if doctor is on leave
   const checkDoctor = await Doctor.findById(doctorId);
-  if (checkDoctor?.leaves && checkDoctor.leaves.length > 0) {
+  if (!checkDoctor) throw new AppError('Doctor not found', 404);
+
+  // 1. Check Day of Week Availability
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const bookingDayName = days[new Date(date).getDay()];
+  const isAvailableOnDay = checkDoctor.availability?.some(a => a.day === bookingDayName && a.slots.length > 0);
+  
+  if (!isAvailableOnDay) {
+    throw new AppError(`Doctor is not available on this day (${bookingDayName})`, 400);
+  }
+
+  // 2. Check Leaves
+  if (checkDoctor.leaves && checkDoctor.leaves.length > 0) {
     const bookingDate = new Date(date);
     bookingDate.setHours(0, 0, 0, 0); // Normalize booking date
     
@@ -50,33 +62,22 @@ export const bookAppointment = async (data: Partial<IAppointment>) => {
   return await Appointment.create(data);
 };
 
-export const getMyAppointments = async (userId: string, role: string) => {
+export const getMyAppointments = async (userId: string, role: string, branchId?: string) => {
   const filter: any = {};
+  
+  if (branchId) {
+    filter.branchId = branchId;
+  }
+
   if (role === 'patient') {
     filter.patient = userId;
   } else if (role === 'doctor') {
     // Find doctor profile for this user
     const doctor = await Doctor.findOne({ user: userId });
     if (doctor) filter.doctor = doctor._id;
-  } else if (role === 'admin' || role === 'sub_admin') {
-    // If user belongs to a specific clinic, filter by that clinic
-    const User = (await import('../models/User')).default;
-    const user = await User.findById(userId);
-    if (user?.clinic) {
-      filter.clinic = user.clinic;
-    } else {
-      // Fallback to legacy hierarchy filtering
-      const usersInHierarchy = await User.find({
-        $or: [
-          { parentAdmin: userId },
-          { parentSubAdmin: userId }
-        ],
-        role: 'doctor'
-      }).select('_id');
-      
-      const doctors = await Doctor.find({ user: { $in: usersInHierarchy.map(u => u._id) } }).select('_id');
-      filter.doctor = { $in: doctors.map(d => d._id) };
-    }
+  } else if (role === 'admin' || role === 'receptionist') {
+    // Admins and Receptionists only see appointments within their branch
+    // branchId is already added to filter if provided from controller
   }
   
   return await Appointment.find(filter)
@@ -96,15 +97,15 @@ export const updateAppointmentStatus = async (id: string, userId: string, role: 
     const doctor = await Doctor.findOne({ user: userId });
     if (!doctor) throw new AppError('Doctor profile not found', 404);
     filter.doctor = doctor._id;
-  } else if (role === 'admin' || role === 'sub_admin') {
+  } else if (role === 'admin' || role === 'receptionist') {
     const app = await Appointment.findById(id).populate({
       path: 'doctor',
-      select: 'parentAdmin parentSubAdmin'
+      select: 'parentAdmin parentReceptionist'
     });
     
     const isOwner = app && (
       (role === 'admin' && (app.doctor as any).parentAdmin?.toString() === userId) ||
-      (role === 'sub_admin' && (app.doctor as any).parentSubAdmin?.toString() === userId)
+      (role === 'receptionist' && (app.doctor as any).parentReceptionist?.toString() === userId)
     );
 
     if (!isOwner) {
@@ -144,19 +145,20 @@ export const updateAppointmentStatus = async (id: string, userId: string, role: 
       patientId: appointment.patient,
       doctorId: appointment.doctor._id,
       clinic: appointment.clinic,
+      branchId: (appointment as any).branchId,
       aadhaar: appointment.aadhaar,
       dob: appointment.dob,
       gender: appointment.gender,
       address: appointment.address,
       city: appointment.city,
       country: appointment.country
-    });
+    } as any);
 
     console.log('Patient record created successfully:', patientRecord._id);
 
     // Option 1: Delete the appointment (as requested)
-    await Appointment.findByIdAndDelete(appointment._id);
-    console.log('Appointment record deleted successfully:', appointment._id);
+    await Appointment.findByIdAndDelete((appointment as any)._id);
+    console.log('Appointment record deleted successfully:', (appointment as any)._id);
   }
 
   return appointment;
@@ -168,12 +170,12 @@ export const rescheduleAppointment = async (id: string, userId: string, role: st
     const doctor = await Doctor.findOne({ user: userId });
     if (!doctor) throw new AppError('Doctor profile not found', 404);
     filter.doctor = doctor._id;
-  } else if (role === 'admin' || role === 'sub_admin') {
+  } else if (role === 'admin' || role === 'receptionist') {
     // Similar ownership check
     const app = await Appointment.findById(id).populate('doctor');
     const isOwner = app && (
       (role === 'admin' && (app.doctor as any).parentAdmin?.toString() === userId) ||
-      (role === 'sub_admin' && (app.doctor as any).parentSubAdmin?.toString() === userId)
+      (role === 'receptionist' && (app.doctor as any).parentReceptionist?.toString() === userId)
     );
     if (!isOwner) throw new AppError('Unauthorized', 403);
   }
