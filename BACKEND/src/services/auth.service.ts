@@ -40,6 +40,10 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
     if (!staffRoles.includes(user.role)) {
       throw new AppError('Email not registered.', 401);
     }
+
+    if (user.role === UserRole.ADMIN && user.status === 'pending') {
+      throw new AppError('Your admin application is pending approval. Please wait for the Super Admin to approve your account.', 403);
+    }
   }
 
   const accessToken = generateAccessToken({ id: user._id.toString(), role: user.role });

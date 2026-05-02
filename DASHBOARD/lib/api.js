@@ -47,6 +47,10 @@ export const authApi = {
     method: 'POST',
     body: JSON.stringify({ ...credentials, isDashboard: true }),
   }),
+  registerAdmin: (data) => apiCall('/auth/register-admin', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   getMe: () => apiCall('/users/me'),
   forgotPassword: (email) => apiCall('/auth/forgot-password', {
     method: 'POST',
@@ -63,6 +67,11 @@ export const doctorsApi = {
     const query = new URLSearchParams(params).toString();
     return apiCall(`/doctors?${query}`);
   },
+  getPending: (status) => apiCall(`/doctors/pending${status ? `?status=${status}` : ''}`),
+  updateStatus: (id, status, rejectionReason) => apiCall(`/doctors/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, rejectionReason }),
+  }),
   create: (data) => apiCall('/doctors', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -121,6 +130,11 @@ export const usersApi = {
     method: 'PATCH',
     body: JSON.stringify({ patientStatus }),
   }),
+  getAdminRequests: (status) => apiCall(`/users/admin-requests${status ? `?status=${status}` : ''}`),
+  updateStatus: (id, status, rejectionReason) => apiCall(`/users/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, rejectionReason }),
+  }),
 };
 
 export const utilityApi = {
@@ -137,9 +151,10 @@ export const clinicsApi = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  approve: (id) => apiCall(`/clinics/${id}/verify`, {
+  getPending: (status) => apiCall(`/clinics/pending${status ? `?status=${status}` : ''}`),
+  updateStatus: (id, status, rejectionReason) => apiCall(`/clinics/${id}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status: 'Approved' }),
+    body: JSON.stringify({ status, rejectionReason }),
   }),
   update: (id, data) => apiCall(`/clinics/${id}`, {
     method: 'PATCH',

@@ -27,7 +27,7 @@ const router = Router();
  *       200:
  *         description: File uploaded successfully
  */
-router.post('/', protect, upload.single('image'), (req: Request, res: Response) => {
+router.post('/', upload.single('image'), (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ status: 'fail', message: 'No file uploaded' });
   }

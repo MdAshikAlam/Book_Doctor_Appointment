@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as appointmentController from '../controllers/appointment.controller';
 import { protect } from '../middlewares/auth';
+import { branchHandler } from '../middlewares/branchHandler';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ const router = Router();
  */
 
 router.use(protect);
+router.use(branchHandler);
 
 /**
  * @swagger

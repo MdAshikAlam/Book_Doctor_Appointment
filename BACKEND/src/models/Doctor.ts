@@ -34,6 +34,10 @@ export interface IDoctor extends Document {
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentReceptionist?: mongoose.Types.ObjectId;
+  status: 'submitted' | 'verified' | 'rejected';
+  isVerified: boolean;
+  verifiedBy?: mongoose.Types.ObjectId | string;
+  rejectionReason?: string;
   slug: string;
 }
 
@@ -76,6 +80,14 @@ const doctorSchema = new Schema<IDoctor>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
+    status: { 
+      type: String, 
+      enum: ['submitted', 'verified', 'rejected'], 
+      default: 'submitted' 
+    },
+    isVerified: { type: Boolean, default: false },
+    verifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    rejectionReason: { type: String },
     slug: { type: String, unique: true, sparse: true, index: true },
   },
   { timestamps: true }

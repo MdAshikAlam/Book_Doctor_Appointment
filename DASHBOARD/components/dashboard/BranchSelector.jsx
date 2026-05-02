@@ -31,7 +31,7 @@ const BranchSelector = () => {
           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-1">Branch</p>
           <div className="flex items-center gap-1">
             <p className="text-sm font-bold text-slate-900 leading-none">
-              {loading ? 'Loading...' : (selectedBranch?.name || 'Select Branch')}
+              {loading ? 'Loading...' : (selectedBranch?.name || (user.role === 'super_admin' && !selectedBranchId ? 'All Branches' : 'Select Branch'))}
             </p>
             <ChevronDown size={14} className="text-slate-400 group-hover:text-primary transition-colors" />
           </div>
@@ -39,11 +39,25 @@ const BranchSelector = () => {
       </div>
 
       {/* Dropdown */}
-      <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-border py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left scale-95 group-hover:scale-100">
+      <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-border py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left scale-95 group-hover:scale-100">
         <div className="px-4 py-2 border-b border-border mb-1">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Switch Branch</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Switch Context</p>
         </div>
         <div className="max-h-60 overflow-y-auto">
+          {user?.role === 'super_admin' && (
+            <button
+              onClick={() => changeBranch('all')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                !selectedBranchId 
+                  ? 'bg-primary/5 text-primary font-bold' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-primary'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${!selectedBranchId ? 'bg-primary' : 'bg-transparent'}`}></div>
+              All Branches (Global Mode)
+            </button>
+          )}
+          
           {branches.map((branch) => (
             <button
               key={branch._id}

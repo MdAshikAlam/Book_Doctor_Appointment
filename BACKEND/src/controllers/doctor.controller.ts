@@ -11,27 +11,76 @@ import Doctor from '../models/Doctor';
 export const getDoctors = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = (req as any).user;
+    const branchId = (req as any).branchId;
     let creatorId: string | undefined;
 
-    // Filter by creator if not Super Admin and in dashboard context
-    // Assuming we use this for the dashboard list
-    if (currentUser && currentUser.role !== UserRole.SUPER_ADMIN) {
-      if (currentUser.role === UserRole.RECEPTIONIST) {
-        // Receptionists see all doctors of their parent Admin
-        const User = mongoose.model('User');
-        const userDoc = await User.findById(currentUser.id);
-        creatorId = userDoc?.parentAdmin?.toString() || currentUser.id;
+    // Data Isolation Logic
+    if (currentUser) {
+      if (currentUser.role === UserRole.SUPER_ADMIN) {
+        // Global access: No creator or branch restriction unless selected
       } else {
-        creatorId = currentUser.id;
+        // Branch restricted: Enforce branch context
+        if (!branchId) {
+          return next(new AppError('Unauthorized: Branch context missing', 403));
+        }
       }
     }
 
-    const branchId = (req as any).branchId;
     const doctors = await doctorService.getAllDoctors(req.query, creatorId, branchId);
     res.status(200).json({
       status: 'success',
       results: doctors.length,
       data: { doctors },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPendingDoctors = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = (req.query.status as string) || 'submitted';
+    const doctors = await Doctor.find({ status: status as any })
+      .populate('user', 'name email phone')
+      .sort({ createdAt: -1 });
+    res.status(200).json({
+      status: 'success',
+      results: doctors.length,
+      data: { doctors }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateDoctorStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status, rejectionReason } = z.object({
+      status: z.enum(['submitted', 'verified', 'rejected']),
+      rejectionReason: z.string().optional()
+    }).parse(req.body);
+
+    const updateData: any = { status, rejectionReason };
+    if (status === 'verified') {
+      updateData.isVerified = true;
+      updateData.verifiedBy = (req as any).user.id;
+    } else {
+      updateData.isVerified = false;
+    }
+
+    const doctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!doctor) {
+      return next(new AppError('No doctor found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { doctor }
     });
   } catch (error) {
     next(error);

@@ -45,6 +45,7 @@ const router = Router();
  *         description: Invalid input
  */
 router.post('/register', authController.register);
+router.post('/register-admin', authController.registerAdmin);
 
 /**
  * @swagger
