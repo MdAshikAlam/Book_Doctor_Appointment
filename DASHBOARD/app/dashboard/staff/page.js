@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useBranch } from '@/context/BranchContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
@@ -36,9 +37,10 @@ const getFullImageUrl = (path) => {
 
 export default function StaffManagementPage() {
   const { user: currentUser } = useAuth();
+  const { branches } = useBranch();
   const [staff, setStaff] = useState([]);
   const [hierarchy, setHierarchy] = useState([]);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'hierarchy'
+  const [viewMode, setViewMode] = useState(currentUser?.role === 'super_admin' ? 'hierarchy' : 'list');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -81,7 +83,8 @@ export default function StaffManagementPage() {
     setFormData({ 
       name: '', email: '', password: '', 
       role: currentUser?.role === 'super_admin' ? 'admin' : 'receptionist', 
-      phone: '' 
+      phone: '',
+      branchId: ''
     });
     setIsModalOpen(true);
   };
@@ -94,6 +97,7 @@ export default function StaffManagementPage() {
       password: '', // Optional for edit
       role: member.role || 'receptionist',
       phone: member.phone || '',
+      branchId: member.branchId || '',
     });
     setIsModalOpen(true);
   };
@@ -184,22 +188,6 @@ export default function StaffManagementPage() {
           />
         </div>
 
-        {currentUser?.role === 'super_admin' && (
-          <div className="flex bg-slate-50 p-1 rounded-2xl">
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Flat List
-            </button>
-            <button 
-              onClick={() => setViewMode('hierarchy')}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${viewMode === 'hierarchy' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Hierarchy
-            </button>
-          </div>
-        )}
       </div>
 
       {viewMode === 'hierarchy' && currentUser?.role === 'super_admin' ? (
@@ -229,7 +217,7 @@ export default function StaffManagementPage() {
                   <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Member</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Address</th>
+                  <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Branch Context</th>
                   <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Joined</th>
                   <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -237,14 +225,14 @@ export default function StaffManagementPage() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="px-8 py-20 text-center text-slate-400">
+                    <td colSpan="6" className="px-8 py-20 text-center text-slate-400">
                       <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-4" />
                       <p className="font-bold">Fetching system staff...</p>
                     </td>
                   </tr>
                 ) : filteredStaff.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-8 py-20 text-center text-slate-500">
+                    <td colSpan="6" className="px-8 py-20 text-center text-slate-500">
                       <p className="font-bold">No staff members found.</p>
                     </td>
                   </tr>
@@ -282,10 +270,16 @@ export default function StaffManagementPage() {
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <p className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            <MapPin size={12} className="text-slate-300" /> {member.address || member.city || 'N/A'}
-                          </p>
-                          {member.country && <p className="text-[10px] text-slate-400 font-medium ml-4">{member.country}</p>}
+                          <div className="flex flex-col">
+                            <p className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                              <MapPin size={12} className="text-primary" /> {member.branchName || 'Global Access'}
+                            </p>
+                            {member.branchName && (
+                              <p className="text-[10px] text-slate-400 font-medium ml-4">
+                                {member.city || 'Main Office'}
+                              </p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-5 font-bold text-slate-600 text-sm">
                           {new Date(member.createdAt).toLocaleDateString()}
@@ -366,20 +360,35 @@ export default function StaffManagementPage() {
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
                 className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
               >
-                {currentUser?.role === 'super_admin' && <option value="super_admin">Super Admin</option>}
                 {currentUser?.role === 'super_admin' && <option value="admin">Administrator</option>}
                 {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="receptionist">Receptionist</option>}
                 <option value="doctor">Doctor</option>
               </select>
             </div>
           </div>
-          <Input 
-            label="Phone Number (Optional)" 
-            type="tel" 
-            placeholder="+1 234 567 890"
-            value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input 
+              label="Phone Number" 
+              type="tel" 
+              placeholder="+1 234 567 890"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            />
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Branch Assignment</label>
+              <select 
+                value={formData.branchId}
+                onChange={(e) => setFormData({...formData, branchId: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+                required={formData.role !== 'super_admin'}
+              >
+                <option value="">Select a Branch</option>
+                {branches.map(branch => (
+                  <option key={branch._id} value={branch._id}>{branch.name} ({branch.district})</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="flex gap-4 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
             <Button type="submit" className="flex-[2] h-12 bg-slate-900 text-white font-bold rounded-2xl shadow-lg shadow-slate-200">

@@ -6,6 +6,7 @@ export enum UserRole {
   DOCTOR = 'doctor',
   ADMIN = 'admin',
   RECEPTIONIST = 'receptionist',
+  SUPER_ADMIN = 'super_admin',
 }
 
 export interface IUser extends Document {
@@ -23,10 +24,22 @@ export interface IUser extends Document {
   passwordResetExpires?: Date;
   organization?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
+  branchIds?: mongoose.Types.ObjectId[];
   clinic?: mongoose.Types.ObjectId; // Keeping for compatibility
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentReceptionist?: mongoose.Types.ObjectId;
+  
+  // Admin Registration Fields
+  governmentIdType?: 'Aadhar' | 'PAN' | 'Passport';
+  governmentIdNumber?: string;
+  idProofDocument?: string;
+  clinicName?: string;
+  city?: string;
+  state?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -37,7 +50,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String, select: false },
     role: { 
       type: String, 
-      enum: [...Object.values(UserRole), 'super_admin'], 
+      enum: Object.values(UserRole), 
       default: UserRole.PATIENT 
     },
     phone: { type: String, trim: true },
@@ -53,13 +66,28 @@ const userSchema = new Schema<IUser>(
       type: Schema.Types.ObjectId, 
       ref: 'Clinic', 
       required: function(this: any) { 
-        return this.role !== 'super_admin'; 
+        return this.role !== UserRole.SUPER_ADMIN && this.role !== UserRole.ADMIN; 
       } 
     },
+    branchIds: [{ type: Schema.Types.ObjectId, ref: 'Clinic' }],
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' }, // Keeping for compatibility
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
+
+    // Admin Registration Fields
+    governmentIdType: { type: String, enum: ['Aadhar', 'PAN', 'Passport'] },
+    governmentIdNumber: { type: String },
+    idProofDocument: { type: String },
+    clinicName: { type: String },
+    city: { type: String },
+    state: { type: String },
+    status: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'approved' // Default to approved for existing users/staff
+    },
+    rejectionReason: { type: String },
   },
   { timestamps: true }
 );

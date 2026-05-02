@@ -56,7 +56,8 @@ export interface IClinic extends Document {
   // Verification
   registrationNumber: string;
   registrationCertificate?: string;
-  verificationStatus: VerificationStatus;
+  clinicStatus: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
   slug: string;
 
   // System
@@ -121,11 +122,12 @@ const clinicSchema = new Schema<IClinic>(
     // Verification
     registrationNumber: { type: String, required: true },
     registrationCertificate: { type: String },
-    verificationStatus: { 
+    clinicStatus: { 
       type: String, 
-      enum: Object.values(VerificationStatus), 
-      default: VerificationStatus.PENDING 
+      enum: ['pending', 'approved', 'rejected'], 
+      default: 'pending' 
     },
+    rejectionReason: { type: String },
     slug: { type: String, unique: true, index: true },
 
     // System

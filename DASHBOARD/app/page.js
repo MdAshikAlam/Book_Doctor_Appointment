@@ -120,7 +120,7 @@ export default function LoginPage() {
 
           <div className="bg-slate-50 p-6 border-t border-slate-100 text-center">
             <p className="text-slate-500 text-sm">
-              Don't have an account? <a href="#" className="text-blue-600 font-bold hover:underline">Contact Administrator</a>
+              Don't have an account? <Link href="/register" className="text-blue-600 font-bold hover:underline">Register as Admin</Link>
             </p>
           </div>
         </div>

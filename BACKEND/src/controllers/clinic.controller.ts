@@ -5,13 +5,16 @@ import { z } from 'zod';
 import { ClinicType } from '../models/Clinic';
 import { geocodeAddress } from '../utils/geocoder';
 import { AppError } from '../middlewares/error';
+import { UserRole } from '../models/User';
+
+import Clinic from '../models/Clinic';
 
 export const getClinics = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = (req as any).user;
     let creatorId: string | undefined;
 
-    if (currentUser && currentUser.role !== 'super_admin') {
+    if (currentUser && currentUser.role !== UserRole.SUPER_ADMIN) {
       creatorId = currentUser.id;
     }
 
@@ -20,6 +23,46 @@ export const getClinics = async (req: Request, res: Response, next: NextFunction
       status: 'success',
       results: clinics.length,
       data: { clinics },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPendingClinics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const clinics = await Clinic.find({ clinicStatus: status as any }).sort({ createdAt: -1 });
+    res.status(200).json({
+      status: 'success',
+      results: clinics.length,
+      data: { clinics }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateClinicStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status, rejectionReason } = z.object({
+      status: z.enum(['pending', 'approved', 'rejected']),
+      rejectionReason: z.string().optional()
+    }).parse(req.body);
+
+    const clinic = await Clinic.findByIdAndUpdate(
+      req.params.id,
+      { clinicStatus: status, rejectionReason },
+      { new: true, runValidators: true }
+    );
+
+    if (!clinic) {
+      return next(new AppError('No clinic found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { clinic }
     });
   } catch (error) {
     next(error);
@@ -85,7 +128,7 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
   try {
     const validatedData = clinicSchema.parse(req.body);
 
-    if (req.user!.role !== 'super_admin') {
+    if (req.user!.role !== UserRole.SUPER_ADMIN) {
       const existingClinic = await clinicService.getAllClinics({}, req.user!.id);
       if (existingClinic.length > 0) {
         return next(new AppError('You have already registered a clinic. You can only update it.', 400));

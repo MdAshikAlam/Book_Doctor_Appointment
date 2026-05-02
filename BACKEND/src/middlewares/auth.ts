@@ -10,6 +10,7 @@ export interface AuthRequest extends Request {
     id: string;
     role: UserRole;
     branchId?: string | undefined;
+    branchIds?: string[] | undefined;
     clinicId?: string | undefined;
   };
 }
@@ -44,6 +45,7 @@ export const protect = async (
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
       branchId: currentUser.branchId?.toString(),
+      branchIds: (currentUser as any).branchIds?.map((id: any) => id.toString()),
       clinicId: currentUser.clinic?.toString(),
     };
     next();
@@ -86,6 +88,7 @@ export const optionalProtect = async (
       id: currentUser._id.toString(),
       role: currentUser.role as UserRole,
       branchId: currentUser.branchId?.toString(),
+      branchIds: (currentUser as any).branchIds?.map((id: any) => id.toString()),
       clinicId: currentUser.clinic?.toString(),
     };
     next();

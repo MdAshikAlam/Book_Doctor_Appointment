@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as doctorController from '../controllers/doctor.controller';
 import { protect, restrictTo, optionalProtect, checkDoctorOwnership } from '../middlewares/auth';
+import { branchHandler } from '../middlewares/branchHandler';
 import { UserRole } from '../models/User';
 
 const router = Router();
@@ -22,7 +23,7 @@ const router = Router();
  *       200:
  *         description: List of doctors
  */
-router.get('/', optionalProtect, doctorController.getDoctors);
+router.get('/', optionalProtect, branchHandler, doctorController.getDoctors);
 
 /**
  * @swagger
@@ -40,6 +41,8 @@ router.get('/', optionalProtect, doctorController.getDoctors);
  *       200:
  *         description: Doctor details
  */
+router.get('/pending', protect, restrictTo(UserRole.SUPER_ADMIN), doctorController.getPendingDoctors);
+router.patch('/:id/status', protect, restrictTo(UserRole.SUPER_ADMIN), doctorController.updateDoctorStatus);
 router.get('/:id', doctorController.getDoctor);
 
 /**
@@ -63,6 +66,7 @@ router.get('/:id', doctorController.getDoctor);
 router.get(
   '/me',
   protect,
+  branchHandler,
   restrictTo(UserRole.DOCTOR),
   doctorController.getMyProfile
 );
@@ -70,6 +74,7 @@ router.get(
 router.post(
   '/profile',
   protect,
+  branchHandler,
   restrictTo(UserRole.DOCTOR),
   doctorController.createMyProfile
 );
@@ -77,6 +82,7 @@ router.post(
 router.post(
   '/',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   doctorController.adminCreateDoctor
 );
@@ -84,6 +90,7 @@ router.post(
 router.patch(
   '/:id',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.adminUpdateDoctor
@@ -92,6 +99,7 @@ router.patch(
 router.delete(
   '/:id',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.deleteDoctor
@@ -100,6 +108,7 @@ router.delete(
 router.post(
   '/:id/availability/generate',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.generateAvailability
@@ -108,6 +117,7 @@ router.post(
 router.post(
   '/:id/leave',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.addLeave

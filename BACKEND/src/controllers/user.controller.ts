@@ -9,39 +9,36 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
     const currentUser = (req as any).user;
     const Patient = (await import('../models/Patient')).default;
     const Doctor = (await import('../models/Doctor')).default;
-    let doctorIds: mongoose.Types.ObjectId[] = [];
-
-    // 1. Determine allowed doctors for this user
-    if (currentUser.role === UserRole.ADMIN) {
-      const allDoctors = await Doctor.find({ branchId: currentUser.branchId }).select('_id');
-      doctorIds = allDoctors.map(d => d._id as mongoose.Types.ObjectId);
-    } else if (currentUser.role === UserRole.DOCTOR) {
-      const doctorProfile = await Doctor.findOne({ user: currentUser.id });
-      if (doctorProfile) doctorIds = [doctorProfile._id as mongoose.Types.ObjectId];
-    } else {
-      // Receptionists only see their own doctors
-      const doctorProfiles = await Doctor.find({
-        parentReceptionist: currentUser.id
-      }).select('_id');
-      doctorIds = doctorProfiles.map(d => d._id as mongoose.Types.ObjectId);
-    }
-
-    // 2. Fetch from Patients collection
+    const branchId = (req as any).branchId;
     const query: any = {};
-    const branchId = (req as any).branchId || currentUser.branchId;
-    
-    if (branchId) {
-      query.branchId = new mongoose.Types.ObjectId(branchId);
+
+    // Data Isolation Logic
+    if (currentUser.role === UserRole.SUPER_ADMIN) {
+      // Global access: no branch filter unless selected
+      if (branchId) {
+        query.branchId = new mongoose.Types.ObjectId(branchId);
+      }
     } else {
-      // If no branchId, filter by doctors to ensure some level of isolation
-      query.doctorId = { $in: doctorIds };
+      // Branch-specific access
+      if (!branchId) {
+        return next(new AppError('Unauthorized: Branch context missing', 403));
+      }
+      query.branchId = new mongoose.Types.ObjectId(branchId);
+
+      // Role-specific restrictions
+      if (currentUser.role === UserRole.DOCTOR) {
+        const doctorProfile = await Doctor.findOne({ user: currentUser.id });
+        if (doctorProfile) {
+          query.doctorId = doctorProfile._id;
+        }
+      }
     }
     
     console.log('Fetching patients with query:', JSON.stringify(query));
     
     const patientsData = await Patient.find(query).sort({ createdAt: -1 });
 
-    console.log(`Fetched ${patientsData.length} patients from Patients collection for doctors:`, doctorIds);
+    console.log(`Fetched ${patientsData.length} patients from Patients collection`);
 
     // Map to the format expected by the frontend if necessary
     const patients = patientsData.map(p => {
@@ -58,8 +55,96 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
 
     res.status(200).json({
       status: 'success',
-      results: patients.length,
-      data: { patients },
+      data: { patients }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPendingAdmins = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const admins = await User.find({ 
+      role: UserRole.ADMIN, 
+      status: status as any
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: admins.length,
+      data: { admins }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status, rejectionReason } = z.object({
+      status: z.enum(['pending', 'approved', 'rejected']),
+      rejectionReason: z.string().optional()
+    }).parse(req.body);
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return next(new AppError('No user found with that ID', 404));
+    }
+
+    const oldStatus = user.status;
+    user.status = status;
+    if (rejectionReason) user.rejectionReason = rejectionReason;
+
+    // Admin Approval Logic: Automatically set up Organization and Clinic
+    if (user.role === UserRole.ADMIN && oldStatus === 'pending' && status === 'approved') {
+      const Organization = (await import('../models/Organization')).default;
+      const Clinic = (await import('../models/Clinic')).default;
+
+      // Only create if not already exists (safety for re-approval)
+      let clinicId = user.clinic;
+
+      if (!clinicId) {
+        // 1. Create Organization
+        const org = await Organization.create({
+          name: user.clinicName || `${user.name}'s Organization`,
+          owner: user._id as any,
+          email: user.email,
+          phone: user.phone || '0000000000'
+        });
+
+        // 2. Create Initial Clinic Branch
+        const clinic = await Clinic.create({
+          name: user.clinicName || `${user.name}'s Clinic`,
+          organizationId: org._id as any,
+          owner: user._id as any,
+          district: user.city || 'Unknown',
+          state: user.state || 'Unknown',
+          // Minimal required fields to satisfy schema
+          addressLine1: user.city || 'Main Street',
+          pincode: '000000',
+          phone: user.phone || '0000000000',
+          email: user.email,
+          openingTime: '09:00',
+          closingTime: '20:00',
+          registrationNumber: user.governmentIdNumber || 'PENDING',
+          location: { type: 'Point', coordinates: [0, 0] },
+          clinicStatus: 'approved' 
+        });
+
+        clinicId = clinic._id as any;
+      }
+
+      user.clinic = clinicId as any;
+      user.branchId = clinicId as any;
+      user.branchIds = [clinicId as any];
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: { user }
     });
   } catch (error) {
     next(error);
@@ -69,30 +154,38 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
 export const getStaff = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = (req as any).user;
+    const branchId = (req as any).branchId;
     let query: any = {
-      role: { $in: [UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.DOCTOR] }
+      role: { $nin: [UserRole.SUPER_ADMIN, UserRole.PATIENT] },
+      status: 'approved'
     };
 
-    // Data Isolation & Hierarchy
-    const branchId = (req as any).branchId || currentUser.branchId;
-    if (branchId && currentUser.role !== 'super_admin' as any) {
+    // Data Isolation Logic
+    if (currentUser.role === UserRole.SUPER_ADMIN) {
+      // Global Mode: No branch filter unless specifically selected
+      if (branchId) {
+        query.branchId = new mongoose.Types.ObjectId(branchId);
+      }
+    } else {
+      // Branch-Specific Mode: Enforce current branch filtering
+      if (!branchId) {
+        return next(new AppError('Unauthorized: No branch context found', 403));
+      }
       query.branchId = new mongoose.Types.ObjectId(branchId);
     }
-    
+
+    // Additional Role-based filtering for internal hierarchy (optional, but keep for safety)
     if (currentUser.role === UserRole.ADMIN) {
-      // Admin only sees users where they are the parentAdmin
-      query.parentAdmin = new mongoose.Types.ObjectId(currentUser.id);
-      // Exclude themselves from the "staff" list if desired, but here we show all under them
-      query._id = { $ne: new mongoose.Types.ObjectId(currentUser.id) };
+      // Admin sees everyone in their branch except themselves? 
+      // Usually they want to see all staff in the branch.
+      // query._id = { $ne: new mongoose.Types.ObjectId(currentUser.id) };
     } else if (currentUser.role === UserRole.RECEPTIONIST) {
-      // Receptionist only sees Doctors of their parent Admin
-      const userDoc = await User.findById(currentUser.id);
+      // Receptionists only see doctors in their branch
       query.role = UserRole.DOCTOR;
-      query.parentAdmin = userDoc?.parentAdmin || new mongoose.Types.ObjectId(currentUser.id);
     } else if (currentUser.role === UserRole.DOCTOR) {
-      query._id = currentUser.id;
-    } else if (currentUser.role === 'super_admin' as any) {
-      // Super admin can see everything
+      // Doctors only see themselves in staff list? Or others in same branch?
+      // Let's assume they only see themselves for now or limited info.
+      query._id = new mongoose.Types.ObjectId(currentUser.id);
     }
 
     const staff = await User.aggregate([
@@ -127,7 +220,12 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
           specialty: { $arrayElemAt: ['$doctorProfile.specialty', 0] },
           city: { $arrayElemAt: ['$doctorProfile.city', 0] },
           country: { $arrayElemAt: ['$doctorProfile.country', 0] },
-          branchName: { $arrayElemAt: ['$branchInfo.name', 0] },
+          branchName: { 
+            $ifNull: [
+              { $arrayElemAt: ['$branchInfo.name', 0] }, 
+              '$clinicName'
+            ] 
+          },
           parentName: { $arrayElemAt: ['$parentAdminInfo.name', 0] }
         }
       },
@@ -164,7 +262,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
       }
     } else if (currentUser.role === UserRole.DOCTOR) {
       throw new AppError('Doctors cannot create users', 403);
-    } else if (currentUser.role === 'super_admin' as any) {
+    } else if (currentUser.role === UserRole.SUPER_ADMIN) {
        // Super admin can create anyone
     }
 
@@ -259,7 +357,7 @@ export const updateStaff = async (req: Request, res: Response, next: NextFunctio
       if (user.id !== currentUser.id) {
         throw new AppError('Doctors can only update their own profile', 403);
       }
-    } else if (currentUser.role === 'super_admin' as any) {
+    } else if (currentUser.role === UserRole.SUPER_ADMIN) {
       // Super admin can update anyone
     }
 
@@ -303,7 +401,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       }
     } else if (requester.role === UserRole.DOCTOR) {
       throw new AppError('Doctors cannot delete users', 403);
-    } else if (requester.role === 'super_admin' as any) {
+    } else if (requester.role === UserRole.SUPER_ADMIN) {
       // Super admin can delete anyone
     }
 
@@ -392,11 +490,14 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
 
     // 1. Initial Match
     if (currentUser.role === UserRole.ADMIN) {
-      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id) } });
+      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: 'approved' } });
     } else if (currentUser.role === UserRole.RECEPTIONIST) {
-      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id) } });
+      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: 'approved' } });
+    } else if (currentUser.role === UserRole.SUPER_ADMIN) {
+      // Super admin sees all admins as root of hierarchies
+      stages.push({ $match: { role: UserRole.ADMIN, status: 'approved' } });
     } else {
-      throw new AppError('Only Admins and Receptionists can view hierarchy', 403);
+      throw new AppError('Only Admins, Receptionists and Super Admins can view hierarchy', 403);
     }
 
     // 2. Receptionist Lookup
@@ -410,7 +511,8 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
               $expr: {
                 $and: [
                   { $eq: ['$role', UserRole.RECEPTIONIST] },
-                  { $eq: ['$parentAdmin', '$$adminId'] }
+                  { $eq: ['$parentAdmin', '$$adminId'] },
+                  { $eq: ['$status', 'approved'] }
                 ]
               }
             }
@@ -425,7 +527,8 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
                     $expr: {
                       $and: [
                         { $eq: ['$role', UserRole.DOCTOR] },
-                        { $eq: ['$parentReceptionist', '$$receptionistId'] }
+                        { $eq: ['$parentReceptionist', '$$receptionistId'] },
+                        { $eq: ['$status', 'approved'] }
                       ]
                     }
                   }
@@ -453,6 +556,7 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
                 $and: [
                   { $eq: ['$role', UserRole.DOCTOR] },
                   { $eq: ['$parentAdmin', '$$adminId'] },
+                  { $eq: ['$status', 'approved'] },
                   { $not: ['$parentReceptionist'] }
                 ]
               }

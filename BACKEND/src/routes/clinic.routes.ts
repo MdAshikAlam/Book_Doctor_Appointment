@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as clinicController from '../controllers/clinic.controller';
 import * as reviewController from '../controllers/review.controller';
 import { protect, restrictTo, optionalProtect } from '../middlewares/auth';
+import { branchHandler } from '../middlewares/branchHandler';
 import { UserRole } from '../models/User';
 
 const router = Router();
@@ -23,8 +24,10 @@ const router = Router();
  *       200:
  *         description: List of clinics
  */
-router.get('/', optionalProtect, clinicController.getClinics);
-router.get('/:id', optionalProtect, clinicController.getClinic);
+router.get('/', optionalProtect, branchHandler, clinicController.getClinics);
+router.get('/pending', protect, restrictTo(UserRole.SUPER_ADMIN), clinicController.getPendingClinics);
+router.patch('/:id/status', protect, restrictTo(UserRole.SUPER_ADMIN), clinicController.updateClinicStatus);
+router.get('/:id', optionalProtect, branchHandler, clinicController.getClinic);
 
 /**
  * @swagger
@@ -47,6 +50,7 @@ router.get('/:id', optionalProtect, clinicController.getClinic);
 router.post(
   '/',
   protect,
+  branchHandler,
   restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
   clinicController.createClinic
 );
@@ -54,6 +58,7 @@ router.post(
 router.patch(
   '/:id',
   protect,
+  branchHandler,
   restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
   clinicController.updateClinic
 );
@@ -61,6 +66,7 @@ router.patch(
 router.patch(
   '/:id/verify',
   protect,
+  branchHandler,
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   clinicController.verifyClinic
 );
