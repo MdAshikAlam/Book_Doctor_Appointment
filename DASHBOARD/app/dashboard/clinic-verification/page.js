@@ -16,7 +16,11 @@ import {
   Check,
   X,
   User,
-  Info
+  Info,
+  Mail,
+  ExternalLink,
+  Award,
+  Image as ImageIcon
 } from 'lucide-react';
 import { clinicsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -76,9 +80,10 @@ export default function ClinicVerificationPage() {
   };
 
   const filteredClinics = clinics.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.clinicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.legalName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.registrationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.district?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (currentUser?.role !== 'super_admin') {
@@ -113,7 +118,7 @@ export default function ClinicVerificationPage() {
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
           <input 
             type="text" 
-            placeholder="Search by name or registration number..."
+            placeholder="Search by clinic name, legal name or reg number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-600 transition-all outline-none font-medium text-sm"
@@ -146,12 +151,13 @@ export default function ClinicVerificationPage() {
                   <div className="w-20 h-20 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-2xl border border-emerald-100 overflow-hidden shadow-inner">
                     {clinic.images?.[0] ? <img src={getFullImageUrl(clinic.images[0])} className="w-full h-full object-cover" /> : <Building2 size={32} />}
                   </div>
-                  <div>
-                    <h3 className="font-black text-2xl text-slate-900 leading-tight mb-1">{clinic.name}</h3>
-                    <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+                  <div className="flex-1">
+                    <h3 className="font-black text-2xl text-slate-900 leading-tight mb-1">{clinic.clinicName}</h3>
+                    <p className="text-xs font-bold text-slate-400 mb-2">{clinic.legalName}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-slate-400 font-bold text-sm">
                       <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] uppercase tracking-wider">{clinic.clinicType}</span>
                       <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                      <span>Reg: {clinic.registrationNumber}</span>
+                      <span className="flex items-center gap-1"><Award size={14} className="text-emerald-500" /> {clinic.registrationNumber}</span>
                     </div>
                   </div>
                 </div>
@@ -162,13 +168,13 @@ export default function ClinicVerificationPage() {
                   <div className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
                     <MapPin size={12} /> Location
                   </div>
-                  <p className="text-sm font-bold text-slate-700 truncate">{clinic.district}, {clinic.state}</p>
+                  <p className="text-sm font-bold text-slate-700 truncate">{clinic.city}, {clinic.state}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <div className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
-                    <User size={12} /> Contact
+                    <User size={12} /> Owner
                   </div>
-                  <p className="text-sm font-bold text-slate-700 truncate">{clinic.phone}</p>
+                  <p className="text-sm font-bold text-slate-700 truncate">{clinic.ownerName}</p>
                 </div>
               </div>
 
@@ -178,7 +184,7 @@ export default function ClinicVerificationPage() {
                   variant="outline" 
                   className="flex-1 h-14 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50"
                 >
-                  <Eye size={20} /> View Details
+                  <Eye size={20} /> Review Documents
                 </Button>
                 <div className="flex gap-2">
                   <button 
@@ -204,99 +210,166 @@ export default function ClinicVerificationPage() {
       <Modal
         isOpen={!!selectedClinic && !showRejectModal}
         onClose={() => setSelectedClinic(null)}
-        title="Review Clinic Details"
-        size="lg"
+        title="Review Clinic Registration"
+        size="xl"
       >
         {selectedClinic && (
           <div className="space-y-8 py-2">
-            <div className="flex flex-col items-center text-center p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 relative overflow-hidden">
+            {/* Top Info Banner */}
+            <div className="flex flex-col md:flex-row items-center gap-8 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 relative overflow-hidden">
                <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
-               <div className="w-24 h-24 rounded-[2rem] bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl font-black text-emerald-600 mb-4 border border-slate-100 overflow-hidden">
+               <div className="w-24 h-24 rounded-[2rem] bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl font-black text-emerald-600 border border-slate-100 overflow-hidden shrink-0">
                  {selectedClinic.images?.[0] ? <img src={getFullImageUrl(selectedClinic.images[0])} className="w-full h-full object-cover" /> : <Building2 size={40} />}
                </div>
-               <h3 className="text-3xl font-black text-slate-900 leading-tight">{selectedClinic.name}</h3>
-               <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-2">{selectedClinic.clinicType}</p>
+               <div className="text-center md:text-left flex-1">
+                 <h3 className="text-3xl font-black text-slate-900 leading-tight">{selectedClinic.clinicName}</h3>
+                 <p className="text-emerald-600 font-bold text-sm mb-2">{selectedClinic.legalName}</p>
+                 <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-4">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-slate-100 shadow-sm">
+                       <MapPin size={16} className="text-slate-400" />
+                       <span className="text-xs font-bold text-slate-600">{selectedClinic.city}, {selectedClinic.state}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-slate-100 shadow-sm">
+                       <Award size={16} className="text-emerald-500" />
+                       <span className="text-xs font-bold text-slate-600">{selectedClinic.registrationNumber}</span>
+                    </div>
+                 </div>
+               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column: Docs & Identity */}
+              <div className="lg:col-span-2 space-y-6">
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Legal & Registration</h4>
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-400 font-bold uppercase">Reg Number</p>
-                      <p className="text-sm font-black text-slate-900">{selectedClinic.registrationNumber}</p>
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Verification Documents</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Registration Proof */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 flex flex-col items-center text-center">
+                       <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4">
+                          <FileText size={24} />
+                       </div>
+                       <p className="text-sm font-black text-slate-900 mb-1">Registration Proof</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">GST / License / Certificate</p>
+                       {selectedClinic.registrationProof ? (
+                         <a 
+                           href={getFullImageUrl(selectedClinic.registrationProof)} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
+                         >
+                           <ExternalLink size={14} /> Open Document
+                         </a>
+                       ) : (
+                         <div className="py-3 px-4 bg-red-50 text-red-500 rounded-xl font-bold text-[10px] uppercase w-full">Missing Document</div>
+                       )}
                     </div>
-                    {selectedClinic.registrationCertificate && (
-                      <a 
-                        href={getFullImageUrl(selectedClinic.registrationCertificate)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl border-2 border-dashed border-emerald-200 hover:bg-emerald-100 transition-all font-bold mt-4"
-                      >
-                        <FileText size={20} /> View License Certificate
-                      </a>
-                    )}
+
+                    {/* Address Proof */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 flex flex-col items-center text-center">
+                       <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                          <ImageIcon size={24} />
+                       </div>
+                       <p className="text-sm font-black text-slate-900 mb-1">Address Proof</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">Utility Bill / Lease Agreement</p>
+                       {selectedClinic.addressProof ? (
+                         <a 
+                           href={getFullImageUrl(selectedClinic.addressProof)} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
+                         >
+                           <ExternalLink size={14} /> Open Document
+                         </a>
+                       ) : (
+                         <div className="py-3 px-4 bg-slate-50 text-slate-400 rounded-xl font-bold text-[10px] uppercase w-full italic">Not Provided</div>
+                       )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Location Details</h4>
-                  <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4">
-                    <div className="flex gap-3">
-                      <MapPin size={20} className="text-slate-300 shrink-0" />
-                      <p className="text-sm font-bold text-slate-700 leading-relaxed">
-                        {selectedClinic.addressLine1},<br />
-                        {selectedClinic.addressLine2 && <>{selectedClinic.addressLine2},<br /></>}
-                        {selectedClinic.district}, {selectedClinic.state} - {selectedClinic.pincode}
-                      </p>
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Full Clinical Address</h4>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6">
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+                         <MapPin size={20} />
+                      </div>
+                      <div className="text-sm font-bold text-slate-700 leading-relaxed">
+                        <p className="text-slate-900">{selectedClinic.address}</p>
+                        {selectedClinic.addressLine2 && <p className="text-slate-500 text-xs">{selectedClinic.addressLine2}</p>}
+                        <p className="mt-1">{selectedClinic.city}, {selectedClinic.state} - {selectedClinic.pincode}</p>
+                        <p className="text-xs text-slate-400 mt-2 font-black uppercase tracking-widest">{selectedClinic.country}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Right Column: Owner & Contact */}
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Contact Information</h4>
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Owner Details</h4>
                   <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <User size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Owner Name</p>
+                        <p className="text-sm font-black text-slate-900">{selectedClinic.ownerName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                         <Phone size={18} />
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Primary Phone</p>
-                        <p className="text-sm font-black text-slate-900">{selectedClinic.phone}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Owner Phone</p>
+                        <p className="text-sm font-black text-slate-900">{selectedClinic.ownerPhone}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-                        <Calendar size={18} />
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <Mail size={18} />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Operational Hours</p>
-                        <p className="text-sm font-black text-slate-900">{selectedClinic.openingTime} - {selectedClinic.closingTime}</p>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Owner Email</p>
+                        <p className="text-sm font-black text-slate-900 truncate">{selectedClinic.ownerEmail}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Features & Services</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedClinic.services?.map((s, i) => (
-                      <span key={i} className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100">{s}</span>
-                    ))}
-                    {selectedClinic.emergencyAvailable && (
-                      <span className="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold border border-red-100 flex items-center gap-1.5">
-                        <Info size={14} /> Emergency Available
-                      </span>
-                    )}
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Operational Info</h4>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs font-bold text-slate-400">Clinic Email</span>
+                       <span className="text-xs font-black text-slate-900">{selectedClinic.email}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs font-bold text-slate-400">Public Phone</span>
+                       <span className="text-xs font-black text-slate-900">{selectedClinic.phone}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs font-bold text-slate-400">Working Hours</span>
+                       <span className="text-xs font-black text-slate-900">{selectedClinic.openingTime} - {selectedClinic.closingTime}</span>
+                    </div>
                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Services</h4>
+                   <div className="flex flex-wrap gap-2">
+                     {selectedClinic.services?.map((s, i) => (
+                       <span key={i} className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">{s}</span>
+                     ))}
+                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 pt-6 border-t border-slate-100">
+            <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-slate-100 bg-white sticky bottom-0 z-10 py-4">
               <Button 
                 variant="outline" 
                 onClick={() => setShowRejectModal(true)}
@@ -307,7 +380,7 @@ export default function ClinicVerificationPage() {
               <Button 
                 onClick={() => handleAction(selectedClinic._id, 'approved')}
                 disabled={isProcessing}
-                className="flex-[2] h-14 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
+                className="flex-[2] h-14 bg-emerald-500 text-white font-black rounded-2xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
               >
                 {isProcessing ? <Loader2 className="animate-spin" /> : <><ShieldCheck size={24} /> Verify & Approve Clinic</>}
               </Button>
@@ -327,7 +400,7 @@ export default function ClinicVerificationPage() {
           <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3">
             <ShieldAlert className="text-red-500 shrink-0" size={24} />
             <p className="text-sm text-red-700 font-medium leading-relaxed">
-              You are about to reject the application for <strong>{selectedClinic?.name}</strong>. Please provide a reason for the rejection.
+              You are about to reject the application for <strong>{selectedClinic?.clinicName}</strong>. Please provide a reason for the rejection.
             </p>
           </div>
           <div className="space-y-2">

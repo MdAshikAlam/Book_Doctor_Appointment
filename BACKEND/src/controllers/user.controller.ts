@@ -115,19 +115,23 @@ export const updateUserStatus = async (req: Request, res: Response, next: NextFu
 
         // 2. Create Initial Clinic Branch
         const clinic = await Clinic.create({
-          name: user.clinicName || `${user.name}'s Clinic`,
-          organizationId: org._id as any,
+          clinicName: user.clinicName || `${user.name}'s Clinic`,
+          legalName: user.clinicName || `${user.name}'s Clinic`,
+          ownerName: user.name,
+          ownerPhone: user.phone || '0000000000',
+          ownerEmail: user.email,
           owner: user._id as any,
-          district: user.city || 'Unknown',
+          createdByAdminId: user._id as any,
+          city: user.city || 'Unknown',
           state: user.state || 'Unknown',
-          // Minimal required fields to satisfy schema
-          addressLine1: user.city || 'Main Street',
+          address: user.city || 'Main Street',
           pincode: '000000',
           phone: user.phone || '0000000000',
           email: user.email,
           openingTime: '09:00',
-          closingTime: '20:00',
-          registrationNumber: user.governmentIdNumber || 'PENDING',
+          closingTime: '21:00',
+          registrationNumber: user.governmentIdNumber || `REG-${user._id.toString().slice(-6)}`,
+          registrationProof: 'system-generated-proof',
           location: { type: 'Point', coordinates: [0, 0] },
           clinicStatus: 'approved' 
         });
@@ -222,7 +226,7 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
           country: { $arrayElemAt: ['$doctorProfile.country', 0] },
           branchName: { 
             $ifNull: [
-              { $arrayElemAt: ['$branchInfo.name', 0] }, 
+              { $arrayElemAt: ['$branchInfo.clinicName', 0] }, 
               '$clinicName'
             ] 
           },

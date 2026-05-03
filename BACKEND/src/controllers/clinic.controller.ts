@@ -46,13 +46,17 @@ export const getPendingClinics = async (req: Request, res: Response, next: NextF
 export const updateClinicStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, rejectionReason } = z.object({
-      status: z.enum(['pending', 'approved', 'rejected']),
+      status: z.enum(['pending', 'approved', 'rejected', 'suspended']),
       rejectionReason: z.string().optional()
     }).parse(req.body);
 
     const clinic = await Clinic.findByIdAndUpdate(
       req.params.id,
-      { clinicStatus: status, rejectionReason },
+      { 
+        clinicStatus: status, 
+        rejectionReason,
+        verifiedBy: (req as any).user.id
+      },
       { new: true, runValidators: true }
     );
 
@@ -82,15 +86,21 @@ export const getClinic = async (req: Request, res: Response, next: NextFunction)
 };
 
 const clinicSchema = z.object({
-  name: z.string().min(2),
+  clinicName: z.string().min(2),
+  legalName: z.string().min(2),
   clinicType: z.nativeEnum(ClinicType),
   description: z.string().optional(),
   images: z.array(z.string()).optional(),
   
+  // Owner info
+  ownerName: z.string().min(2),
+  ownerPhone: z.string().min(10),
+  ownerEmail: z.string().email(),
+
   // Location
-  addressLine1: z.string(),
+  address: z.string(),
   addressLine2: z.string().optional(),
-  district: z.string(),
+  city: z.string(),
   state: z.string(),
   pincode: z.string(),
   country: z.string().default('India'),
@@ -121,27 +131,23 @@ const clinicSchema = z.object({
 
   // Verification
   registrationNumber: z.string(),
-  registrationCertificate: z.string().optional(),
+  registrationProof: z.string(),
+  addressProof: z.string().optional(),
 });
 
 export const createClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedData = clinicSchema.parse(req.body);
 
-    if (req.user!.role !== UserRole.SUPER_ADMIN) {
-      const existingClinic = await clinicService.getAllClinics({}, req.user!.id);
-      if (existingClinic.length > 0) {
-        return next(new AppError('You have already registered a clinic. You can only update it.', 400));
-      }
-    }
+    // Removed restriction: Admins can now register multiple clinics
     
     let coordinates = validatedData.location?.coordinates;
 
     if (!coordinates) {
       try {
         const geo = await geocodeAddress(
-          validatedData.addressLine1,
-          validatedData.district,
+          validatedData.address,
+          validatedData.city,
           validatedData.state
         );
         coordinates = [geo.lng, geo.lat];
@@ -158,6 +164,7 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
         coordinates,
       },
       owner: req.user!.id as any,
+      createdByAdminId: req.user!.id as any,
     } as any, req.user!.id);
 
     res.status(201).json({

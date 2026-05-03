@@ -38,9 +38,9 @@ export const BranchProvider = ({ children }) => {
         // Super Admin sees all branches
         filteredBranches = allClinics;
       } else if (user?.role === 'admin') {
-        // Admin sees their assigned branches
+        // Admin sees their assigned branches AND clinics they created
         const assignedIds = user.branchIds || (user.branchId ? [user.branchId] : []);
-        filteredBranches = allClinics.filter(b => assignedIds.includes(b._id));
+        filteredBranches = allClinics.filter(b => assignedIds.includes(b._id) || b.createdByAdminId === user._id || b.owner === user._id);
       } else {
         // Others see only their assigned branch
         filteredBranches = allClinics.filter(b => b._id === user?.branchId);

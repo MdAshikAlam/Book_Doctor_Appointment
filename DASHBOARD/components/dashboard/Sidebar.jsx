@@ -71,13 +71,29 @@ const superAdminSections = [
   }
 ];
 
-const adminItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
-  { icon: Users, label: 'Patients', href: '/dashboard/patients' },
-  { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-  { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+const adminSections = [
+  {
+    title: 'Clinic Operations',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+      { icon: Building2, label: 'Clinic Profile', href: '/dashboard/clinics' },
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
+    ]
+  },
+  {
+    title: 'Staffing',
+    items: [
+      { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
+      { icon: Users, label: 'Patients', href: '/dashboard/patients' },
+    ]
+  },
+  {
+    title: 'Account',
+    items: [
+      { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    ]
+  }
 ];
 
 const staffItems = [
@@ -163,9 +179,24 @@ const Sidebar = () => {
               </div>
             ))}
           </div>
+        ) : user?.role === 'admin' ? (
+          <div className="space-y-8">
+            {adminSections.map((section, sIdx) => (
+              <div key={sIdx} className="space-y-2">
+                {!isCollapsed && (
+                  <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
+                    {section.title}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-1">
-            {(user?.role === 'admin' ? adminItems : staffItems).map((item, idx) => renderLink(item, idx))}
+            {staffItems.map((item, idx) => renderLink(item, idx))}
           </div>
         )}
       </nav>
