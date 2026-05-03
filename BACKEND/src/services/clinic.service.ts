@@ -2,11 +2,19 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5000, name } = query;
+  const { lat, lng, radius = 5000, clinicName } = query;
   const filter: any = {};
 
-  if (name) {
-    filter.name = { $regex: name, $options: 'i' };
+  // Status Filtering
+  if (query.status && query.status !== 'all') {
+    filter.clinicStatus = query.status;
+  } else if (!creatorId) {
+    // If no status provided and not a creator, default to approved for public visibility
+    filter.clinicStatus = 'approved';
+  }
+
+  if (clinicName) {
+    filter.clinicName = { $regex: clinicName, $options: 'i' };
   }
 
   if (lat && lng) {
@@ -36,6 +44,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
       filter.$or = [
         { owner: creatorObjectId },
         { createdBy: creatorObjectId },
+        { createdByAdminId: creatorObjectId },
         { parentAdmin: creatorObjectId },
         { parentReceptionist: creatorObjectId }
       ];
@@ -136,7 +145,7 @@ export const updateClinic = async (id: string, ownerId: string, data: Partial<IC
 export const updateClinicStatus = async (id: string, status: string) => {
   const clinic = await Clinic.findByIdAndUpdate(
     id,
-    { verificationStatus: status },
+    { clinicStatus: status },
     { new: true, runValidators: true }
   );
 

@@ -12,16 +12,21 @@ export enum VerificationStatus {
 }
 
 export interface IClinic extends Document {
-  name: string;
-  organizationId: mongoose.Types.ObjectId;
+  clinicName: string;
+  legalName: string;
   clinicType: ClinicType;
   description?: string;
   images: string[];
   
+  // Owner
+  ownerName: string;
+  ownerPhone: string;
+  ownerEmail: string;
+
   // Location
-  addressLine1: string;
+  address: string;
   addressLine2?: string;
-  district: string;
+  city: string;
   state: string;
   pincode: string;
   country: string;
@@ -55,13 +60,16 @@ export interface IClinic extends Document {
 
   // Verification
   registrationNumber: string;
-  registrationCertificate?: string;
-  clinicStatus: 'pending' | 'approved' | 'rejected';
+  registrationProof: string;
+  addressProof?: string;
+  clinicStatus: 'pending' | 'approved' | 'rejected' | 'suspended';
+  verifiedBy?: mongoose.Types.ObjectId;
   rejectionReason?: string;
   slug: string;
 
   // System
   owner: mongoose.Types.ObjectId;
+  createdByAdminId: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   parentAdmin?: mongoose.Types.ObjectId;
   parentReceptionist?: mongoose.Types.ObjectId;
@@ -73,8 +81,8 @@ export interface IClinic extends Document {
 
 const clinicSchema = new Schema<IClinic>(
   {
-    name: { type: String, required: true, trim: true },
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+    clinicName: { type: String, required: true, trim: true },
+    legalName: { type: String, required: true, trim: true },
     clinicType: { 
       type: String, 
       enum: Object.values(ClinicType), 
@@ -84,10 +92,15 @@ const clinicSchema = new Schema<IClinic>(
     description: { type: String },
     images: [{ type: String }],
 
+    // Owner
+    ownerName: { type: String, required: true },
+    ownerPhone: { type: String, required: true },
+    ownerEmail: { type: String, required: true },
+
     // Location
-    addressLine1: { type: String, required: true },
+    address: { type: String, required: true },
     addressLine2: { type: String },
-    district: { type: String, required: true },
+    city: { type: String, required: true },
     state: { type: String, required: true },
     pincode: { type: String, required: true },
     country: { type: String, required: true, default: 'India' },
@@ -120,18 +133,21 @@ const clinicSchema = new Schema<IClinic>(
     averageConsultationFee: { type: Number },
 
     // Verification
-    registrationNumber: { type: String, required: true },
-    registrationCertificate: { type: String },
+    registrationNumber: { type: String, required: true, unique: true },
+    registrationProof: { type: String, required: true },
+    addressProof: { type: String },
     clinicStatus: { 
       type: String, 
-      enum: ['pending', 'approved', 'rejected'], 
+      enum: ['pending', 'approved', 'rejected', 'suspended'], 
       default: 'pending' 
     },
+    verifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String },
     slug: { type: String, unique: true, index: true },
 
     // System
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdByAdminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -143,11 +159,12 @@ const clinicSchema = new Schema<IClinic>(
   { timestamps: true }
 );
 
+clinicSchema.index({ clinicName: 1, city: 1 }, { unique: true });
 clinicSchema.index({ location: '2dsphere' });
 
 clinicSchema.pre('save', function() {
-  if (this.isModified('name')) {
-    this.slug = (this as any).name
+  if (this.isModified('clinicName')) {
+    this.slug = this.clinicName
       .toLowerCase()
       .replace(/[^\w ]+/g, '')
       .replace(/ +/g, '-');

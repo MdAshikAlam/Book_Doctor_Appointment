@@ -23,6 +23,7 @@ import {
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useBranch } from '@/context/BranchContext';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
@@ -38,6 +39,7 @@ const getFullImageUrl = (path) => {
 export default function StaffManagementPage() {
   const { user: currentUser } = useAuth();
   const { branches } = useBranch();
+  const router = useRouter();
   const [staff, setStaff] = useState([]);
   const [hierarchy, setHierarchy] = useState([]);
   const [viewMode, setViewMode] = useState(currentUser?.role === 'super_admin' ? 'hierarchy' : 'list');
@@ -79,6 +81,14 @@ export default function StaffManagementPage() {
   }, [fetchStaff]);
 
   const handleOpenAddModal = () => {
+    if (currentUser?.role === 'admin') {
+      const approvedBranches = branches.filter(b => b.clinicStatus === 'approved');
+      if (approvedBranches.length === 0) {
+        alert("You must have at least one APPROVED clinic before adding staff members. Please wait for the super admin to approve your clinic registration.");
+        router.push('/dashboard/clinics');
+        return;
+      }
+    }
     setEditingUser(null);
     setFormData({ 
       name: '', email: '', password: '', 
@@ -157,8 +167,35 @@ export default function StaffManagementPage() {
     }
   };
 
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Warning for Admins with no clinics */}
+      {currentUser?.role === 'admin' && (!branches || branches.length === 0) && (
+        <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+            <ShieldAlert size={24} />
+          </div>
+          <div>
+            <h3 className="text-amber-900 font-bold text-lg">
+              {branches.length === 0 ? "No Clinics Registered" : "Pending Clinic Approval"}
+            </h3>
+            <p className="text-amber-700 font-medium">
+              {branches.length === 0 
+                ? "To manage staff and receptionists, you must first register your clinic." 
+                : "Your clinic is currently pending approval. Clinical records and staff management are only available once your clinic is approved by a super admin."}
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/dashboard/clinics')}
+              className="mt-4 border-amber-200 text-amber-700 hover:bg-amber-100 font-bold px-6 h-10 rounded-xl"
+            >
+              Register Clinic Now
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -382,9 +419,9 @@ export default function StaffManagementPage() {
                 className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
                 required={formData.role !== 'super_admin'}
               >
-                <option value="">Select a Branch</option>
-                {branches.map(branch => (
-                  <option key={branch._id} value={branch._id}>{branch.name} ({branch.district})</option>
+                <option value="">Select a Clinic</option>
+                {branches.filter(b => currentUser?.role === 'super_admin' || b.clinicStatus === 'approved').map(branch => (
+                  <option key={branch._id} value={branch._id}>{branch.clinicName} ({branch.city})</option>
                 ))}
               </select>
             </div>

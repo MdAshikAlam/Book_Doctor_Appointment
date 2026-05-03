@@ -213,7 +213,7 @@ export default function DoctorsPage() {
       setLoading(true);
       const [res, clinicsRes] = await Promise.all([
         doctorsApi.getAll({ dashboard: true }),
-        clinicsApi.getAll()
+        clinicsApi.getAll({ status: 'approved' })
       ]);
       setDoctors(res.data.doctors || []);
       setClinicsCount(clinicsRes.data.clinics?.length || 0);
@@ -413,7 +413,7 @@ export default function DoctorsPage() {
               <Plus size={20} /> Add New Doctor
             </Button>
             {clinicsCount === 0 && !loading && (
-              <p className="text-xs text-red-500 font-bold mt-2">Please register a clinic first</p>
+              <p className="text-xs text-red-500 font-bold mt-2">Approved clinic required to add doctors</p>
             )}
           </div>
         )}

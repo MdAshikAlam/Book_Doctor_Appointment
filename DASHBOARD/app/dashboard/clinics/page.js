@@ -21,7 +21,11 @@ import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
-  Pencil
+  Pencil,
+  Filter,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { clinicsApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -50,6 +54,7 @@ export default function ClinicsPage() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedClinic, setSelectedClinic] = useState(null);
   
   // Registration Form State
@@ -74,85 +79,18 @@ export default function ClinicsPage() {
   const [slotFormError, setSlotFormError] = useState(null);
   const [slotSuccessMsg, setSlotSuccessMsg] = useState(null);
 
-  const handleApprove = async (id) => {
-    try {
-      await clinicsApi.approve(id);
-      setSuccessMsg('Clinic approved successfully!');
-      fetchData();
-      setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to approve clinic: ' + err.message);
-    }
-  };
-
-  const handleEdit = (clinic) => {
-    setEditingClinicId(clinic._id);
-    setFormData({
-      name: clinic.name || '',
-      clinicType: clinic.clinicType || 'Private Clinic',
-      description: clinic.description || '',
-      images: clinic.images || [],
-      addressLine1: clinic.addressLine1 || '',
-      addressLine2: clinic.addressLine2 || '',
-      district: clinic.district || '',
-      state: clinic.state || '',
-      pincode: clinic.pincode || '',
-      country: clinic.country || 'India',
-      phone: clinic.phone || '',
-      alternatePhone: clinic.alternatePhone || '',
-      email: clinic.email || '',
-      openingTime: clinic.openingTime || '09:00',
-      closingTime: clinic.closingTime || '21:00',
-      workingDays: clinic.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      emergencyAvailable: clinic.emergencyAvailable || false,
-      doctors: clinic.doctors?.map(d => typeof d === 'object' ? d._id : d) || [],
-      services: clinic.services || [],
-      facilities: clinic.facilities || [],
-      registrationFee: clinic.registrationFee || '',
-      registrationNumber: clinic.registrationNumber || '',
-      registrationCertificate: clinic.registrationCertificate || ''
-    });
-    setIsModalOpen(true);
-  };
-
-  const resetForm = () => {
-    setEditingClinicId(null);
-    setFormData({
-      name: '',
-      clinicType: 'Private Clinic',
-      description: '',
-      images: [],
-      addressLine1: '',
-      addressLine2: '',
-      district: '',
-      state: '',
-      pincode: '',
-      country: 'India',
-      phone: '',
-      alternatePhone: '',
-      email: '',
-      openingTime: '09:00',
-      closingTime: '21:00',
-      workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      emergencyAvailable: false,
-      doctors: [],
-      services: [],
-      facilities: [],
-      registrationFee: '',
-      registrationNumber: '',
-      registrationCertificate: ''
-    });
-  };
-
   const [formData, setFormData] = useState({
-    name: '',
+    clinicName: '',
+    legalName: '',
+    ownerName: '',
+    ownerPhone: '',
+    ownerEmail: '',
     clinicType: 'Private Clinic',
     description: '',
     images: [],
-    addressLine1: '',
+    address: '',
     addressLine2: '',
-    district: '',
+    city: '',
     state: '',
     pincode: '',
     country: 'India',
@@ -168,25 +106,109 @@ export default function ClinicsPage() {
     facilities: [],
     registrationFee: '',
     registrationNumber: '',
-    registrationCertificate: ''
+    registrationProof: '',
+    addressProof: ''
   });
+
+  const handleApprove = async (id) => {
+    try {
+      await clinicsApi.approve(id);
+      setSuccessMsg('Clinic approved successfully!');
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to approve clinic: ' + err.message);
+    }
+  };
+
+  const handleEdit = (clinic) => {
+    setEditingClinicId(clinic._id);
+    setFormData({
+      clinicName: clinic.clinicName || '',
+      legalName: clinic.legalName || '',
+      ownerName: clinic.ownerName || '',
+      ownerPhone: clinic.ownerPhone || '',
+      ownerEmail: clinic.ownerEmail || '',
+      clinicType: clinic.clinicType || 'Private Clinic',
+      description: clinic.description || '',
+      images: clinic.images || [],
+      address: clinic.address || '',
+      addressLine2: clinic.addressLine2 || '',
+      city: clinic.city || '',
+      state: clinic.state || '',
+      pincode: clinic.pincode || '',
+      country: clinic.country || 'India',
+      phone: clinic.phone || '',
+      alternatePhone: clinic.alternatePhone || '',
+      email: clinic.email || '',
+      openingTime: clinic.openingTime || '09:00',
+      closingTime: clinic.closingTime || '21:00',
+      workingDays: clinic.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      emergencyAvailable: clinic.emergencyAvailable || false,
+      doctors: clinic.doctors?.map(d => typeof d === 'object' ? d._id : d) || [],
+      services: clinic.services || [],
+      facilities: clinic.facilities || [],
+      registrationFee: clinic.registrationFee || '',
+      registrationNumber: clinic.registrationNumber || '',
+      registrationProof: clinic.registrationProof || '',
+      addressProof: clinic.addressProof || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingClinicId(null);
+    setFormData({
+      clinicName: '',
+      legalName: '',
+      ownerName: '',
+      ownerPhone: '',
+      ownerEmail: '',
+      clinicType: 'Private Clinic',
+      description: '',
+      images: [],
+      address: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pincode: '',
+      country: 'India',
+      phone: '',
+      alternatePhone: '',
+      email: '',
+      openingTime: '09:00',
+      closingTime: '21:00',
+      workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      emergencyAvailable: false,
+      doctors: [],
+      services: [],
+      facilities: [],
+      registrationFee: '',
+      registrationNumber: '',
+      registrationProof: '',
+      addressProof: ''
+    });
+  };
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [statusFilter]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      let params = {};
+      let params = {
+        status: statusFilter
+      };
       
-      // Try to get user's location for proximity sorting
       try {
         const position = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
         });
         params = {
+          ...params,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           radius: 100000 // 100km radius
@@ -209,9 +231,9 @@ export default function ClinicsPage() {
   };
 
   const filteredClinics = clinics.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.addressLine1 && c.addressLine1.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (c.district && c.district.toLowerCase().includes(searchTerm.toLowerCase()))
+    c.clinicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.address && c.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.city && c.city.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getDoctorsInClinic = (clinicId) => {
@@ -260,7 +282,6 @@ export default function ClinicsPage() {
       const res = await doctorsApi.upload(uploadData);
       
       if (field === 'images') {
-        // Set images as an array containing the uploaded URL
         setFormData(prev => ({ ...prev, images: [res.data.url] }));
       } else {
         setFormData(prev => ({ ...prev, [field]: res.data.url }));
@@ -339,6 +360,16 @@ export default function ClinicsPage() {
     }
   };
 
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'approved': return { color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: CheckCircle };
+      case 'pending': return { color: 'bg-amber-50 text-amber-600 border-amber-100', icon: Clock };
+      case 'rejected': return { color: 'bg-red-50 text-red-600 border-red-100', icon: XCircle };
+      case 'suspended': return { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: AlertTriangle };
+      default: return { color: 'bg-slate-50 text-slate-400', icon: Clock };
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
@@ -349,7 +380,7 @@ export default function ClinicsPage() {
           </h1>
           <p className="text-slate-500 mt-1 font-medium text-lg">Search for partner clinics and view their registered medical teams.</p>
         </div>
-        {(user?.role === 'super_admin' || clinics.length === 0) && (
+        {(user?.role === 'super_admin' || user?.role === 'admin') && (
           <Button 
             onClick={() => {
               resetForm();
@@ -362,7 +393,35 @@ export default function ClinicsPage() {
         )}
       </div>
 
+      {/* Filters & Tabs */}
+      <div className="bg-white p-4 rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="relative flex-1 group w-full">
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Search clinics by name, city or address..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-14 pl-14 pr-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
+          />
+        </div>
 
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-full md:w-auto overflow-x-auto custom-scrollbar">
+           {['all', 'approved', 'pending', 'rejected'].map((tab) => (
+             <button
+               key={tab}
+               onClick={() => setStatusFilter(tab)}
+               className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                 statusFilter === tab 
+                   ? 'bg-white text-blue-600 shadow-sm' 
+                   : 'text-slate-500 hover:text-slate-700'
+               }`}
+             >
+               {tab}
+             </button>
+           ))}
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -373,7 +432,8 @@ export default function ClinicsPage() {
         <div className="grid grid-cols-1 gap-8">
           {filteredClinics.length > 0 ? filteredClinics.map((clinic) => {
             const clinicDoctors = getDoctorsInClinic(clinic._id);
-            const isSelected = selectedClinic?._id === clinic._id;
+            const statusCfg = getStatusConfig(clinic.clinicStatus);
+            const StatusIcon = statusCfg.icon;
 
             return (
               <div
@@ -385,15 +445,21 @@ export default function ClinicsPage() {
                     <div className="flex items-center gap-5">
                       <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-105 overflow-hidden bg-slate-900">
                         {clinic.images?.[0] ? (
-                          <img src={getFullImageUrl(clinic.images[0])} alt={clinic.name} className="w-full h-full object-cover" />
+                          <img src={getFullImageUrl(clinic.images[0])} alt={clinic.clinicName} className="w-full h-full object-cover" />
                         ) : (
                           <Home size={32} />
                         )}
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black text-slate-900 leading-tight mb-1">{clinic.name}</h3>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-2xl font-black text-slate-900 leading-tight">{clinic.clinicName}</h3>
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border ${statusCfg.color}`}>
+                            <StatusIcon size={12} />
+                            {clinic.clinicStatus}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
-                          <MapPin size={14} /> {clinic.district}, {clinic.state}
+                          <MapPin size={14} /> {clinic.city}, {clinic.state}
                         </div>
                       </div>
                     </div>
@@ -410,7 +476,7 @@ export default function ClinicsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
                        <Users size={18} className="text-blue-500" />
                        <div>
@@ -423,6 +489,20 @@ export default function ClinicsPage() {
                        <div>
                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
                          <p className="text-sm font-bold text-slate-900">{clinic.phone}</p>
+                       </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
+                       <Mail size={18} className="text-indigo-500" />
+                       <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                         <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{clinic.email}</p>
+                       </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
+                       <CreditCard size={18} className="text-amber-500" />
+                       <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reg. Fee</p>
+                         <p className="text-sm font-bold text-slate-900">₹{clinic.registrationFee || '0'}</p>
                        </div>
                     </div>
                   </div>
@@ -438,21 +518,33 @@ export default function ClinicsPage() {
                              </div>
                              <div>
                                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                                  <ShieldCheck size={14} /> Verification
+                                  <ShieldCheck size={14} /> Verification Action
                                 </h4>
                                 <div className="flex items-center gap-3">
-                                  <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                    clinic.verificationStatus === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                                  }`}>
-                                    {clinic.verificationStatus}
-                                  </span>
-                                  {clinic.verificationStatus !== 'Approved' && (user?.role === 'admin' || user?.role === 'super_admin') && (
-                                    <button 
-                                      onClick={() => handleApprove(clinic._id)}
-                                      className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
-                                    >
-                                      Approve
-                                    </button>
+                                  {clinic.clinicStatus !== 'approved' && (user?.role === 'super_admin') && (
+                                    <div className="flex gap-2">
+                                      <button 
+                                        onClick={() => handleApprove(clinic._id)}
+                                        className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 flex items-center gap-2"
+                                      >
+                                        <CheckCircle size={14} /> Approve
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider hover:bg-red-100 transition-all flex items-center gap-2"
+                                      >
+                                        <XCircle size={14} /> Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                  {clinic.clinicStatus === 'approved' && (
+                                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-2">
+                                      <CheckCircle2 size={16} /> Verified by System
+                                    </span>
+                                  )}
+                                  {clinic.clinicStatus === 'pending' && user?.role !== 'super_admin' && (
+                                    <span className="text-xs font-bold text-amber-500 flex items-center gap-2">
+                                      <Clock size={16} /> Awaiting Verification
+                                    </span>
                                   )}
                                 </div>
                              </div>
@@ -462,9 +554,10 @@ export default function ClinicsPage() {
                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                               <Stethoscope size={14} /> Doctors in this Clinic
                             </h4>
-                            {clinicDoctors.length > 0 && (
+                            {clinicDoctors.length > 0 && clinic.clinicStatus === 'approved' && (
                               <button 
                                 onClick={() => {
+                                  setSelectedClinic(clinic);
                                   setSlotFormData(prev => ({...prev, doctorId: clinicDoctors[0]._id}));
                                   setIsSlotModalOpen(true);
                                 }}
@@ -502,9 +595,9 @@ export default function ClinicsPage() {
             );
           }) : (
             <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-              <Home size={64} className="text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-500 font-bold text-xl">No clinics found matching "{searchTerm}"</p>
-              <button onClick={() => setSearchTerm('')} className="text-blue-600 font-bold mt-2 hover:underline">Clear search</button>
+              <Filter size={64} className="text-slate-200 mx-auto mb-4" />
+              <p className="text-slate-500 font-bold text-xl">No {statusFilter !== 'all' ? statusFilter : ''} clinics found matching "{searchTerm}"</p>
+              <button onClick={() => {setSearchTerm(''); setStatusFilter('all');}} className="text-blue-600 font-bold mt-2 hover:underline">Clear filters</button>
             </div>
           )}
         </div>
@@ -529,7 +622,7 @@ export default function ClinicsPage() {
             >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900">Register New Clinic</h2>
+                  <h2 className="text-2xl font-black text-slate-900">{editingClinicId ? 'Edit Clinic' : 'Register New Clinic'}</h2>
                   <p className="text-sm text-slate-500 font-medium">Fill in the clinical and administrative details below.</p>
                 </div>
                 <button 
@@ -551,10 +644,18 @@ export default function ClinicsPage() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Input 
-                        label="Clinic Name" 
-                        name="name" 
+                        label="Clinic Display Name" 
+                        name="clinicName" 
                         placeholder="e.g. Apollo Healthcare" 
-                        value={formData.name} 
+                        value={formData.clinicName} 
+                        onChange={handleInputChange} 
+                        required 
+                      />
+                      <Input 
+                        label="Legal Registered Name" 
+                        name="legalName" 
+                        placeholder="e.g. Apollo Hospitals Enterprise Ltd" 
+                        value={formData.legalName} 
                         onChange={handleInputChange} 
                         required 
                       />
@@ -610,34 +711,49 @@ export default function ClinicsPage() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2">
-                        <Input label="Address Line 1" name="addressLine1" value={formData.addressLine1} onChange={handleInputChange} required />
+                        <Input label="Detailed Address" name="address" value={formData.address} onChange={handleInputChange} required />
                       </div>
-                      <Input label="Address Line 2 (Optional)" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} />
-                      <Input label="District" name="district" value={formData.district} onChange={handleInputChange} required />
+                      <Input label="Building/Floor (Optional)" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} />
+                      <Input label="City" name="city" value={formData.city} onChange={handleInputChange} required />
                       <Input label="State" name="state" value={formData.state} onChange={handleInputChange} required />
                       <Input label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} required />
                       <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} required />
                     </div>
                   </section>
 
-                  {/* 3. Contact Details */}
+                  {/* 3. Owner Details */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      3. Contact Details
+                      3. Owner Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} icon={Phone} required />
-                       <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleInputChange} icon={Phone} />
-                       <Input label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} required />
+                       <Input label="Owner Full Name" name="ownerName" value={formData.ownerName} onChange={handleInputChange} required />
+                       <Input label="Owner Phone" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} required />
+                       <div className="md:col-span-2">
+                         <Input label="Owner Email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} required />
+                       </div>
                     </div>
                   </section>
 
-                  {/* 4. Timing */}
+                  {/* 4. Contact Details */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      4. Working Hours
+                      4. Clinic Contact
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <Input label="Public Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} icon={Phone} required />
+                       <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleInputChange} icon={Phone} />
+                       <Input label="Public Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} required />
+                    </div>
+                  </section>
+
+                  {/* 5. Timing */}
+                  <section className="space-y-6">
+                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                      5. Working Hours
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        <Input label="Opening Time" name="openingTime" type="time" value={formData.openingTime} onChange={handleInputChange} icon={Clock} required />
@@ -672,11 +788,11 @@ export default function ClinicsPage() {
                     </div>
                   </section>
 
-                  {/* 5. Doctors Mapping */}
+                  {/* 6. Doctors Mapping */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      5. Doctors Mapping
+                      6. Doctors Mapping
                     </h3>
                     <div className="space-y-3">
                         <label className="text-sm font-bold text-slate-700 ml-1">Select Available Doctors</label>
@@ -700,11 +816,11 @@ export default function ClinicsPage() {
                     </div>
                   </section>
 
-                  {/* 6. Facilities & Services */}
+                  {/* 7. Facilities & Services */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      6. Facilities & Services
+                      7. Facilities & Services
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3">
@@ -742,48 +858,74 @@ export default function ClinicsPage() {
                     </div>
                   </section>
 
-                  {/* 7. Fees */}
+                  {/* 8. Fee Settings */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      7. Fee Settings
+                      8. Fee Settings
                     </h3>
                     <div className="grid grid-cols-1 gap-6">
                        <Input label="Registration Fee" name="registrationFee" type="number" value={formData.registrationFee} onChange={handleInputChange} icon={CreditCard} />
                     </div>
                   </section>
 
-                  {/* 8. Verification */}
+                  {/* 9. Verification Details */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      8. Verification Details
+                      9. Verification Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Clinic Registration Number" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required />
+                       <Input label="Registration Number (GST/License)" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required />
                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Registration Certificate</label>
+                          <label className="text-sm font-bold text-slate-700 ml-1">Registration Proof (Mandatory)</label>
                            <div className="flex items-center gap-4">
-                             {formData.registrationCertificate && formData.registrationCertificate.match(/\.(jpg|jpeg|png|webp|gif)$|image/i) && (
+                             {formData.registrationProof && formData.registrationProof.match(/\.(jpg|jpeg|png|webp|gif)$|image/i) && (
                                 <div className="w-11 h-11 rounded-lg overflow-hidden border border-emerald-200 shadow-sm flex-shrink-0">
-                                   <img src={getFullImageUrl(formData.registrationCertificate)} alt="Certificate" className="w-full h-full object-cover" />
+                                   <img src={getFullImageUrl(formData.registrationProof)} alt="Proof" className="w-full h-full object-cover" />
                                 </div>
                              )}
                              <label className="flex-1 block">
                                 <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                  formData.registrationCertificate 
+                                  formData.registrationProof 
                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
                                     : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
                                 }`}>
                                    {isUploading ? (
                                       <><Loader2 size={18} className="animate-spin" /> Uploading...</>
-                                   ) : formData.registrationCertificate ? (
-                                      <><CheckCircle2 size={18} /> Certificate Attached</>
+                                   ) : formData.registrationProof ? (
+                                      <><CheckCircle2 size={18} /> Proof Attached</>
                                    ) : (
-                                      <><Upload size={18} /> Upload PDF/Image</>
+                                      <><Upload size={18} /> Upload Proof (PDF/IMG)</>
                                    )}
                                 </div>
-                                <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'registrationCertificate')} />
+                                <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'registrationProof')} />
+                             </label>
+                           </div>
+                       </div>
+                       <div className="md:col-span-2 space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Address Proof (Optional)</label>
+                           <div className="flex items-center gap-4">
+                             {formData.addressProof && formData.addressProof.match(/\.(jpg|jpeg|png|webp|gif)$|image/i) && (
+                                <div className="w-11 h-11 rounded-lg overflow-hidden border border-blue-200 shadow-sm flex-shrink-0">
+                                   <img src={getFullImageUrl(formData.addressProof)} alt="Address Proof" className="w-full h-full object-cover" />
+                                </div>
+                             )}
+                             <label className="flex-1 block">
+                                <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
+                                  formData.addressProof 
+                                    ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
+                                }`}>
+                                   {isUploading ? (
+                                      <><Loader2 size={18} className="animate-spin" /> Uploading...</>
+                                   ) : formData.addressProof ? (
+                                      <><CheckCircle2 size={18} /> Address Proof Attached</>
+                                   ) : (
+                                      <><Upload size={18} /> Upload Address Proof</>
+                                   )}
+                                </div>
+                                <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'addressProof')} />
                              </label>
                            </div>
                        </div>
@@ -817,7 +959,7 @@ export default function ClinicsPage() {
                   disabled={isSaving}
                   className="flex-[2] h-14 bg-blue-600 text-white font-extrabold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
                 >
-                  {isSaving ? <Loader2 size={24} className="animate-spin" /> : 'Register Clinic'}
+                  {isSaving ? <Loader2 size={24} className="animate-spin" /> : editingClinicId ? 'Save Changes' : 'Register Clinic'}
                 </Button>
               </div>
             </motion.div>
