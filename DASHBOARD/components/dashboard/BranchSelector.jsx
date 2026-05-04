@@ -1,25 +1,25 @@
 "use client"
 
 import React, { useEffect } from 'react';
-import { useBranch } from '@/context/BranchContext';
+import { useClinic } from '@/context/BranchContext';
 import { MapPin, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const BranchSelector = () => {
-  const { branches, selectedBranchId, changeBranch, fetchBranches, loading } = useBranch();
+  const { clinics, selectedClinicId, changeClinic, fetchClinics, loading } = useClinic();
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      fetchBranches();
+      fetchClinics();
     }
   }, [user]);
 
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+  if (!user || user.role !== 'admin') {
     return null;
   }
 
-  const selectedBranch = branches.find(b => b._id === selectedBranchId);
+  const selectedClinic = clinics.find(b => b._id === selectedClinicId);
 
   return (
     <div className="relative group">
@@ -28,10 +28,10 @@ const BranchSelector = () => {
           <MapPin size={18} />
         </div>
         <div className="text-left pr-2">
-          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-1">Branch</p>
+          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-1">Clinic</p>
           <div className="flex items-center gap-1">
             <p className="text-sm font-bold text-slate-900 leading-none">
-              {loading ? 'Loading...' : (selectedBranch?.name || (user.role === 'super_admin' && !selectedBranchId ? 'All Branches' : 'Select Branch'))}
+              {loading ? 'Loading...' : (selectedClinic?.clinicName || selectedClinic?.name || (user.role === 'super_admin' && !selectedClinicId ? 'All Clinics' : 'Select Clinic'))}
             </p>
             <ChevronDown size={14} className="text-slate-400 group-hover:text-primary transition-colors" />
           </div>
@@ -46,35 +46,35 @@ const BranchSelector = () => {
         <div className="max-h-60 overflow-y-auto">
           {user?.role === 'super_admin' && (
             <button
-              onClick={() => changeBranch('all')}
+              onClick={() => changeClinic('all')}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                !selectedBranchId 
+                !selectedClinicId 
                   ? 'bg-primary/5 text-primary font-bold' 
                   : 'text-slate-600 hover:bg-slate-50 hover:text-primary'
               }`}
             >
-              <div className={`w-2 h-2 rounded-full ${!selectedBranchId ? 'bg-primary' : 'bg-transparent'}`}></div>
-              All Branches (Global Mode)
+              <div className={`w-2 h-2 rounded-full ${!selectedClinicId ? 'bg-primary' : 'bg-transparent'}`}></div>
+              All Clinics (Global Mode)
             </button>
           )}
           
-          {branches.map((branch) => (
+          {clinics.map((branch) => (
             <button
               key={branch._id}
-              onClick={() => changeBranch(branch._id)}
+              onClick={() => changeClinic(branch._id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                selectedBranchId === branch._id 
+                selectedClinicId === branch._id 
                   ? 'bg-primary/5 text-primary font-bold' 
                   : 'text-slate-600 hover:bg-slate-50 hover:text-primary'
               }`}
             >
-              <div className={`w-2 h-2 rounded-full ${selectedBranchId === branch._id ? 'bg-primary' : 'bg-transparent'}`}></div>
-              {branch.name}
+              <div className={`w-2 h-2 rounded-full ${selectedClinicId === branch._id ? 'bg-primary' : 'bg-transparent'}`}></div>
+              {branch.clinicName || branch.name}
               <span className="ml-auto text-[10px] font-medium text-slate-400">{branch.district}</span>
             </button>
           ))}
-          {branches.length === 0 && !loading && (
-            <p className="px-4 py-3 text-xs text-slate-500 italic">No branches found</p>
+          {clinics.length === 0 && !loading && (
+            <p className="px-4 py-3 text-xs text-slate-500 italic">No clinics found</p>
           )}
         </div>
       </div>

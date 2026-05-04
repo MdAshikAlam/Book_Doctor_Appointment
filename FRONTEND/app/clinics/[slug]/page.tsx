@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { 
-  Loader2, MapPin, Phone, Mail, Globe, Clock, 
+import {
+  Loader2, MapPin, Phone, Mail, Globe, Clock,
   CheckCircle2, Hospital, Stethoscope, ArrowRight,
   ShieldCheck, Info, Award as AwardIcon, Users as UsersIcon, Star as StarIcon, MessageSquare as MessageSquareIcon,
   Send as SendIcon, Lock
@@ -17,11 +17,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5
 type ClinicDetails = {
   _id: string;
   name: string;
+  clinicName: string;
   clinicType: string;
   description?: string;
   images: string[];
   addressLine1: string;
   addressLine2?: string;
+  city: string;
   district: string;
   state: string;
   pincode: string;
@@ -44,6 +46,7 @@ type ClinicDetails = {
     _id: string;
     slug?: string;
     specialty: string;
+    status: string;
     user: {
       name: string;
       avatar?: string;
@@ -57,7 +60,7 @@ export default function ClinicDetailsPage() {
   const [clinic, setClinic] = useState<ClinicDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [reviews, setReviews] = useState<any[]>([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -120,7 +123,7 @@ export default function ClinicDetailsPage() {
         },
         body: JSON.stringify(newReview)
       });
-      
+
       const data = await res.json();
       if (data.status === "success") {
         setNewReview({ rating: 5, comment: "" });
@@ -185,12 +188,12 @@ export default function ClinicDetailsPage() {
   return (
     <div className="bg-[#fafbfc] min-h-screen pt-24 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header Section */}
         <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden mb-8">
           <div className="relative h-64 md:h-80 w-full overflow-hidden">
-            <img 
-              src={clinic.images?.[0] ? resolveImageUrl(clinic.images[0]) || "" : "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop"} 
+            <img
+              src={clinic.images?.[0] ? resolveImageUrl(clinic.images[0]) || "" : "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop"}
               alt={clinic.name}
               className="w-full h-full object-cover"
             />
@@ -206,7 +209,7 @@ export default function ClinicDetailsPage() {
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl md:text-5xl font-black mb-2">{clinic.name}</h1>
+              <h1 className="text-3xl md:text-5xl font-black mb-2">{clinic.clinicName}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 font-bold">
                 <p className="flex items-center gap-2">
                   <MapPin size={18} className="text-emerald-400" />
@@ -223,143 +226,154 @@ export default function ClinicDetailsPage() {
           </div>
 
           <div className="p-8 md:p-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-gray-50">
-             <div className="flex flex-wrap gap-8">
-                <div className="flex flex-col">
-                   <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Doctors</span>
-                   <span className="text-xl font-black text-gray-900">{clinic.doctors?.length || 0} Specialists</span>
-                </div>
-                <div className="flex flex-col">
-                   <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Timings</span>
-                   <span className="text-xl font-black text-gray-900">{clinic.openingTime} - {clinic.closingTime}</span>
-                </div>
-                <div className="flex flex-col">
-                   <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Registration</span>
-                   <span className="text-xl font-black text-emerald-600">₹{clinic.registrationFee || 0}</span>
-                </div>
-             </div>
-             <button className="bg-primary text-white px-10 py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all flex items-center gap-3">
-                Book Consultation <ArrowRight size={20} />
-             </button>
+            <div className="flex flex-wrap gap-8">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Doctors</span>
+                <span className="text-xl font-black text-gray-900">{clinic.doctors?.length || 0} Specialists</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Timings</span>
+                <span className="text-xl font-black text-gray-900">{clinic.openingTime} - {clinic.closingTime}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Registration</span>
+                <span className="text-xl font-black text-emerald-600">₹{clinic.registrationFee || 0}</span>
+              </div>
+            </div>
+            <button className="bg-primary text-white px-10 py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all flex items-center gap-3">
+              Book Consultation <ArrowRight size={20} />
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3">
-             {/* Left Column: About & Services */}
-             <div className="lg:col-span-2 p-8 md:p-12 border-r border-gray-50 space-y-12">
-                <section>
-                   <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                      <div className="w-2 h-8 bg-primary rounded-full"></div>
-                      About the Facility
-                   </h3>
-                   <p className="text-gray-600 leading-loose text-lg font-medium">
-                      {clinic.description || `Welcome to ${clinic.name}, a premier ${clinic.clinicType} located in ${clinic.district}. Our facility is dedicated to providing high-quality medical services with a patient-centric approach.`}
-                   </p>
-                </section>
+            {/* Left Column: About & Services */}
+            <div className="lg:col-span-2 p-8 md:p-12 border-r border-gray-50 space-y-12">
+              <section>
+                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-primary rounded-full"></div>
+                  About the Facility
+                </h3>
+                <p className="text-gray-600 leading-loose text-lg font-medium">
+                  {clinic.description || `Welcome to ${clinic.name}, a premier ${clinic.clinicType} located in ${clinic.district}. Our facility is dedicated to providing high-quality medical services with a patient-centric approach.`}
+                </p>
+              </section>
 
-                <section>
-                   <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
-                      <div className="w-2 h-8 bg-emerald-500 rounded-full"></div>
-                      Available Services
-                   </h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {clinic.services?.map((service, index) => (
-                        <div key={index} className="flex items-center gap-4 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group">
-                           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                              <Stethoscope size={20} />
-                           </div>
-                           <span className="font-black text-gray-800">{service}</span>
+              <section>
+                <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-emerald-500 rounded-full"></div>
+                  Available Services
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {clinic.services?.map((service, index) => (
+                    <div key={index} className="flex items-center gap-4 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <Stethoscope size={20} />
+                      </div>
+                      <span className="font-black text-gray-800">{service}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
+                  Medical Staff
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {clinic.doctors?.map((doc) => (
+                      <Link href={`/doctors/${doc.slug || doc._id}`} key={doc._id} className="flex items-center gap-4 p-4 border border-gray-100 rounded-3xl hover:border-primary hover:shadow-lg transition-all group">
+                        <img
+                          src={doc.user?.avatar ? resolveImageUrl(doc.user.avatar) || "" : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.user?.name || 'Doctor')}&background=random`}
+                          alt={doc.user?.name || 'Doctor'}
+                          className="w-16 h-16 rounded-2xl object-cover"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-black text-gray-900 group-hover:text-primary transition-colors">Dr. {doc.user?.name || 'Unknown'}</h4>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{doc.specialty}</p>
+                          {doc.status === 'submitted' && (
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black uppercase tracking-tighter rounded-full border border-amber-100">
+                              Verification Pending
+                            </span>
+                          )}
                         </div>
-                      ))}
-                   </div>
-                </section>
-
-                <section>
-                   <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
-                      <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
-                      Medical Staff
-                   </h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {clinic.doctors?.map((doc) => (
-                        <Link href={`/doctors/${doc.slug || doc._id}`} key={doc._id} className="flex items-center gap-4 p-4 border border-gray-100 rounded-3xl hover:border-primary hover:shadow-lg transition-all group">
-                           <img 
-                              src={doc.user.avatar ? resolveImageUrl(doc.user.avatar) || "" : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.user.name)}&background=random`} 
-                              alt={doc.user.name}
-                              className="w-16 h-16 rounded-2xl object-cover"
-                           />
-                           <div className="flex-1">
-                              <h4 className="font-black text-gray-900 group-hover:text-primary transition-colors">Dr. {doc.user.name}</h4>
-                              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{doc.specialty}</p>
-                           </div>
-                           <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                              <ArrowRight size={18} />
-                           </div>
-                        </Link>
-                      ))}
-                   </div>
-                </section>
-             </div>
-
-             {/* Right Column: Contact & Location */}
-             <div className="bg-gray-50/30 p-8 md:p-12 space-y-10">
-                <section>
-                   <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Contact Details</h4>
-                   <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                         <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
-                            <Phone size={18} />
-                         </div>
-                         <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Phone</p>
-                            <p className="font-black text-gray-900">{clinic.phone}</p>
-                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                         <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
-                            <Mail size={18} />
-                         </div>
-                         <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Email</p>
-                            <p className="font-black text-gray-900">{clinic.email}</p>
-                         </div>
-                      </div>
-                      {clinic.website && (
-                        <div className="flex items-center gap-4">
-                           <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
-                              <Globe size={18} />
-                           </div>
-                           <div>
-                              <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Website</p>
-                              <p className="font-black text-gray-900">{clinic.website}</p>
-                           </div>
+                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                          <ArrowRight size={18} />
                         </div>
-                      )}
-                   </div>
-                </section>
-
-                <section>
-                   <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Facility Location</h4>
-                   <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm mb-6">
-                      <p className="text-gray-600 font-bold leading-relaxed">
-                         {fullAddress}
-                      </p>
-                   </div>
-                   <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2">
-                      <MapPin size={18} /> Get Directions
-                   </button>
-                </section>
-
-                <section>
-                   <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Working Hours</h4>
-                   <div className="space-y-3">
-                      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
-                         <span className="font-bold text-gray-600">Weekdays</span>
-                         <span className="font-black text-primary">{clinic.openingTime} - {clinic.closingTime}</span>
+                      </Link>
+                    ))}
+                    {(!clinic.doctors || clinic.doctors.length === 0) && (
+                      <div className="col-span-full py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 text-center">
+                        <Stethoscope size={40} className="text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-400 font-bold italic">No medical staff listed for this facility yet.</p>
                       </div>
-                      <div className="p-4 rounded-2xl bg-primary/5 text-primary text-xs font-black uppercase tracking-widest text-center">
-                         {clinic.workingDays?.join(" • ")}
+                    )}
+                </div>
+              </section>
+            </div>
+
+            {/* Right Column: Contact & Location */}
+            <div className="bg-gray-50/30 p-8 md:p-12 space-y-10">
+              <section>
+                <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Contact Details</h4>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
+                      <Phone size={18} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Phone</p>
+                      <p className="font-black text-gray-900">{clinic.phone}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
+                      <Mail size={18} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Email</p>
+                      <p className="font-black text-gray-900">{clinic.email}</p>
+                    </div>
+                  </div>
+                  {clinic.website && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
+                        <Globe size={18} />
                       </div>
-                   </div>
-                </section>
-             </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Website</p>
+                        <p className="font-black text-gray-900">{clinic.website}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section>
+                <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Facility Location</h4>
+                <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm mb-6">
+                  <p className="text-gray-600 font-bold leading-relaxed">
+                    {fullAddress}
+                  </p>
+                </div>
+                <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2">
+                  <MapPin size={18} /> Get Directions
+                </button>
+              </section>
+
+              <section>
+                <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Working Hours</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+                    <span className="font-bold text-gray-600">Weekdays</span>
+                    <span className="font-black text-primary">{clinic.openingTime} - {clinic.closingTime}</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-primary/5 text-primary text-xs font-black uppercase tracking-widest text-center">
+                    {clinic.workingDays?.join(" • ")}
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
 
@@ -374,7 +388,7 @@ export default function ClinicDetailsPage() {
                 </h3>
                 <p className="text-gray-500 font-medium">Read what our patients have to say about our medical services.</p>
               </div>
-              
+
               {clinic.reviewCount > 0 && (
                 <div className="flex items-center gap-6 bg-gray-50 px-8 py-4 rounded-3xl border border-gray-100">
                   <div className="text-center border-r border-gray-200 pr-6">
@@ -438,7 +452,7 @@ export default function ClinicDetailsPage() {
                 <h4 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
                   <AwardIcon size={24} className="text-primary" /> Write a Review
                 </h4>
-                
+
                 {isAuthenticated ? (
                   <form onSubmit={handleReviewSubmit} className="space-y-6">
                     <div>
@@ -449,9 +463,8 @@ export default function ClinicDetailsPage() {
                             key={star}
                             type="button"
                             onClick={() => setNewReview({ ...newReview, rating: star })}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                              newReview.rating >= star ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-100' : 'bg-gray-50 text-gray-300 hover:text-yellow-400'
-                            }`}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${newReview.rating >= star ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-100' : 'bg-gray-50 text-gray-300 hover:text-yellow-400'
+                              }`}
                           >
                             <StarIcon size={20} fill={newReview.rating >= star ? "currentColor" : "none"} />
                           </button>
@@ -459,7 +472,7 @@ export default function ClinicDetailsPage() {
                         <span className="ml-auto font-black text-gray-900 text-lg">{newReview.rating}/5</span>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Your Experience</label>
                       <textarea

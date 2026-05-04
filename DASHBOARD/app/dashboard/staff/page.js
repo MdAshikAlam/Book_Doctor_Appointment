@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useBranch } from '@/context/BranchContext';
+import { useClinic } from '@/context/BranchContext';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -38,7 +38,7 @@ const getFullImageUrl = (path) => {
 
 export default function StaffManagementPage() {
   const { user: currentUser } = useAuth();
-  const { branches } = useBranch();
+  const { clinics, selectedClinic, selectedClinicId } = useClinic();
   const router = useRouter();
   const [staff, setStaff] = useState([]);
   const [hierarchy, setHierarchy] = useState([]);
@@ -57,6 +57,7 @@ export default function StaffManagementPage() {
     password: '',
     role: 'receptionist',
     phone: '',
+    clinicId: '',
   });
 
   const fetchStaff = useCallback(async () => {
@@ -82,8 +83,8 @@ export default function StaffManagementPage() {
 
   const handleOpenAddModal = () => {
     if (currentUser?.role === 'admin') {
-      const approvedBranches = branches.filter(b => b.clinicStatus === 'approved');
-      if (approvedBranches.length === 0) {
+      const approvedClinics = clinics.filter(b => b.clinicStatus === 'approved');
+      if (approvedClinics.length === 0) {
         alert("You must have at least one APPROVED clinic before adding staff members. Please wait for the super admin to approve your clinic registration.");
         router.push('/dashboard/clinics');
         return;
@@ -94,7 +95,7 @@ export default function StaffManagementPage() {
       name: '', email: '', password: '', 
       role: currentUser?.role === 'super_admin' ? 'admin' : 'receptionist', 
       phone: '',
-      branchId: ''
+      clinicId: selectedClinicId || ''
     });
     setIsModalOpen(true);
   };
@@ -107,7 +108,7 @@ export default function StaffManagementPage() {
       password: '', // Optional for edit
       role: member.role || 'receptionist',
       phone: member.phone || '',
-      branchId: member.branchId || '',
+      clinicId: member.branchId || '',
     });
     setIsModalOpen(true);
   };
@@ -171,17 +172,17 @@ export default function StaffManagementPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Warning for Admins with no clinics */}
-      {currentUser?.role === 'admin' && (!branches || branches.length === 0) && (
+      {currentUser?.role === 'admin' && (!clinics || clinics.length === 0) && (
         <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
             <ShieldAlert size={24} />
           </div>
           <div>
             <h3 className="text-amber-900 font-bold text-lg">
-              {branches.length === 0 ? "No Clinics Registered" : "Pending Clinic Approval"}
+              {clinics.length === 0 ? "No Clinics Registered" : "Pending Clinic Approval"}
             </h3>
             <p className="text-amber-700 font-medium">
-              {branches.length === 0 
+              {clinics.length === 0 
                 ? "To manage staff and receptionists, you must first register your clinic." 
                 : "Your clinic is currently pending approval. Clinical records and staff management are only available once your clinic is approved by a super admin."}
             </p>
@@ -330,7 +331,7 @@ export default function StaffManagementPage() {
                             >
                               <Eye size={18} />
                             </button>
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && member.role !== 'doctor' && (
                               <button 
                                 onClick={() => handleOpenEditModal(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
@@ -338,7 +339,7 @@ export default function StaffManagementPage() {
                                 <Edit size={18} />
                               </button>
                             )}
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && currentUser?._id !== member._id && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && member.role !== 'doctor' && currentUser?._id !== member._id && (
                               <button 
                                 onClick={() => setUserToDelete(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
@@ -399,7 +400,6 @@ export default function StaffManagementPage() {
               >
                 {currentUser?.role === 'super_admin' && <option value="admin">Administrator</option>}
                 {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="receptionist">Receptionist</option>}
-                <option value="doctor">Doctor</option>
               </select>
             </div>
           </div>
@@ -413,17 +413,23 @@ export default function StaffManagementPage() {
             />
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Branch Assignment</label>
-              <select 
-                value={formData.branchId}
-                onChange={(e) => setFormData({...formData, branchId: e.target.value})}
-                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
-                required={formData.role !== 'super_admin'}
-              >
-                <option value="">Select a Clinic</option>
-                {branches.filter(b => currentUser?.role === 'super_admin' || b.clinicStatus === 'approved').map(branch => (
-                  <option key={branch._id} value={branch._id}>{branch.clinicName} ({branch.city})</option>
-                ))}
-              </select>
+              
+              {/* Selected Clinic Visual Indicator */}
+              {selectedClinic && (
+                <div className="mb-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <MapPin size={16} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Active Context</p>
+                    <p className="text-xs font-bold text-slate-900 leading-none">
+                      {selectedClinic?.clinicName || 'Loading...'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Clinic selection dropdown removed as per request - using dashboard context */}
             </div>
           </div>
           <div className="flex gap-4 pt-4">
@@ -631,10 +637,6 @@ function DoctorCard({ doctor, onEdit, onDelete }) {
           <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doctor.name}</p>
           <p className="text-[10px] text-slate-400 font-medium truncate max-w-[120px]">{doctor.email}</p>
         </div>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onEdit(doctor)} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-blue-600 transition-all"><Edit size={14}/></button>
-        <button onClick={() => onDelete(doctor)} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-red-500 transition-all"><Trash2 size={14}/></button>
       </div>
     </div>
   );

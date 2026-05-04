@@ -46,6 +46,15 @@ export const getAllDoctors = async (query: any, creatorId?: string, branchId?: s
 
   // 3. Build Match Stage
   const match: any = {};
+  
+  // Status Filtering
+  if (query.status && query.status !== 'all') {
+    match.status = query.status;
+  } else if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
+    // Public view only shows verified doctors
+    match.status = 'verified';
+  }
+
   if (specialty) {
     match.specialty = { $regex: specialty, $options: 'i' };
   }
@@ -78,8 +87,31 @@ export const getAllDoctors = async (query: any, creatorId?: string, branchId?: s
   }
 
   if (branchId) {
-    const branchObjectId = new mongoose.Types.ObjectId(branchId);
-    match.branchId = branchObjectId;
+    const branchStr = branchId.toString();
+    let branchObj;
+    try {
+      branchObj = new mongoose.Types.ObjectId(branchStr);
+    } catch (e) {
+      branchObj = null;
+    }
+
+    const branchMatch: any = {
+      $or: [
+        { branchId: branchStr },
+        { clinic: branchStr },
+        { clinics: branchStr }
+      ]
+    };
+
+    if (branchObj) {
+      branchMatch.$or.push(
+        { branchId: branchObj },
+        { clinic: branchObj },
+        { clinics: branchObj }
+      );
+    }
+
+    pipeline.push({ $match: branchMatch });
   }
 
   if (Object.keys(match).length > 0) {
@@ -240,12 +272,37 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     branchId: branchId || undefined
   } as any);
 
+  if (branchId) {
+    const Clinic = mongoose.model('Clinic');
+    await Clinic.findByIdAndUpdate(branchId, {
+      $addToSet: { doctors: doctor._id }
+    });
+  }
+
   return { user, doctor };
 };
 export const getDoctorByUserId = async (userId: string) => {
   const doctor = await Doctor.findOne({ user: userId }).populate('user', 'name email avatar').populate('clinic');
   if (!doctor) {
     throw new AppError('Doctor profile not found', 404);
+  }
+  return doctor;
+};
+
+export const updateDoctorStatus = async (id: string, status: 'submitted' | 'verified' | 'rejected', verifiedBy: string, rejectionReason?: string) => {
+  const doctor = await Doctor.findByIdAndUpdate(
+    id,
+    { 
+      status, 
+      isVerified: status === 'verified',
+      verifiedBy,
+      rejectionReason: status === 'rejected' ? rejectionReason : undefined
+    },
+    { new: true, runValidators: true }
+  ).populate('user', 'name email');
+
+  if (!doctor) {
+    throw new AppError('Doctor not found', 404);
   }
   return doctor;
 };

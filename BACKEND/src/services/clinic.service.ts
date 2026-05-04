@@ -7,9 +7,9 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
 
   // Status Filtering
   if (query.status && query.status !== 'all') {
-    filter.clinicStatus = query.status;
-  } else if (!creatorId) {
-    // If no status provided and not a creator, default to approved for public visibility
+    filter.clinicStatus = { $regex: `^${query.status}$`, $options: 'i' };
+  } else if (!creatorId && !query.isDashboard) {
+    // If no status provided, not a creator, AND not a dashboard request, default to approved for public visibility
     filter.clinicStatus = 'approved';
   }
 
@@ -31,7 +31,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
   if (creatorId) {
     const User = (await import('../models/User')).default;
     const user = await User.findById(creatorId);
-    
+
     if (user?.organization) {
       filter.$or = [
         { organizationId: user.organization },
@@ -46,7 +46,8 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
         { createdBy: creatorObjectId },
         { createdByAdminId: creatorObjectId },
         { parentAdmin: creatorObjectId },
-        { parentReceptionist: creatorObjectId }
+        { parentReceptionist: creatorObjectId },
+        { _id: { $in: user?.branchIds || [] } }
       ];
     }
   }
@@ -57,19 +58,32 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
 export const getClinicById = async (idOrSlug: string) => {
   const mongoose = require('mongoose');
   const isId = mongoose.Types.ObjectId.isValid(idOrSlug);
-  
+
   const query = isId ? { _id: idOrSlug } : { slug: idOrSlug };
-  const clinic = await Clinic.findOne(query)
-    .populate('owner', 'name email')
-    .populate({
-      path: 'doctors',
-      populate: { path: 'user', select: 'name avatar specialty' }
-    });
+  const clinic = await Clinic.findOne(query).populate('owner', 'name email');
 
   if (!clinic) {
     throw new AppError('Clinic not found', 404);
   }
-  return clinic;
+
+  // Fetch all doctors that are linked to this clinic
+  const Doctor = (await import('../models/Doctor')).default;
+  const doctors = await Doctor.find({
+    $or: [
+      { _id: { $in: clinic.doctors || [] } },
+      { clinic: clinic._id },
+      { clinics: clinic._id },
+      { branchId: clinic._id }
+    ],
+    status: { $in: ['verified', 'submitted'] }
+  }).populate('user', 'name avatar');
+
+  // Convert to object and add doctors
+  const clinicObj = clinic.toObject() as any;
+  clinicObj.name = clinicObj.clinicName; // Compatibility for frontend
+  clinicObj.doctors = doctors;
+
+  return clinicObj;
 };
 
 export const createClinic = async (data: Partial<IClinic>, creatorId?: string) => {
@@ -92,11 +106,11 @@ export const createClinic = async (data: Partial<IClinic>, creatorId?: string) =
     }
   }
 
-  const clinic = await Clinic.create({ 
-    ...data, 
+  const clinic = await Clinic.create({
+    ...data,
     createdBy: creatorId,
     parentAdmin,
-    parentReceptionist 
+    parentReceptionist
   } as any);
 
   if (data.doctors && data.doctors.length > 0) {

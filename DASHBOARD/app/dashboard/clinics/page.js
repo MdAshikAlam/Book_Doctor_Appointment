@@ -112,13 +112,28 @@ export default function ClinicsPage() {
 
   const handleApprove = async (id) => {
     try {
-      await clinicsApi.approve(id);
+      await clinicsApi.updateStatus(id, 'approved');
       setSuccessMsg('Clinic approved successfully!');
       fetchData();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       console.error(err);
       alert('Failed to approve clinic: ' + err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    const reason = prompt('Please enter rejection reason:');
+    if (reason === null) return; // Cancelled
+
+    try {
+      await clinicsApi.updateStatus(id, 'rejected', reason);
+      setSuccessMsg('Clinic rejected successfully');
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to reject clinic: ' + err.message);
     }
   };
 
@@ -200,7 +215,8 @@ export default function ClinicsPage() {
       setLoading(true);
       
       let params = {
-        status: statusFilter
+        status: statusFilter,
+        isDashboard: true
       };
       
       try {
@@ -380,7 +396,7 @@ export default function ClinicsPage() {
           </h1>
           <p className="text-slate-500 mt-1 font-medium text-lg">Search for partner clinics and view their registered medical teams.</p>
         </div>
-        {(user?.role === 'super_admin' || user?.role === 'admin') && (
+        {user?.role === 'admin' && (
           <Button 
             onClick={() => {
               resetForm();
@@ -530,6 +546,7 @@ export default function ClinicsPage() {
                                         <CheckCircle size={14} /> Approve
                                       </button>
                                       <button 
+                                        onClick={() => handleReject(clinic._id)}
                                         className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider hover:bg-red-100 transition-all flex items-center gap-2"
                                       >
                                         <XCircle size={14} /> Reject

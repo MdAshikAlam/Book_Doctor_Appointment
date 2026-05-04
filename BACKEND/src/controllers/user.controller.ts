@@ -252,6 +252,7 @@ const createStaffSchema = z.object({
   password: z.string().min(8),
   role: z.nativeEnum(UserRole),
   phone: z.string().optional(),
+  clinicId: z.string().optional(),
 });
 
 export const createStaff = async (req: Request, res: Response, next: NextFunction) => {
@@ -293,7 +294,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
       ...validatedData,
       isEmailVerified: true,
       clinic: currentUser.clinicId,
-      branchId: branchId || undefined,
+      branchId: validatedData.clinicId || (req as any).branchId || undefined,
       createdBy: currentUser.id,
       parentAdmin,
       parentReceptionist
@@ -312,7 +313,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
           coordinates: [0, 0] // Default location
         },
         clinic: currentUser.clinicId,
-        branchId: branchId || undefined,
+        branchId: validatedData.clinicId || (req as any).branchId || undefined,
         createdBy: currentUser.id,
         parentAdmin,
         parentReceptionist

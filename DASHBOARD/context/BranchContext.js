@@ -4,103 +4,107 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { clinicsApi } from '@/lib/api';
 import { useAuth } from './AuthContext';
 
-const BranchContext = createContext();
+const ClinicContext = createContext();
 
-export const BranchProvider = ({ children }) => {
+export const ClinicProvider = ({ children }) => {
   const { user } = useAuth();
-  const [branches, setBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState(null);
+  const [clinics, setClinics] = useState([]);
+  const [selectedClinicId, setSelectedClinicId] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Initial load from localStorage
-    const savedBranchId = localStorage.getItem('selectedBranchId');
-    if (savedBranchId) {
-      setSelectedBranchId(savedBranchId);
+    const savedClinicId = localStorage.getItem('selectedClinicId');
+    if (savedClinicId) {
+      setSelectedClinicId(savedClinicId);
     }
   }, []);
 
   useEffect(() => {
     if (user) {
-      fetchBranches();
+      fetchClinics();
     }
   }, [user]);
 
-  const fetchBranches = async () => {
+  const fetchClinics = async () => {
     try {
       setLoading(true);
-      const response = await clinicsApi.getAll();
+      const response = await clinicsApi.getAll({ isDashboard: true });
       let allClinics = response.data.clinics || [];
       
-      let filteredBranches = [];
+      let filteredClinics = [];
 
       if (user?.role === 'super_admin') {
-        // Super Admin sees all branches
-        filteredBranches = allClinics;
+        // Super Admin sees all clinics
+        filteredClinics = allClinics;
       } else if (user?.role === 'admin') {
-        // Admin sees their assigned branches AND clinics they created
+        // Admin sees their assigned clinics AND clinics they created
         const assignedIds = user.branchIds || (user.branchId ? [user.branchId] : []);
-        filteredBranches = allClinics.filter(b => assignedIds.includes(b._id) || b.createdByAdminId === user._id || b.owner === user._id);
+        filteredClinics = allClinics.filter(b => assignedIds.includes(b._id) || b.createdByAdminId === user._id || b.owner === user._id);
       } else {
-        // Others see only their assigned branch
-        filteredBranches = allClinics.filter(b => b._id === user?.branchId);
+        // Others see only their assigned clinic
+        filteredClinics = allClinics.filter(b => b._id === user?.branchId);
       }
 
-      setBranches(filteredBranches);
+      setClinics(filteredClinics);
       
-      // Check if current selectedBranchId is valid for this user
-      const isValid = filteredBranches.some(b => b._id === selectedBranchId);
+      // Check if current selectedClinicId is valid for this user
+      const isValid = filteredClinics.some(b => b._id === selectedClinicId);
       
-      if (!selectedBranchId || !isValid) {
-        if (filteredBranches.length > 0) {
-          // Default to first available branch
-          const defaultBranchId = filteredBranches[0]._id;
-          setSelectedBranchId(defaultBranchId);
-          localStorage.setItem('selectedBranchId', defaultBranchId);
-        } else if (user?.role !== 'super_admin') {
-          // If no branches assigned and not super_admin, clear selection
-          setSelectedBranchId(null);
-          localStorage.removeItem('selectedBranchId');
+      if (!selectedClinicId || !isValid) {
+        if (user?.role === 'super_admin') {
+          // Super Admin defaults to Global Mode (null)
+          setSelectedClinicId(null);
+          localStorage.removeItem('selectedClinicId');
+        } else if (filteredClinics.length > 0) {
+          // Others default to first available clinic
+          const defaultClinicId = filteredClinics[0]._id;
+          setSelectedClinicId(defaultClinicId);
+          localStorage.setItem('selectedClinicId', defaultClinicId);
+        } else {
+          // If no clinics assigned, clear selection
+          setSelectedClinicId(null);
+          localStorage.removeItem('selectedClinicId');
         }
       }
     } catch (err) {
-      console.error('Failed to fetch branches', err);
+      console.error('Failed to fetch clinics', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const changeBranch = (branchId) => {
-    if (branchId === 'all' && user?.role === 'super_admin') {
-      setSelectedBranchId(null);
-      localStorage.removeItem('selectedBranchId');
+  const changeClinic = (clinicId) => {
+    if (clinicId === 'all' && user?.role === 'super_admin') {
+      setSelectedClinicId(null);
+      localStorage.removeItem('selectedClinicId');
     } else {
-      setSelectedBranchId(branchId);
-      localStorage.setItem('selectedBranchId', branchId);
+      setSelectedClinicId(clinicId);
+      localStorage.setItem('selectedClinicId', clinicId);
     }
-    // Reload the page to refresh all data with the new branchId header
+    // Reload the page to refresh all data with the new clinicId header
     window.location.reload();
   };
 
   return (
-    <BranchContext.Provider value={{ 
-      branches, 
-      selectedBranchId, 
+    <ClinicContext.Provider value={{ 
+      clinics, 
+      selectedClinicId, 
       loading, 
-      fetchBranches, 
-      changeBranch,
-      selectedBranch: branches.find(b => b._id === selectedBranchId),
-      isGlobalMode: user?.role === 'super_admin' && !selectedBranchId
+      fetchClinics, 
+      changeClinic,
+      selectedClinic: clinics.find(b => b._id === selectedClinicId),
+      isGlobalMode: user?.role === 'super_admin' && !selectedClinicId
     }}>
       {children}
-    </BranchContext.Provider>
+    </ClinicContext.Provider>
   );
 };
 
-export const useBranch = () => {
-  const context = useContext(BranchContext);
+export const useClinic = () => {
+  const context = useContext(ClinicContext);
   if (!context) {
-    throw new Error('useBranch must be used within a BranchProvider');
+    throw new Error('useClinic must be used within a ClinicProvider');
   }
   return context;
 };

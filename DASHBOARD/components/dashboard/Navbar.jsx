@@ -6,6 +6,7 @@ import { Search, Bell, Menu, LogOut, User, Settings as SettingsIcon, HelpCircle,
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAuth } from '@/context/AuthContext';
+import BranchSelector from './BranchSelector';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -39,7 +40,10 @@ const Navbar = () => {
         </button>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* Branch Switcher */}
+          <BranchSelector />
+
           {/* Notifications */}
           <button className="relative p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
             <Bell size={20} />
