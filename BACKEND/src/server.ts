@@ -16,9 +16,9 @@ mongoose
     // Seed system users
     await seedSystemUsers();
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Server running in ${config.NODE_ENV} mode`);
-      logger.info(`🔗 URL: http://localhost:${PORT}`);
+      logger.info(`🔗 URL: http://0.0.0.0:${PORT}`);
       logger.info(`📝 Swagger Docs: http://localhost:${PORT}/docs`);
     });
   })

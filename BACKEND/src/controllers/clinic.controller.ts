@@ -179,7 +179,7 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
 export const verifyClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status } = z.object({
-      status: z.enum(['Pending', 'Approved', 'Rejected'])
+      status: z.enum(['pending', 'approved', 'rejected'])
     }).parse(req.body);
 
     const clinic = await clinicService.updateClinicStatus(req.params.id as string, status);

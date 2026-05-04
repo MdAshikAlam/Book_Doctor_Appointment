@@ -20,10 +20,16 @@ import {
   Phone,
   CalendarCheck,
   Shield,
-  Award
+  Award,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Check,
+  X
 } from 'lucide-react';
 import { usersApi, doctorsApi, utilityApi, clinicsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useClinic } from '@/context/BranchContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 const SPECIALTIES = [
   'General Physician',
@@ -51,6 +57,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DoctorsPage() {
   const { user: currentUser } = useAuth();
+  const { selectedClinic, selectedClinicId } = useClinic();
   const [doctors, setDoctors] = useState([]);
   const [clinicsCount, setClinicsCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -83,6 +90,8 @@ export default function DoctorsPage() {
     address: '',
     district: '',
     state: '',
+    registrationYear: '',
+    licenseDocumentFile: null,
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -90,6 +99,9 @@ export default function DoctorsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [statesList, setStatesList] = useState([]);
   const [districtsList, setDistrictsList] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [successMsg, setSuccessMsg] = useState(null);
+
   const [isFetchingStates, setIsFetchingStates] = useState(false);
   const [isFetchingDistricts, setIsFetchingDistricts] = useState(false);
 
@@ -212,8 +224,8 @@ export default function DoctorsPage() {
     try {
       setLoading(true);
       const [res, clinicsRes] = await Promise.all([
-        doctorsApi.getAll({ dashboard: true }),
-        clinicsApi.getAll({ status: 'approved' })
+        doctorsApi.getAll({ isDashboard: true, status: statusFilter }),
+        clinicsApi.getAll({ isDashboard: true })
       ]);
       setDoctors(res.data.doctors || []);
       setClinicsCount(clinicsRes.data.clinics?.length || 0);
@@ -222,7 +234,7 @@ export default function DoctorsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     fetchDoctors();
@@ -242,37 +254,64 @@ export default function DoctorsPage() {
       name: '', email: '', avatar: '', password: '', phone: '', gender: '', dob: '',
       specialty: '', subSpecialization: '', experience: '', consultationFee: '',
       licenseNumber: '', medicalCouncil: '', qualifications: '',
-      bio: '', address: '', district: '', state: ''
+      bio: '', 
+      address: selectedClinic?.address || '', 
+      district: selectedClinic?.city || '', 
+      state: selectedClinic?.state || ''
     });
+    if (selectedClinic?.state) {
+      fetchDistricts(selectedClinic.state);
+    }
     setSelectedFile(null);
     setPreviewUrl('');
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (doc) => {
-    setEditingDoctor(doc);
+  const handleUpdateStatus = async (id, status) => {
+    let reason = '';
+    if (status === 'rejected') {
+      reason = prompt('Please enter rejection reason:');
+      if (reason === null) return;
+    }
+
+    try {
+      await doctorsApi.updateStatus(id, status, reason);
+      setSuccessMsg(`Doctor ${status} successfully!`);
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update status: ' + err.message);
+    }
+  };
+
+  const handleOpenEditModal = (doctor) => {
+    setEditingDoctor(doctor);
     setFormData({
-      name: doc.user?.name || '',
-      email: doc.user?.email || '',
-      avatar: doc.user?.avatar || '',
+      name: doctor.user?.name || '',
+      email: doctor.user?.email || '',
+      avatar: doctor.user?.avatar || '',
       password: '', // Leave blank for edit
-      phone: doc.user?.phone || '',
-      gender: doc.user?.gender || '',
-      dob: doc.user?.dob ? new Date(doc.user.dob).toISOString().split('T')[0] : '',
-      specialty: doc.specialty || '',
-      subSpecialization: doc.subSpecialization || '',
-      experience: doc.experience?.toString() || '',
-      consultationFee: doc.consultationFee?.toString() || '',
-      licenseNumber: doc.licenseNumber || '',
-      medicalCouncil: doc.medicalCouncil || '',
-      qualifications: doc.qualifications?.join(', ') || '',
-      bio: doc.bio || '',
-      address: doc.address || '',
-      district: doc.district || '',
-      state: doc.state || '',
+      phone: doctor.user?.phone || '',
+      gender: doctor.user?.gender || '',
+      dob: doctor.user?.dob ? new Date(doctor.user.dob).toISOString().split('T')[0] : '',
+      specialty: doctor.specialty || '',
+      subSpecialization: doctor.subSpecialization || '',
+      experience: doctor.experience?.toString() || '',
+      consultationFee: doctor.consultationFee?.toString() || '',
+      licenseNumber: doctor.licenseNumber || '',
+      medicalCouncil: doctor.medicalCouncil || '',
+      qualifications: doctor.qualifications?.join(', ') || '',
+      bio: doctor.bio || '',
+      address: doctor.address || '',
+      district: doctor.district || '',
+      state: doctor.state || '',
+      registrationYear: doctor.registrationYear || '',
+      licenseDocument: doctor.licenseDocument || '',
+      licenseDocumentFile: null
     });
     setSelectedFile(null);
-    setPreviewUrl(doc.user?.avatar || '');
+    setPreviewUrl(doctor.user?.avatar || '');
     setIsModalOpen(true);
   };
 
@@ -294,6 +333,7 @@ export default function DoctorsPage() {
     e.preventDefault();
     try {
       let currentAvatarUrl = formData.avatar;
+      let currentLicenseUrl = formData.licenseDocument;
 
       // 1. Upload file if selected
       if (selectedFile) {
@@ -302,6 +342,15 @@ export default function DoctorsPage() {
         uploadData.append('image', selectedFile);
         const uploadRes = await doctorsApi.upload(uploadData);
         currentAvatarUrl = uploadRes.data.url;
+        setIsUploading(false);
+      }
+
+      if (formData.licenseDocumentFile) {
+        setIsUploading(true);
+        const licenseData = new FormData();
+        licenseData.append('image', formData.licenseDocumentFile);
+        const licenseRes = await doctorsApi.upload(licenseData);
+        currentLicenseUrl = licenseRes.data.url;
         setIsUploading(false);
       }
 
@@ -323,11 +372,14 @@ export default function DoctorsPage() {
             consultationFee: Number(formData.consultationFee) || 0,
             licenseNumber: formData.licenseNumber,
             medicalCouncil: formData.medicalCouncil,
+            registrationYear: Number(formData.registrationYear) || undefined,
+            licenseDocument: currentLicenseUrl,
             qualifications: formData.qualifications ? formData.qualifications.split(',').map(s => s.trim()).filter(s => s) : [],
             bio: formData.bio,
             address: formData.address,
             district: formData.district,
             state: formData.state,
+            clinicId: selectedClinicId
           }
         };
 
@@ -355,11 +407,14 @@ export default function DoctorsPage() {
             consultationFee: Number(formData.consultationFee),
             licenseNumber: formData.licenseNumber,
             medicalCouncil: formData.medicalCouncil,
+            registrationYear: Number(formData.registrationYear) || undefined,
+            licenseDocument: currentLicenseUrl,
             qualifications: formData.qualifications.split(',').map(s => s.trim()).filter(s => s),
             bio: formData.bio,
             address: formData.address,
             district: formData.district,
             state: formData.state,
+            clinicId: selectedClinicId
           }
         };
         await doctorsApi.create(payload);
@@ -420,7 +475,24 @@ export default function DoctorsPage() {
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center">
+      <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col xl:flex-row gap-4 items-center">
+        {/* Status Tabs */}
+        <div className="flex items-center gap-1 p-1 bg-slate-50 rounded-2xl w-full xl:w-auto">
+          {['all', 'verified', 'submitted', 'rejected'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
+              className={`flex-1 xl:flex-none px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                statusFilter === tab 
+                  ? 'bg-white text-blue-600 shadow-md shadow-blue-100' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {tab === 'submitted' ? 'Pending' : tab}
+            </button>
+          ))}
+        </div>
+
         <div className="relative flex-1 group w-full">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
           <input
@@ -431,9 +503,6 @@ export default function DoctorsPage() {
             className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
           />
         </div>
-        <Button variant="outline" className="h-12 px-6 rounded-2xl border-slate-200 flex items-center gap-2 font-bold w-full md:w-auto">
-          <Filter size={18} /> Filters
-        </Button>
       </div>
 
       {/* Doctors Table/Grid */}
@@ -447,6 +516,7 @@ export default function DoctorsPage() {
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Experience</th>
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Consultation</th>
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Rating</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Verification Status</th>
                 {canManage && <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>}
               </tr>
             </thead>
@@ -499,6 +569,44 @@ export default function DoctorsPage() {
                         ★ {doc.rating?.toFixed(1) || '0.0'}
                       </div>
                       <p className="text-[10px] text-slate-400 font-medium">{doc.numReviews || 0} Reviews</p>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col gap-2">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                          doc.status === 'verified' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                          doc.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' : 
+                          'bg-amber-50 text-amber-600 border-amber-100'
+                        }`}>
+                          {doc.status === 'verified' ? <CheckCircle size={10} /> : doc.status === 'rejected' ? <XCircle size={10} /> : <Clock size={10} />}
+                          {doc.status === 'submitted' ? 'Pending' : doc.status || 'Pending'}
+                        </span>
+                        
+                        {doc.status === 'rejected' && doc.rejectionReason && (
+                          <p className="text-[9px] text-red-400 font-medium italic max-w-[120px] leading-tight">
+                            Reason: {doc.rejectionReason}
+                          </p>
+                        )}
+                        
+                        {/* Approval Buttons for Super Admin */}
+                        {currentUser?.role === 'super_admin' && doc.status !== 'verified' && (
+                          <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => handleUpdateStatus(doc._id, 'verified')}
+                              className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all"
+                              title="Approve Doctor"
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button 
+                              onClick={() => handleUpdateStatus(doc._id, 'rejected')}
+                              className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 shadow-sm transition-all"
+                              title="Reject Doctor"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     {canManage && (
                       <td className="px-8 py-5 text-right">
@@ -655,6 +763,25 @@ export default function DoctorsPage() {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Registration Year"
+                type="number"
+                placeholder="2012"
+                value={formData.registrationYear}
+                onChange={(e) => setFormData({ ...formData, registrationYear: e.target.value })}
+              />
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">
+                  License Document (PDF/Image)
+                </label>
+                <input
+                  type="file"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  onChange={(e) => setFormData({ ...formData, licenseDocumentFile: e.target.files[0] })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-0">
                 <Input
                   label="Specialization"
@@ -707,6 +834,29 @@ export default function DoctorsPage() {
             <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
               <MapPin size={14} /> Clinic & Location
             </h4>
+            
+            {/* Selected Clinic Display */}
+            {selectedClinic && (
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
+                  <Stethoscope size={20} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Target Clinic</p>
+                  <p className="text-sm font-bold text-slate-900 leading-none">
+                    {selectedClinic?.clinicName || (selectedClinicId ? 'Loading Clinic Details...' : 'No Clinic Selected')}
+                  </p>
+                  {selectedClinic && (
+                    <p className="text-[10px] text-slate-500 mt-1 font-medium italic">
+                      {selectedClinic.address}, {selectedClinic.city}
+                    </p>
+                  )}
+                </div>
+                <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">
+                  Selected
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 ml-1">

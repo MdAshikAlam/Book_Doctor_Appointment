@@ -19,7 +19,8 @@ import {
   User,
   Info,
   BadgeCheck,
-  Building
+  Building,
+  Mail
 } from 'lucide-react';
 import { doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -243,6 +244,10 @@ export default function DoctorVerificationPage() {
                       <p className="text-xs text-slate-400 font-bold uppercase">Medical Council</p>
                       <p className="text-sm font-black text-slate-900">{selectedDoctor.medicalCouncil}</p>
                     </div>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+                      <p className="text-xs text-slate-400 font-bold uppercase">Registration Year</p>
+                      <p className="text-sm font-black text-slate-900">{selectedDoctor.registrationYear || 'N/A'}</p>
+                    </div>
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-slate-400 font-bold uppercase">Experience</p>
                       <p className="text-sm font-black text-slate-900">{selectedDoctor.experience} Years</p>
@@ -258,6 +263,16 @@ export default function DoctorVerificationPage() {
                         <GraduationCap size={16} /> {q}
                       </div>
                     ))}
+                    {selectedDoctor.licenseDocument && (
+                      <a 
+                        href={getFullImageUrl(selectedDoctor.licenseDocument)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 font-bold text-xs hover:bg-emerald-100 transition-colors"
+                      >
+                        <FileText size={16} /> View License Document
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

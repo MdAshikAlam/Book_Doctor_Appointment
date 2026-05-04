@@ -111,6 +111,9 @@ const doctorProfileSchema = z.object({
   address: z.string(),
   district: z.string(),
   state: z.string(),
+  clinicId: z.string().optional(),
+  registrationYear: z.number().optional(),
+  licenseDocument: z.string().optional(),
   location: z.object({
     type: z.literal('Point'),
     coordinates: z.array(z.number()).length(2),
@@ -179,7 +182,7 @@ export const adminCreateDoctor = async (req: Request, res: Response, next: NextF
       validatedData.userData,
       validatedData.profileData,
       (req as any).user.id,
-      (req as any).branchId
+      validatedData.profileData.clinicId || (req as any).branchId
     );
 
     res.status(201).json({
@@ -374,6 +377,29 @@ export const addLeave = async (req: AuthRequest, res: Response, next: NextFuncti
     res.status(200).json({
       status: 'success',
       data: { leaves: updatedDoctor.leaves }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status, rejectionReason } = z.object({
+      status: z.enum(['submitted', 'verified', 'rejected']),
+      rejectionReason: z.string().optional()
+    }).parse(req.body);
+
+    const doctor = await doctorService.updateDoctorStatus(
+      req.params.id as string,
+      status,
+      (req as any).user.id as string,
+      rejectionReason
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: { doctor }
     });
   } catch (error) {
     next(error);

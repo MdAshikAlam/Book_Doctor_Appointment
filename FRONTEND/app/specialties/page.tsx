@@ -58,7 +58,10 @@ export default function SpecialtiesPage() {
         if (selectedState) params.append('state', selectedState);
       }
       
-      const res = await fetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
+      const requestUrl = `${url}${params.toString() ? '?' + params.toString() : ''}`;
+      console.log('Fetching doctors from:', requestUrl);
+      
+      const res = await fetch(requestUrl);
       const data = await res.json();
       
       if (data.status === 'success') {

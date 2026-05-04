@@ -16,9 +16,9 @@ export const apiCall = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const selectedBranchId = typeof window !== 'undefined' ? localStorage.getItem('selectedBranchId') : null;
-  if (selectedBranchId) {
-    headers['X-Branch-ID'] = selectedBranchId;
+  const selectedClinicId = typeof window !== 'undefined' ? localStorage.getItem('selectedClinicId') : null;
+  if (selectedClinicId) {
+    headers['X-Clinic-ID'] = selectedClinicId;
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
