@@ -99,10 +99,10 @@ export const doctorsApi = {
 };
 
 export const appointmentsApi = {
-  getMy: () => apiCall('/appointments/my'),
-  updateStatus: (id, status) => apiCall(`/appointments/${id}/status`, {
+  getMy: (status) => apiCall(`/appointments/my${status ? `?status=${status}` : ''}`),
+  updateStatus: (id, data) => apiCall(`/appointments/${id}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(data),
   }),
   reschedule: (id, data) => apiCall(`/appointments/${id}/reschedule`, {
     method: 'PATCH',

@@ -171,6 +171,13 @@ export const checkDoctorOwnership = async (req: AuthRequest, res: Response, next
       }
     }
 
+    // Doctor Check: Can manage their own profile
+    if (requester.role === UserRole.DOCTOR) {
+      if (targetUser._id.toString() === requester.id) {
+        return next();
+      }
+    }
+
     return next(new AppError('You do not have permission to manage this doctor', 403));
   } catch (error) {
     next(error);

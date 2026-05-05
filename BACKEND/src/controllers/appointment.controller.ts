@@ -24,15 +24,35 @@ const appointmentSchema = z.object({
 
 export const bookAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { role, id: userId } = (req as any).user;
+    
+    // Restriction: Doctors cannot book appointments
+    if (role === 'doctor') {
+      throw new AppError('Doctors are not authorized to book appointments', 403);
+    }
+
     const validatedData = appointmentSchema.parse(req.body);
     const branchId = (req as any).branchId || (req as any).user.branchId;
-    const appointment = await appointmentService.bookAppointment({
+
+    const bookingData: any = {
       ...validatedData,
-      patient: (req as any).user.id as any,
       doctor: validatedData.doctor as any,
       clinic: validatedData.clinic as any,
       branchId: branchId,
-    });
+    };
+
+    // If receptionist is booking, they can specify a patient ID
+    if (role === 'admin' || role === 'receptionist') {
+      if (!req.body.patient) {
+        throw new AppError('Please select a patient for this appointment', 400);
+      }
+      bookingData.patient = req.body.patient;
+    } else {
+      // Regular patient booking their own appointment
+      bookingData.patient = userId;
+    }
+
+    const appointment = await appointmentService.bookAppointment(bookingData);
 
     res.status(201).json({
       status: 'success',
@@ -47,7 +67,8 @@ export const getMyAppointments = async (req: Request, res: Response, next: NextF
   try {
     const { id: userId, role } = (req as any).user;
     const branchId = (req as any).branchId;
-    const appointments = await appointmentService.getMyAppointments(userId, role, branchId);
+    const { status } = req.query;
+    const appointments = await appointmentService.getMyAppointments(userId, role, branchId, status as string);
     res.status(200).json({
       status: 'success',
       results: appointments.length,
@@ -60,12 +81,16 @@ export const getMyAppointments = async (req: Request, res: Response, next: NextF
 
 export const updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { status } = req.body;
+    const { status, diagnosis, prescription, notes } = req.body;
+    const branchId = (req as any).branchId || (req as any).user.branchId;
+    
     const appointment = await appointmentService.updateAppointmentStatus(
       req.params.id as string,
       req.user!.id,
       req.user!.role,
-      status as AppointmentStatus
+      status as AppointmentStatus,
+      branchId,
+      { diagnosis, prescription, notes }
     );
 
     res.status(200).json({
@@ -84,13 +109,22 @@ const rescheduleSchema = z.object({
 
 export const rescheduleAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const { role } = (req as any).user;
+    
+    // Restriction: Doctors cannot reschedule appointments
+    if (role === 'doctor') {
+      throw new AppError('Doctors cannot reschedule appointments. Please contact the reception.', 403);
+    }
+
     const { date, slot } = rescheduleSchema.parse(req.body);
+    const branchId = (req as any).branchId || (req as any).user.branchId;
     const appointment = await appointmentService.rescheduleAppointment(
       req.params.id as string,
       req.user!.id,
       req.user!.role,
       date,
-      slot
+      slot,
+      branchId
     );
 
     res.status(200).json({

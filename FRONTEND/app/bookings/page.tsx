@@ -135,16 +135,23 @@ export default function MyAppointmentsPage() {
   today.setHours(0, 0, 0, 0);
 
   const upcomingAppointments = appointments.filter(apt => 
-    new Date(apt.date) >= today && apt.status !== 'cancelled' && apt.status !== 'completed'
+    new Date(apt.date) >= today && 
+    apt.status !== 'cancelled' && 
+    apt.status !== 'completed' && 
+    apt.status !== 'visited'
   );
   
   const pastAppointments = appointments.filter(apt => 
-    new Date(apt.date) < today || apt.status === 'cancelled' || apt.status === 'completed'
+    new Date(apt.date) < today || 
+    apt.status === 'cancelled' || 
+    apt.status === 'completed' || 
+    apt.status === 'visited'
   );
 
   const renderAppointmentCard = (apt: Appointment, isUpcoming: boolean) => {
     const isCancelled = apt.status === 'cancelled';
-    const isCompleted = apt.status === 'completed';
+    const isCompleted = apt.status === 'completed' || apt.status === 'visited';
+    const isVisited = apt.status === 'visited';
     const appointmentDate = new Date(apt.date).toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
@@ -177,6 +184,7 @@ export default function MyAppointmentsPage() {
           <div>
             <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
               isCancelled ? 'bg-red-50 text-red-600' : 
+              isVisited ? 'bg-blue-50 text-blue-600 border border-blue-100' :
               isCompleted ? 'bg-emerald-50 text-emerald-600' : 
               'bg-blue-50 text-blue-600'
             }`}>

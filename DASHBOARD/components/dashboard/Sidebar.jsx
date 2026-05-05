@@ -19,7 +19,9 @@ import {
   GitBranch,
   UserPlus,
   ShieldAlert,
-  BarChart3
+  BarChart3,
+  XCircle,
+  History
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -79,13 +81,14 @@ const adminSections = [
       { icon: Building2, label: 'Clinic Profile', href: '/dashboard/clinics' },
       { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
+      { icon: XCircle, label: 'Cancelled Appt.', href: '/dashboard/appointments/cancelled' },
     ]
   },
   {
-    title: 'Staffing',
+    title: 'Staffing & History',
     items: [
       { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
-      { icon: Users, label: 'Patients', href: '/dashboard/patients' },
+      { icon: Users, label: 'Patient History', href: '/dashboard/patients' },
     ]
   },
   {
@@ -99,6 +102,8 @@ const adminSections = [
 const staffItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
+  { icon: XCircle, label: 'Cancelled Appt.', href: '/dashboard/appointments/cancelled' },
+  { icon: Users, label: 'Patient History', href: '/dashboard/patients' },
   { icon: UserRound, label: 'Profile', href: '/dashboard/profile' },
 ];
 

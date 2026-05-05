@@ -109,7 +109,7 @@ router.post(
   '/:id/availability/generate',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR),
   checkDoctorOwnership,
   doctorController.generateAvailability
 );
@@ -118,7 +118,7 @@ router.post(
   '/:id/leave',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR),
   checkDoctorOwnership,
   doctorController.addLeave
 );

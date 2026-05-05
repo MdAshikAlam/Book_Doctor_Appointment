@@ -17,12 +17,12 @@ router.use(branchHandler);
  */
 
 router.get('/me', userController.getMe);
-router.get('/patients', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.getPatients);
-router.patch('/patients/:id/status', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.updatePatientStatus);
-router.get('/patients/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR), userController.getPatientById);
-router.get('/hierarchy', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.getHierarchy);
-router.get('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.getStaff);
-router.post('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), userController.createStaff);
+router.get('/patients', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.getPatients);
+router.patch('/patients/:id/status', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.updatePatientStatus);
+router.get('/patients/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.getPatientById);
+router.get('/hierarchy', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.getHierarchy);
+router.get('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.getStaff);
+router.post('/staff', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST, 'sub_admin' as any), userController.createStaff);
 router.patch('/staff/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.updateStaff);
 router.get('/admin-requests', restrictTo(UserRole.SUPER_ADMIN), userController.getPendingAdmins);
 router.patch('/:id/status', restrictTo(UserRole.SUPER_ADMIN), userController.updateUserStatus);
