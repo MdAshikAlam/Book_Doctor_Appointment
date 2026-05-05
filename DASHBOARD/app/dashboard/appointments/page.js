@@ -34,10 +34,12 @@ export default function AppointmentsPage() {
   const router = useRouter();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, confirmed, pending, cancelled
+  const [filter, setFilter] = useState('upcoming'); // upcoming, confirmed, pending
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingAppointment, setViewingAppointment] = useState(null);
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
+  const [completingAppointment, setCompletingAppointment] = useState(null);
+  const [medicalForm, setMedicalForm] = useState({ diagnosis: '', prescription: '', notes: '' });
   const [rescheduleData, setRescheduleData] = useState({ date: '', slot: '' });
   const [activeMenu, setActiveMenu] = useState(null);
 
@@ -57,14 +59,17 @@ export default function AppointmentsPage() {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  const handleStatusUpdate = async (id, status) => {
+  const handleStatusUpdate = async (id, status, extraData = {}) => {
     try {
-      await appointmentsApi.updateStatus(id, status);
+      await appointmentsApi.updateStatus(id, { status, ...extraData });
       if (status === 'completed') {
         router.push('/dashboard/patients');
       } else {
         fetchAppointments();
       }
+      setCompletingAppointment(null);
+      setMedicalForm({ diagnosis: '', prescription: '', notes: '' });
+      setActiveMenu(null);
     } catch (err) {
       alert(err.message);
     }
@@ -85,7 +90,20 @@ export default function AppointmentsPage() {
   };
 
   const filteredAppointments = appointments.filter(app => {
-    const matchesFilter = filter === 'all' || app.status === filter;
+    // Hide cancelled appointments by default unless we are specifically looking for them (which we won't on this page anymore)
+    if (app.status === 'cancelled') return false;
+    
+    let matchesFilter = false;
+    const appDate = new Date(app.date).toDateString();
+    const today = new Date().toDateString();
+
+    if (filter === 'upcoming') {
+      matchesFilter = app.status === 'confirmed' || app.status === 'pending';
+    } else if (filter === 'today') {
+      matchesFilter = appDate === today && (app.status === 'confirmed' || app.status === 'pending');
+    } else {
+      matchesFilter = app.status === filter;
+    }
     const matchesSearch = 
       app.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.doctor?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,24 +127,26 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Appointments</h1>
-          <p className="text-slate-500 mt-1 font-medium italic">
-            {user?.role === 'admin' ? 'Platform-wide overview of all medical bookings.' : 'Manage your upcoming and past medical consultations.'}
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Consultations</h1>
+          <p className="text-slate-400 mt-2 font-bold text-sm uppercase tracking-[0.1em]">
+            {user?.role === 'admin' ? 'Administrative Control Center' : 'Clinical Schedule Overview'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-white p-1 rounded-2xl border border-slate-100 shadow-sm flex">
-            {['all', 'pending', 'confirmed', 'cancelled'].map((f) => (
+          <div className="bg-slate-100/50 p-1.5 rounded-[1.5rem] flex items-center gap-1">
+            {['upcoming', 'today', 'pending', 'confirmed'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-xs font-bold transition-all capitalize",
-                  filter === f ? "bg-slate-900 text-white shadow-md shadow-slate-200" : "text-slate-500 hover:text-slate-900"
+                  "px-6 py-2.5 rounded-[1.2rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                  filter === f 
+                    ? "bg-white text-slate-900 shadow-[0_4px_12px_rgba(0,0,0,0.08)] scale-[1.02]" 
+                    : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
                 )}
               >
                 {f}
@@ -185,98 +205,119 @@ export default function AppointmentsPage() {
               {filteredAppointments.map((app) => (
                 <motion.div
                   layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   key={app._id}
-                  className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-shadow group"
+                  className="bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden group"
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                    {/* Date/Time Block */}
-                    <div className="flex items-center gap-4 lg:w-48 lg:border-r lg:border-slate-100 pr-6">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex flex-col items-center justify-center text-blue-600">
-                        <p className="text-[10px] font-black uppercase leading-none">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
-                        <p className="text-lg font-black leading-none mt-1">{new Date(app.date).getDate()}</p>
+                  <div className="p-1">
+                    <div className="flex flex-col lg:flex-row lg:items-stretch">
+                      {/* Date Block */}
+                      <div className="lg:w-32 bg-slate-50/50 flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
+                        <p className="text-3xl font-black text-slate-900 mt-1">{new Date(app.date).getDate()}</p>
+                        <div className="h-1 w-6 bg-blue-600 rounded-full mt-2" />
                       </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-900">{app.slot}</p>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-tight">Time Slot</p>
-                      </div>
-                    </div>
 
-                    {/* Patient & Doctor */}
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                          <User size={20} />
+                      {/* Main Info Area */}
+                      <div className="flex-1 p-6 lg:p-8 flex flex-col md:flex-row md:items-center gap-8">
+                        {/* Time & Reason */}
+                        <div className="md:w-48 space-y-2">
+                          <div className="flex items-center gap-2 text-slate-900">
+                            <Clock size={16} className="text-blue-600" />
+                            <span className="text-base font-black tracking-tight">{app.slot}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-200" />
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest truncate max-w-[140px]">{app.reason || 'General Checkup'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Patient</p>
-                          <p className="text-sm font-black text-slate-900">{app.fullName || app.patient?.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-400">
-                          <Stethoscope size={20} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Doctor</p>
-                          <p className="text-sm font-black text-slate-900">Dr. {app.doctor?.user?.name || 'Assigned Expert'}</p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Status & Actions */}
-                    <div className="flex items-center justify-between lg:w-72 pl-6 lg:border-l lg:border-slate-100">
-                      <div className={cn(
-                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors",
-                        getStatusColor(app.status)
-                      )}>
-                        {app.status}
+                        {/* Participants */}
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                              <User size={24} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Patient</p>
+                              <p className="text-sm font-black text-slate-900 truncate">{app.fullName || app.patient?.name}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all">
+                              <Stethoscope size={24} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-0.5">Assigned Physician</p>
+                              <p className="text-sm font-black text-slate-900 truncate">Dr. {app.doctor?.user?.name || 'Expert'}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setViewingAppointment(app)}
-                          className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
-                          title="View Details"
-                        >
-                          <Eye size={20} />
-                        </button>
-                        {(app.status === 'pending' || app.status === 'confirmed') && (
-                          <>
-                            <button 
-                              onClick={() => {
-                                setReschedulingAppointment(app);
-                                setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
-                              }}
-                              className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm shadow-blue-100"
-                              title="Reschedule / Extend Date"
-                            >
-                              <Calendar size={20} />
-                            </button>
-                            <button 
-                              onClick={() => handleStatusUpdate(app._id, 'cancelled')}
-                              className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm shadow-red-100"
-                              title="Reject / Cancel"
-                            >
-                              <XCircle size={20} />
-                            </button>
-                          </>
-                        )}
-                        <div className="relative">
+
+                      {/* Status & Actions */}
+                      <div className="lg:w-80 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-4">
+                        <div className={cn(
+                          "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
+                          getStatusColor(app.status)
+                        )}>
+                          {app.status}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
                           <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenu(activeMenu === app._id ? null : app._id);
-                            }}
-                            className={cn(
-                              "w-10 h-10 rounded-xl transition-all flex items-center justify-center",
-                              activeMenu === app._id ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"
-                            )}
+                            onClick={() => setViewingAppointment(app)}
+                            className="w-11 h-11 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                            title="View Record"
                           >
-                            <MoreVertical size={20} />
+                            <Eye size={20} />
                           </button>
+
+                          {(user?.role === 'admin' || user?.role === 'receptionist') && app.status === 'pending' && (
+                            <button 
+                              onClick={() => handleStatusUpdate(app._id, 'confirmed')}
+                              className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                              title="Confirm Appointment"
+                            >
+                              <CalendarCheck size={20} />
+                            </button>
+                          )}
+
+                          {user?.role === 'doctor' && app.status === 'confirmed' && (
+                            <button 
+                              onClick={() => setCompletingAppointment(app)}
+                              className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                              title="Finalize Consultation"
+                            >
+                              <CheckCircle2 size={20} />
+                            </button>
+                          )}
+
+                          {(user?.role === 'admin' || user?.role === 'receptionist') && app.status === 'confirmed' && (
+                            <button 
+                              onClick={() => handleStatusUpdate(app._id, 'visited')}
+                              className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                              title="Mark as Visited"
+                            >
+                              <CheckCircle2 size={20} />
+                            </button>
+                          )}
+
+                          <div className="relative">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenu(activeMenu === app._id ? null : app._id);
+                              }}
+                              className={cn(
+                                "w-11 h-11 rounded-2xl transition-all border flex items-center justify-center",
+                                activeMenu === app._id ? "bg-slate-900 text-white border-slate-900 shadow-lg" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
+                              )}
+                            >
+                              <MoreVertical size={20} />
+                            </button>
 
                           <AnimatePresence>
                             {activeMenu === app._id && (
@@ -317,16 +358,33 @@ export default function AppointmentsPage() {
                                       </button>
                                     )}
 
-                                    {app.status === 'confirmed' && (
+                                    {app.status === 'confirmed' && (user?.role === 'doctor' || user?.role === 'admin') && (
                                       <button 
                                         onClick={() => {
-                                          handleStatusUpdate(app._id, 'completed');
+                                          if (user?.role === 'doctor') {
+                                            setCompletingAppointment(app);
+                                          } else {
+                                            handleStatusUpdate(app._id, 'completed');
+                                          }
                                           setActiveMenu(null);
                                         }}
                                         className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                       >
                                         <CheckCircle2 size={18} />
                                         Mark Completed
+                                      </button>
+                                    )}
+
+                                    {(user?.role === 'admin' || user?.role === 'receptionist') && app.status === 'confirmed' && (
+                                      <button 
+                                        onClick={() => {
+                                          handleStatusUpdate(app._id, 'visited');
+                                          setActiveMenu(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                      >
+                                        <CheckCircle2 size={18} />
+                                        Mark Visited
                                       </button>
                                     )}
 
@@ -352,24 +410,28 @@ export default function AppointmentsPage() {
                                         Cancel Appointment
                                       </button>
                                     )}
-                                  </div>
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
+                                    </div>
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-slate-50 flex flex-wrap gap-6">
-                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                      <MessageSquare size={14} className="text-slate-300" />
-                      <span className="font-bold text-slate-700">Reason:</span> {app.reason}
+                  {/* Footer Stats */}
+                  <div className="mt-6 pt-6 border-t border-slate-100 flex flex-wrap gap-6 px-8 pb-8">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1.5 rounded-full">
+                      <MessageSquare size={14} className="text-blue-500" />
+                      <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Reason:</span> 
+                      <span className="text-slate-600 font-bold">{app.reason || 'Not Specified'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                      <MapPin size={14} className="text-slate-300" />
-                      <span className="font-bold text-slate-700">Location:</span> {app.city}, {app.country}
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1.5 rounded-full">
+                      <MapPin size={14} className="text-emerald-500" />
+                      <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Location:</span> 
+                      <span className="text-slate-600 font-bold">{app.city}, {app.country}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -535,6 +597,77 @@ export default function AppointmentsPage() {
                   className="flex-1 h-14 rounded-2xl bg-blue-600 text-white font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
                 >
                   Reschedule
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Medical Summary Modal */}
+      <AnimatePresence>
+        {completingAppointment && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden"
+            >
+              <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-white relative">
+                <button 
+                  onClick={() => setCompletingAppointment(null)}
+                  className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+                >
+                  <XCircle size={24} />
+                </button>
+                <h3 className="text-2xl font-black mb-2">Medical Consultation Summary</h3>
+                <p className="text-emerald-50/80 text-sm font-medium">
+                  Add diagnosis and prescriptions for <span className="text-white font-bold">{completingAppointment.fullName}</span>
+                </p>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Diagnosis</label>
+                  <textarea 
+                    value={medicalForm.diagnosis}
+                    onChange={(e) => setMedicalForm({...medicalForm, diagnosis: e.target.value})}
+                    placeholder="Enter patient diagnosis..."
+                    className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white transition-all outline-none text-sm font-bold min-h-[100px] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Prescription</label>
+                  <textarea 
+                    value={medicalForm.prescription}
+                    onChange={(e) => setMedicalForm({...medicalForm, prescription: e.target.value})}
+                    placeholder="List medications and dosage..."
+                    className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white transition-all outline-none text-sm font-bold min-h-[100px] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Additional Notes</label>
+                  <textarea 
+                    value={medicalForm.notes}
+                    onChange={(e) => setMedicalForm({...medicalForm, notes: e.target.value})}
+                    placeholder="Internal clinical notes..."
+                    className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white transition-all outline-none text-sm font-bold min-h-[80px] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-slate-100 bg-slate-50 flex gap-4">
+                <button 
+                  onClick={() => setCompletingAppointment(null)}
+                  className="flex-1 h-14 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black hover:bg-slate-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate(completingAppointment._id, 'completed', medicalForm)}
+                  className="flex-[2] h-14 rounded-2xl bg-emerald-600 text-white font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                >
+                  Complete Consultation
                 </button>
               </div>
             </motion.div>

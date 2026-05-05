@@ -21,6 +21,9 @@ export interface IPatient extends Document {
   address?: string;
   city?: string;
   country?: string;
+  diagnosis?: string;
+  prescription?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +50,9 @@ const patientSchema = new Schema<IPatient>(
     address: { type: String },
     city: { type: String },
     country: { type: String },
+    diagnosis: { type: String },
+    prescription: { type: String },
+    notes: { type: String },
   },
   { timestamps: true }
 );

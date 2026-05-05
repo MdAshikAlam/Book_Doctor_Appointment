@@ -66,7 +66,9 @@ const userSchema = new Schema<IUser>(
       type: Schema.Types.ObjectId, 
       ref: 'Clinic', 
       required: function(this: any) { 
-        return this.role !== UserRole.SUPER_ADMIN && this.role !== UserRole.ADMIN; 
+        return this.role !== UserRole.SUPER_ADMIN && 
+               this.role !== UserRole.ADMIN && 
+               this.role !== UserRole.PATIENT; 
       } 
     },
     branchIds: [{ type: Schema.Types.ObjectId, ref: 'Clinic' }],

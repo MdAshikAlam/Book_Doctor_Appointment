@@ -5,6 +5,7 @@ export enum AppointmentStatus {
   CONFIRMED = 'confirmed',
   CANCELLED = 'cancelled',
   COMPLETED = 'completed',
+  VISITED = 'visited',
 }
 
 export interface IAppointment extends Document {
@@ -18,6 +19,7 @@ export interface IAppointment extends Document {
   reason: string;
   paymentStatus: 'pending' | 'paid' | 'failed';
   prescription?: string;
+  diagnosis?: string;
   notes?: string;
   // Patient details from form
   fullName: string;
@@ -38,7 +40,7 @@ const appointmentSchema = new Schema<IAppointment>(
     patient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     doctor: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
-    branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Clinic' },
     date: { type: Date, required: true },
     slot: { type: String, required: true },
     status: {
@@ -53,6 +55,7 @@ const appointmentSchema = new Schema<IAppointment>(
       default: 'pending',
     },
     prescription: { type: String },
+    diagnosis: { type: String },
     notes: { type: String },
     // Patient details from form
     fullName: { type: String, required: true },
