@@ -24,6 +24,11 @@ export interface IPatient extends Document {
   diagnosis?: string;
   prescription?: string;
   notes?: string;
+  prescriptions?: any[];
+  consultationNotes?: any;
+  reports?: any[];
+  followUp?: any;
+  dischargeSummary?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +58,36 @@ const patientSchema = new Schema<IPatient>(
     diagnosis: { type: String },
     prescription: { type: String },
     notes: { type: String },
+    prescriptions: [{
+      medicine: String,
+      dosage: String,
+      timing: String,
+      days: Number,
+      notes: String
+    }],
+    consultationNotes: {
+      symptoms: String,
+      diagnosis: String,
+      observations: String,
+      advice: String
+    },
+    reports: [{
+      reportName: String,
+      reportType: String,
+      reportUrl: String,
+      uploadedAt: { type: Date, default: Date.now }
+    }],
+    followUp: {
+      date: Date,
+      notes: String
+    },
+    dischargeSummary: {
+      summary: String,
+      finalAdvice: String,
+      medicines: String,
+      nextVisitRecommendation: String,
+      dischargedAt: Date
+    },
   },
   { timestamps: true }
 );

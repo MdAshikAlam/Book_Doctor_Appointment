@@ -161,7 +161,16 @@ export const updateAppointmentStatus = async (
   role: string, 
   status: AppointmentStatus, 
   branchId?: string,
-  medicalDetails?: { diagnosis?: string; prescription?: string; notes?: string }
+  medicalDetails?: { 
+    diagnosis?: string; 
+    prescription?: string; 
+    notes?: string;
+    prescriptions?: any[];
+    consultationNotes?: any;
+    reports?: any[];
+    followUp?: any;
+    dischargeSummary?: any;
+  }
 ) => {
   const filter: any = { _id: id };
   
@@ -175,9 +184,17 @@ export const updateAppointmentStatus = async (
     const doctor = await Doctor.findOne({ user: userId });
     if (!doctor) throw new AppError('Doctor profile not found', 404);
     filter.doctor = doctor._id;
-    // Doctors can only mark as completed or cancelled
-    if (status !== AppointmentStatus.COMPLETED && status !== AppointmentStatus.CANCELLED) {
-      throw new AppError('Doctors can only mark appointments as completed or cancelled', 403);
+    // Doctors can only mark as completed, cancelled, or in consultation
+    const allowedStatuses = [
+      AppointmentStatus.COMPLETED, 
+      AppointmentStatus.CANCELLED, 
+      AppointmentStatus.IN_CONSULTATION,
+      AppointmentStatus.WAITING,
+      AppointmentStatus.ADMITTED,
+      AppointmentStatus.DISCHARGED
+    ];
+    if (!allowedStatuses.includes(status)) {
+      throw new AppError('Doctors are not authorized to set this status', 403);
     }
   } else if (role === 'admin' || role === 'receptionist') {
     const app = await Appointment.findById(id).populate({
@@ -216,6 +233,11 @@ export const updateAppointmentStatus = async (
     if (medicalDetails.diagnosis) update.diagnosis = medicalDetails.diagnosis;
     if (medicalDetails.prescription) update.prescription = medicalDetails.prescription;
     if (medicalDetails.notes) update.notes = medicalDetails.notes;
+    if (medicalDetails.prescriptions) update.prescriptions = medicalDetails.prescriptions;
+    if (medicalDetails.consultationNotes) update.consultationNotes = medicalDetails.consultationNotes;
+    if (medicalDetails.reports) update.reports = medicalDetails.reports;
+    if (medicalDetails.followUp) update.followUp = medicalDetails.followUp;
+    if (medicalDetails.dischargeSummary) update.dischargeSummary = medicalDetails.dischargeSummary;
   }
 
   const appointment = await Appointment.findOneAndUpdate(filter, update, { new: true })
@@ -260,6 +282,11 @@ export const updateAppointmentStatus = async (
       diagnosis: app.diagnosis,
       prescription: app.prescription,
       notes: app.notes,
+      prescriptions: app.prescriptions,
+      consultationNotes: app.consultationNotes,
+      reports: app.reports,
+      followUp: app.followUp,
+      dischargeSummary: app.dischargeSummary,
     } as any);
 
     console.log('Patient record created successfully:', (patientRecord as any)._id);

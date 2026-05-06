@@ -3,6 +3,7 @@ import * as appointmentService from '../services/appointment.service';
 import { AuthRequest } from '../middlewares/auth';
 import { z } from 'zod';
 import { AppointmentStatus } from '../models/Appointment';
+import { AppError } from '../middlewares/error';
 
 const appointmentSchema = z.object({
   doctor: z.string(),
@@ -81,7 +82,7 @@ export const getMyAppointments = async (req: Request, res: Response, next: NextF
 
 export const updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { status, diagnosis, prescription, notes } = req.body;
+    const { status, diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary } = req.body;
     const branchId = (req as any).branchId || (req as any).user.branchId;
     
     const appointment = await appointmentService.updateAppointmentStatus(
@@ -90,7 +91,7 @@ export const updateStatus = async (req: AuthRequest, res: Response, next: NextFu
       req.user!.role,
       status as AppointmentStatus,
       branchId,
-      { diagnosis, prescription, notes }
+      { diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary }
     );
 
     res.status(200).json({
