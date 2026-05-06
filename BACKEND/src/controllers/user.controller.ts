@@ -592,10 +592,8 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
 export const updatePatientStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { patientStatus } = req.body;
     const Patient = (await import('../models/Patient')).default;
-
-    const patient = await Patient.findByIdAndUpdate(id, { patientStatus }, { new: true });
+    const patient = await Patient.findByIdAndUpdate(id, req.body, { new: true });
 
     if (!patient) {
       throw new AppError('Patient not found', 404);

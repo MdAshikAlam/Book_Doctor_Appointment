@@ -126,9 +126,9 @@ export const usersApi = {
   }),
   getPatients: () => apiCall('/users/patients'),
   getPatientDetails: (id) => apiCall(`/users/patients/${id}`),
-  updatePatientStatus: (id, patientStatus) => apiCall(`/users/patients/${id}/status`, {
+  updatePatientStatus: (id, data) => apiCall(`/users/patients/${id}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ patientStatus }),
+    body: JSON.stringify(data),
   }),
   getAdminRequests: (status) => apiCall(`/users/admin-requests${status ? `?status=${status}` : ''}`),
   updateStatus: (id, status, rejectionReason) => apiCall(`/users/${id}/status`, {
