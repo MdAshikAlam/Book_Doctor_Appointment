@@ -3,7 +3,7 @@ import app from './app';
 import config from './config';
 import logger from './utils/logger';
 
-const PORT = config.PORT || 5000;
+const PORT = config.PORT;
 
 import { seedSystemUsers } from './utils/seed';
 
@@ -12,10 +12,10 @@ mongoose
   .connect(config.MONGODB_URI)
   .then(async () => {
     logger.info('✅ Connected to MongoDB');
-    
+
     // Seed system users
     await seedSystemUsers();
-    
+
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Server running in ${config.NODE_ENV} mode`);
       logger.info(`🔗 URL: http://0.0.0.0:${PORT}`);
@@ -23,7 +23,7 @@ mongoose
     });
   })
   .catch((err) => {
-    logger.error('❌ MongoDB connection error:', err);
+    logger.error({ err }, '❌ MongoDB connection error');
     process.exit(1);
   });
 
