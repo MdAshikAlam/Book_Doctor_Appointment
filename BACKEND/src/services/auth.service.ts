@@ -3,6 +3,7 @@ import User, { IUser, UserRole } from '../models/User';
 import { AppError } from '../middlewares/error';
 import { generateAccessToken, generateRefreshToken } from '../utils/auth';
 import { sendEmail } from '../utils/email';
+import logger from '../utils/logger';
 
 export const registerUser = async (userData: Partial<IUser>) => {
   const existingUser = await User.findOne({ email: userData.email as string });
@@ -30,8 +31,17 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
     throw new AppError('Please provide email and password', 400);
   }
 
+  logger.debug(`Attempting login for email: ${email}`);
   const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.comparePassword(password))) {
+  
+  if (!user) {
+    logger.debug(`User not found for email: ${email}`);
+    throw new AppError('Incorrect email or password', 401);
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    logger.debug(`Password mismatch for user: ${email}`);
     throw new AppError('Incorrect email or password', 401);
   }
 
