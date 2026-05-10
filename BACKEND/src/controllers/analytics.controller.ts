@@ -53,16 +53,87 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       patientQuery = { doctorId: { $in: doctorIds } };
     }
 
-    // 1. Basic Stats
-    const totalPatients = await Patient.countDocuments(patientQuery);
-    const activeDoctors = await Doctor.countDocuments(doctorQuery);
-    const appointmentsToday = await Appointment.countDocuments({
-      ...appointmentQuery,
-      date: { $gte: todayStart, $lte: todayEnd }
-    });
-    const totalAppointments = await Appointment.countDocuments(appointmentQuery);
+    // 1. Basic Stats & Revenue - Run in parallel
+    const [
+      totalPatients,
+      activeDoctors,
+      appointmentsToday,
+      totalAppointments,
+      revenueAggregation,
+      doctorPerformance,
+      recentAppointments
+    ] = await Promise.all([
+      Patient.countDocuments(patientQuery),
+      Doctor.countDocuments(doctorQuery),
+      Appointment.countDocuments({
+        ...appointmentQuery,
+        date: { $gte: todayStart, $lte: todayEnd }
+      }),
+      Appointment.countDocuments(appointmentQuery),
+      // Revenue aggregation
+      Appointment.aggregate([
+        { $match: { ...appointmentQuery, status: { $in: ['completed', 'visited'] } } },
+        { $lookup: { from: 'doctors', localField: 'doctor', foreignField: '_id', as: 'doctorInfo' } },
+        { $unwind: '$doctorInfo' },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$doctorInfo.consultationFee' },
+            revenueToday: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $gte: ['$date', todayStart] }, { $lte: ['$date', todayEnd] }] },
+                  '$doctorInfo.consultationFee',
+                  0
+                ]
+              }
+            }
+          }
+        }
+      ]),
+      // Doctor Performance
+      Appointment.aggregate([
+        { $match: appointmentQuery },
+        { 
+          $group: { 
+            _id: '$doctor', 
+            count: { $sum: 1 },
+            completed: { 
+              $sum: { $cond: [{ $in: ['$status', ['completed', 'visited']] }, 1, 0] } 
+            }
+          } 
+        },
+        { $lookup: { from: 'doctors', localField: '_id', foreignField: '_id', as: 'doctorInfo' } },
+        { $unwind: '$doctorInfo' },
+        { $lookup: { from: 'users', localField: 'doctorInfo.user', foreignField: '_id', as: 'userInfo' } },
+        { $unwind: '$userInfo' },
+        {
+          $project: {
+            name: '$userInfo.name',
+            specialty: '$doctorInfo.specialty',
+            totalAppointments: '$count',
+            completedAppointments: '$completed',
+            revenue: { $multiply: ['$completed', '$doctorInfo.consultationFee'] }
+          }
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 }
+      ]),
+      // Recent Appointments
+      Appointment.find(appointmentQuery)
+        .populate('patient', 'name')
+        .populate({
+          path: 'doctor',
+          populate: { path: 'user', select: 'name' }
+        })
+        .sort('-createdAt')
+        .limit(5)
+    ]);
 
-    // 2. Weekly Appointments Chart Data
+    const totalRevenue = revenueAggregation[0]?.totalRevenue || 0;
+    const revenueToday = revenueAggregation[0]?.revenueToday || 0;
+
+    // 4. Weekly Appointments Chart Data - Optimized to use one aggregation if possible, but keeping Promise.all for simplicity for now
     const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
     
     const weeklyStats = await Promise.all(last7Days.map(async (day) => {
@@ -78,16 +149,6 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       };
     }));
 
-    // 3. Recent Appointments (Last 5)
-    const recentAppointments = await Appointment.find(appointmentQuery)
-      .populate('patient', 'name')
-      .populate({
-        path: 'doctor',
-        populate: { path: 'user', select: 'name' }
-      })
-      .sort('-createdAt')
-      .limit(5);
-
     const formattedRecent = recentAppointments.map(apt => ({
       id: apt._id,
       patient: apt.fullName || (apt as any).patient?.name || 'Unknown',
@@ -97,28 +158,30 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       status: apt.status.charAt(0).toUpperCase() + apt.status.slice(1)
     }));
 
-    // 4. Construct Stats Cards based on permissions
+    // 6. Construct Stats Cards based on permissions
     const stats = [];
     
-    // Only show patients if not Receptionist (or if allowed)
-    // User said "Receptionist -> only appointments", so I'll hide Patients for them.
     if (currentUser.role !== UserRole.RECEPTIONIST) {
       stats.push({ title: 'Total Patients', value: totalPatients.toLocaleString(), icon: 'Users', color: 'blue' });
     }
 
-    // Only show doctors for Admin
     if (currentUser.role === UserRole.ADMIN) {
       stats.push({ title: 'Active Doctors', value: activeDoctors.toLocaleString(), icon: 'Stethoscope', color: 'green' });
+      stats.push({ title: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: 'IndianRupee', color: 'emerald', isCurrency: true });
     }
 
-    // Appointments are shown to everyone
+    stats.push({ title: 'Today\'s Revenue', value: `₹${revenueToday.toLocaleString()}`, icon: 'TrendingUp', color: 'indigo', isCurrency: true });
     stats.push({ title: 'Appointments Today', value: appointmentsToday.toLocaleString(), icon: 'CalendarCheck', color: 'purple' });
-    stats.push({ title: 'Total Appointments', value: totalAppointments.toLocaleString(), icon: 'CalendarCheck', color: 'orange' });
 
     res.status(200).json({
       status: 'success',
       data: {
         stats,
+        revenueData: {
+          total: totalRevenue,
+          today: revenueToday
+        },
+        doctorPerformance,
         appointmentChartData: weeklyStats,
         recentAppointments: formattedRecent
       }
@@ -127,3 +190,4 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+

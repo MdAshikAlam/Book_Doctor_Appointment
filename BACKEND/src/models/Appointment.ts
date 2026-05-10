@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { encrypt, decrypt } from '../utils/encryption';
 
 export enum AppointmentStatus {
   REGISTERED = 'registered',
@@ -137,7 +138,12 @@ const appointmentSchema = new Schema<IAppointment>(
     fullName: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
-    aadhaar: { type: String, required: true },
+    aadhaar: { 
+      type: String, 
+      required: true,
+      set: (val: string) => val ? encrypt(val) : val,
+      get: (val: string) => val ? decrypt(val) : val
+    },
     dob: { type: Date, required: true },
     gender: { type: String, required: true },
     address: { type: String, required: true },
@@ -146,8 +152,19 @@ const appointmentSchema = new Schema<IAppointment>(
     visitedBefore: { type: Boolean, default: false },
     isMovedToPatients: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
+  }
 );
+
+appointmentSchema.index({ branchId: 1 });
+appointmentSchema.index({ doctor: 1 });
+appointmentSchema.index({ date: 1 });
+appointmentSchema.index({ status: 1 });
+appointmentSchema.index({ createdAt: -1 });
 
 const Appointment = mongoose.model<IAppointment>('Appointment', appointmentSchema);
 export default Appointment;
+

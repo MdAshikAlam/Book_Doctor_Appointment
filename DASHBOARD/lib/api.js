@@ -1,8 +1,6 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export const apiCall = async (endpoint, options = {}) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  
   const headers = {
     ...options.headers,
   };
@@ -12,10 +10,6 @@ export const apiCall = async (endpoint, options = {}) => {
     headers['Content-Type'] = 'application/json';
   }
   
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   const selectedClinicId = typeof window !== 'undefined' ? localStorage.getItem('selectedClinicId') : null;
   if (selectedClinicId) {
     headers['X-Clinic-ID'] = selectedClinicId;
@@ -24,17 +18,15 @@ export const apiCall = async (endpoint, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include',
   });
 
   const data = await response.json();
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
+      // Just clear local state, don't force redirect here to avoid loops
       localStorage.removeItem('user');
-      document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-      document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-      window.location.href = '/';
     }
     throw new Error(data.message || 'Something went wrong');
   }
@@ -51,7 +43,7 @@ export const authApi = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  getMe: () => apiCall('/users/me'),
+  getMe: () => apiCall('/auth/me'),
   forgotPassword: (email) => apiCall('/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email }),
@@ -160,4 +152,8 @@ export const clinicsApi = {
     method: 'PATCH',
     body: JSON.stringify(data),
   }),
+  delete: (id) => apiCall(`/clinics/${id}`, {
+    method: 'DELETE',
+  }),
 };
+

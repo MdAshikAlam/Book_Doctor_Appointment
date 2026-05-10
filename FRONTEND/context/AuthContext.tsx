@@ -25,64 +25,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Keep track of the timeout so we can clear it on logout
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const clearTokenTimer = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const setupTokenTimer = (token: string) => {
-    clearTokenTimer();
+  const fetchCurrentUser = async () => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiry = payload.exp * 1000;
-      const timeUntilExpiry = expiry - Date.now();
-      
-      if (timeUntilExpiry <= 0) {
-        logout();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Important for cookies
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        setUser(data.data.user);
       } else {
-        timerRef.current = setTimeout(() => {
-          logout();
-          alert("Your session has expired. Please log in again.");
-          window.location.href = '/login';
-        }, timeUntilExpiry);
+        setUser(null);
       }
-    } catch (e) {
-      // Ignore if malformed
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('accessToken');
-    
-    if (storedUser && token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const expiry = payload.exp * 1000;
-        
-        if (Date.now() >= expiry) {
-          // Token already expired
-          localStorage.removeItem('user');
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setUser(null);
-        } else {
-          setUser(JSON.parse(storedUser));
-          setupTokenTimer(token);
-        }
-      } catch (e) {
-        setUser(JSON.parse(storedUser));
-      }
-    }
-    setLoading(false);
-    
-    return () => clearTokenTimer();
+    fetchCurrentUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -91,17 +59,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include'
       });
 
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
-        const { user, accessToken, refreshToken } = data.data;
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        setupTokenTimer(accessToken);
+        setUser(data.data.user);
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Login failed' };
@@ -122,14 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
            email: userData.email,
            password: userData.password,
            phone: userData.phone,
-           role: 'patient' // Default role
+           role: 'patient' 
         }),
+        credentials: 'include'
       });
 
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
-        return { success: true, message: 'Registration successful! Please login.' };
+        // Automatically log in after registration
+        setUser(data.data.user);
+        return { success: true, message: 'Registration successful!' };
       } else {
         return { success: false, message: data.message || 'Registration failed' };
       }
@@ -139,13 +106,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    clearTokenTimer();
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '/';
+  const logout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      window.location.href = '/';
+    }
   };
 
   return (

@@ -71,6 +71,14 @@ router.patch(
   clinicController.verifyClinic
 );
 
+router.delete(
+  '/:id',
+  protect,
+  branchHandler,
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  clinicController.deleteClinic
+);
+
 // Review Routes
 router.post('/:clinicId/reviews', protect, reviewController.createReview);
 router.get('/:clinicId/reviews', optionalProtect, reviewController.getClinicReviews);

@@ -25,12 +25,14 @@ import {
   Filter,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { clinicsApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import Modal from '@/components/common/Modal';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -63,6 +65,12 @@ export default function ClinicsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Delete State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [clinicToDelete, setClinicToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   // Slot Modal State
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
@@ -134,6 +142,24 @@ export default function ClinicsPage() {
     } catch (err) {
       console.error(err);
       alert('Failed to reject clinic: ' + err.message);
+    }
+  };
+
+  const handleDeleteClinic = async () => {
+    if (!clinicToDelete) return;
+    try {
+      setIsDeleting(true);
+      await clinicsApi.delete(clinicToDelete._id);
+      setSuccessMsg('Clinic deleted successfully!');
+      fetchData();
+      setIsDeleteModalOpen(false);
+      setClinicToDelete(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete clinic: ' + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -481,47 +507,60 @@ export default function ClinicsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {(user?.role === 'admin' || user?.role === 'super_admin' || clinic.owner === user?._id) && (
-                        <button 
-                          onClick={() => handleEdit(clinic)}
-                          className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all"
-                          title="Edit Clinic"
-                        >
-                          <Pencil size={20} />
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => handleEdit(clinic)}
+                            className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all shadow-sm"
+                            title="Edit Clinic"
+                          >
+                            <Pencil size={20} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setClinicToDelete(clinic);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all shadow-sm"
+                            title="Delete Clinic"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
-                       <Users size={18} className="text-blue-500" />
+                    <div className="p-4 rounded-2xl bg-blue-50/50 flex items-center gap-3 border border-blue-100/50">
+                       <ShieldCheck size={18} className="text-blue-600" />
                        <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Medical Staff</p>
-                         <p className="text-sm font-bold text-slate-900">{clinicDoctors.length} Specialists</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Admins</p>
+                         <p className="text-sm font-bold text-slate-900">{clinic.adminCount || 0}</p>
+                       </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-amber-50/50 flex items-center gap-3 border border-amber-100/50">
+                       <Stethoscope size={18} className="text-amber-600" />
+                       <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Doctors</p>
+                         <p className="text-sm font-bold text-slate-900">{clinic.doctorCount || 0}</p>
+                       </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-emerald-50/50 flex items-center gap-3 border border-emerald-100/50">
+                       <Users size={18} className="text-emerald-600" />
+                       <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Reception</p>
+                         <p className="text-sm font-bold text-slate-900">{clinic.receptionistCount || 0}</p>
                        </div>
                     </div>
                     <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
-                       <Phone size={18} className="text-emerald-500" />
+                       <CreditCard size={18} className="text-slate-500" />
                        <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
-                         <p className="text-sm font-bold text-slate-900">{clinic.phone}</p>
-                       </div>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
-                       <Mail size={18} className="text-indigo-500" />
-                       <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
-                         <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{clinic.email}</p>
-                       </div>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
-                       <CreditCard size={18} className="text-amber-500" />
-                       <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reg. Fee</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Reg. Fee</p>
                          <p className="text-sm font-bold text-slate-900">₹{clinic.registrationFee || '0'}</p>
                        </div>
                     </div>
                   </div>
+
 
                   <div className="pt-6 border-t border-slate-100">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -1132,6 +1171,38 @@ export default function ClinicsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Permanently Remove Clinic"
+      >
+        <div className="text-center py-6">
+          <div className="w-20 h-20 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-6">
+            <Trash2 size={40} />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-900">Final Confirmation</h3>
+          <p className="text-slate-500 mt-2 font-medium">
+            Are you sure you want to delete <span className="text-slate-900 font-bold">{clinicToDelete?.clinicName}</span>? 
+            This action will permanently remove all associations with doctors and staff.
+          </p>
+          <div className="flex gap-4 mt-8">
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} className="flex-1 h-14 rounded-2xl font-bold">Cancel</Button>
+            <Button 
+              onClick={handleDeleteClinic} 
+              disabled={isDeleting}
+              className="flex-1 h-14 bg-red-500 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-600 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
+            >
+              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Delete Permanently'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* View Details Modal or Slot Modal if any */}
     </div>
   );
 }
+

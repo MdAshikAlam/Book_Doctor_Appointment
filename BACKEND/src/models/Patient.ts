@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { encrypt, decrypt } from '../utils/encryption';
 
 export interface IPatient extends Document {
   patientName: string;
@@ -49,7 +50,11 @@ const patientSchema = new Schema<IPatient>(
     doctorId: { type: Schema.Types.ObjectId, ref: 'Doctor' },
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
     branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
-    aadhaar: { type: String },
+    aadhaar: { 
+      type: String,
+      set: (val: string) => val ? encrypt(val) : val,
+      get: (val: string) => val ? decrypt(val) : val
+    },
     dob: { type: Date },
     gender: { type: String },
     address: { type: String },
@@ -89,8 +94,15 @@ const patientSchema = new Schema<IPatient>(
       dischargedAt: Date
     },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
+  }
 );
+
+patientSchema.index({ branchId: 1 });
 
 const Patient = mongoose.model<IPatient>('Patient', patientSchema);
 export default Patient;
+

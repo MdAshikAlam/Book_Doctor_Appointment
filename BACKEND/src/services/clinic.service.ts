@@ -17,7 +17,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
     filter.clinicName = { $regex: clinicName, $options: 'i' };
   }
 
-  if (lat && lng) {
+  if (lat && lng && !query.isDashboard) {
     filter.location = {
       $near: {
         $geometry: {
@@ -28,32 +28,109 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
       },
     };
   }
-  if (creatorId) {
-    const User = (await import('../models/User')).default;
-    const user = await User.findById(creatorId);
+  const User = (await import('../models/User')).default;
+  const mongoose = require('mongoose');
 
-    if (user?.organization) {
-      filter.$or = [
-        { organizationId: user.organization },
-        { organizationId: { $exists: false } },
-        { organizationId: null }
-      ];
-    } else {
-      const mongoose = require('mongoose');
-      const creatorObjectId = new mongoose.Types.ObjectId(creatorId);
-      filter.$or = [
-        { owner: creatorObjectId },
-        { createdBy: creatorObjectId },
-        { createdByAdminId: creatorObjectId },
-        { parentAdmin: creatorObjectId },
-        { parentReceptionist: creatorObjectId },
-        { _id: { $in: user?.branchIds || [] } }
-      ];
-    }
+  if (creatorId) {
+    const user = await User.findById(creatorId);
+    const creatorObjectId = new mongoose.Types.ObjectId(creatorId);
+    
+    // Combine all possible associations
+    const userBranchIds = [
+      ...(user?.branchIds || []),
+      ...(user?.branchId ? [user.branchId] : []),
+      ...(user?.clinic ? [user.clinic] : []),
+      ...( (user as any)?.clinics || [])
+    ].map(id => id.toString());
+
+    filter.$or = [
+      { owner: creatorObjectId },
+      { createdBy: creatorObjectId },
+      { createdByAdminId: creatorObjectId },
+      { parentAdmin: creatorObjectId },
+      { parentReceptionist: creatorObjectId },
+      { _id: { $in: userBranchIds.map(id => new mongoose.Types.ObjectId(id)) } }
+    ];
+    
+    console.log('Admin Clinic Filter:', JSON.stringify(filter, null, 2));
   }
 
-  return await Clinic.find(filter).populate('owner', 'name email');
+
+  // Use Aggregation to get counts
+  const clinics = await Clinic.aggregate([
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'users',
+        let: { clinicId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  { $eq: ['$branchId', '$$clinicId'] },
+                  { $in: ['$$clinicId', { $ifNull: ['$branchIds', []] }] }
+                ]
+              }
+            }
+          }
+        ],
+        as: 'staff'
+      }
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'owner',
+        foreignField: '_id',
+        as: 'ownerInfo'
+      }
+    },
+    {
+      $addFields: {
+        adminCount: {
+          $size: {
+            $filter: {
+              input: '$staff',
+              as: 's',
+              cond: { $eq: ['$$s.role', 'admin'] }
+            }
+          }
+        },
+        doctorCount: {
+          $size: {
+            $filter: {
+              input: '$staff',
+              as: 's',
+              cond: { $eq: ['$$s.role', 'doctor'] }
+            }
+          }
+        },
+        receptionistCount: {
+          $size: {
+            $filter: {
+              input: '$staff',
+              as: 's',
+              cond: { $eq: ['$$s.role', 'receptionist'] }
+            }
+          }
+        },
+        owner: { $arrayElemAt: ['$ownerInfo', 0] }
+      }
+    },
+    {
+      $project: {
+        staff: 0,
+        ownerInfo: 0,
+        'owner.password': 0,
+        'owner.refreshToken': 0
+      }
+    }
+  ]);
+
+  return clinics;
 };
+
 
 export const getClinicById = async (idOrSlug: string) => {
   const mongoose = require('mongoose');
@@ -169,3 +246,33 @@ export const updateClinicStatus = async (id: string, status: string) => {
 
   return clinic;
 };
+
+export const deleteClinic = async (id: string, requesterId: string, role: string) => {
+  const clinic = await Clinic.findById(id);
+  if (!clinic) {
+    throw new AppError('Clinic not found', 404);
+  }
+
+  // Permission Check
+  if (role !== 'super_admin' && clinic.owner.toString() !== requesterId) {
+    throw new AppError('You are not authorized to delete this clinic', 403);
+  }
+
+  // Remove clinic reference from doctors
+  const Doctor = (await import('../models/Doctor')).default;
+  await Doctor.updateMany(
+    { $or: [{ clinic: id }, { clinics: id }, { branchId: id }] },
+    { $unset: { clinic: 1, branchId: 1 }, $pull: { clinics: id } }
+  );
+
+  // Remove clinic reference from users
+  const User = (await import('../models/User')).default;
+  await User.updateMany(
+    { $or: [{ branchId: id }, { branchIds: id }] },
+    { $unset: { branchId: 1 }, $pull: { branchIds: id } }
+  );
+
+  await Clinic.findByIdAndDelete(id);
+  return true;
+};
+
