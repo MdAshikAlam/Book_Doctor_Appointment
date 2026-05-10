@@ -1,9 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { authApi } from '@/lib/api';
-import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
+import { authApi, apiCall } from '@/lib/api';
 
 const AuthContext = createContext();
 
@@ -13,54 +12,32 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const router = useRouter();
 
+
+
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
-        const token = Cookies.get('accessToken');
+        const response = await authApi.getMe();
+        const freshUser = response.data.user;
         
-        if (token) {
-          if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
-              // Safety check: Patients should not be in the dashboard
-              if (parsedUser.role === 'patient') {
-                logout();
-                return;
-              }
-              setUser(parsedUser);
-            } else {
-              // Fetch fresh user data if stored data is invalid
-              const response = await authApi.getMe();
-              const freshUser = response.data.user;
-              if (freshUser.role === 'patient') {
-                logout();
-                return;
-              }
-              setUser(freshUser);
-              localStorage.setItem('user', JSON.stringify(freshUser));
-            }
-          } else {
-            // Token exists but no user info, fetch it
-            const response = await authApi.getMe();
-            const freshUser = response.data.user;
-            if (freshUser.role === 'patient') {
-              logout();
-              return;
-            }
-            setUser(freshUser);
-            localStorage.setItem('user', JSON.stringify(freshUser));
-          }
-        } else {
-          // Token missing, clear state
-          localStorage.removeItem('user');
-          localStorage.removeItem('accessToken');
-          setUser(null);
+        if (freshUser.role === 'patient') {
+          logout();
+          return;
         }
+        
+        setUser(freshUser);
+        localStorage.setItem('user', JSON.stringify(freshUser));
       } catch (err) {
         console.error('Auth Init Error:', err);
-        logout();
+        // Clear everything IMMEDIATELY to prevent redirect loops during the async logout
+        setUser(null);
+        localStorage.removeItem('user');
+        
+        if (err.message.includes('401') || err.message.includes('logged in')) {
+          await logout();
+        }
       } finally {
+
         setLoading(false);
       }
     };
@@ -74,17 +51,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       const response = await authApi.login(credentials);
-      const { user, accessToken } = response.data;
-      
-      // Store in Cookies for Middleware access - added path: '/'
-      Cookies.set('accessToken', accessToken, { expires: 7, secure: true, sameSite: 'strict', path: '/' });
-      Cookies.set('userRole', user.role, { expires: 7, secure: true, sameSite: 'strict', path: '/' });
-      
-      // Store in LocalStorage for Client-Side state
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('accessToken', accessToken);
+      const { user } = response.data;
       
       setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      
       router.push('/dashboard');
       return { success: true };
     } catch (err) {
@@ -95,14 +66,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    Cookies.remove('accessToken');
-    Cookies.remove('userRole');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    setUser(null);
-    router.push('/');
+  const logout = async () => {
+    try {
+      await apiCall('/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout API Error:', err);
+    } finally {
+      localStorage.removeItem('user');
+      setUser(null);
+      // Add a query param to signal to the middleware/proxy that we shouldn't auto-redirect back
+      router.push('/?auth=failed');
+    }
   };
+
 
   return (
     <AuthContext.Provider value={{ user, loading, error, login, logout }}>

@@ -82,9 +82,8 @@ export const ClinicProvider = ({ children }) => {
       setSelectedClinicId(clinicId);
       localStorage.setItem('selectedClinicId', clinicId);
     }
-    // Reload the page to refresh all data with the new clinicId header
-    window.location.reload();
   };
+
 
   return (
     <ClinicContext.Provider value={{ 

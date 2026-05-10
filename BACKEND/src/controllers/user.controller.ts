@@ -572,11 +572,33 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
         as: 'doctors'
       }
     });
-
-    // 4. Cleanup
+    
+    // Lookup Branch Info for the root members (Admins/Receptionists)
     stages.push({
-      $project: { password: 0, refreshToken: 0 }
+      $lookup: {
+        from: 'clinics',
+        localField: 'branchId',
+        foreignField: '_id',
+        as: 'branchInfo'
+      }
     });
+
+    // 4. Cleanup and Format
+    stages.push({
+      $addFields: {
+        branchName: { 
+          $ifNull: [
+            { $arrayElemAt: ['$branchInfo.clinicName', 0] }, 
+            '$clinicName'
+          ] 
+        }
+      }
+    });
+
+    stages.push({
+      $project: { password: 0, refreshToken: 0, branchInfo: 0 }
+    });
+
 
     const hierarchy = await User.aggregate(stages);
 

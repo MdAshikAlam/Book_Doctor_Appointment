@@ -554,9 +554,15 @@ function AdminTree({ admin, onEdit, onDelete }) {
             <div className="flex items-center gap-3">
               <h3 className="text-xl font-black text-slate-900">{admin.name}</h3>
               <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">ADMIN</span>
+              {admin.branchName && (
+                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                  <MapPin size={10} /> {admin.branchName}
+                </span>
+              )}
             </div>
             <p className="text-slate-500 font-medium text-sm">{admin.email}</p>
           </div>
+
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => onEdit(admin)} className="p-3 hover:bg-white rounded-xl text-blue-600 transition-all shadow-sm"><Edit size={20}/></button>

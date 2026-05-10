@@ -74,7 +74,11 @@ router.post('/register-admin', authController.registerAdmin);
  *         description: Invalid credentials
  */
 router.post('/login', authController.login);
+router.post('/logout', authController.logout);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password/:token', authController.resetPassword);
+
+import { protect } from '../middlewares/auth';
+router.get('/me', protect, authController.getMe);
 
 export default router;

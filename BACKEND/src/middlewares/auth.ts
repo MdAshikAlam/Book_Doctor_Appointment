@@ -8,6 +8,8 @@ import mongoose from 'mongoose';
 export interface AuthRequest extends Request {
   user?: {
     id: string;
+    name: string;
+    email: string;
     role: UserRole;
     branchId?: string | undefined;
     branchIds?: string[] | undefined;
@@ -23,11 +25,21 @@ export const protect = async (
   try {
     let token: string | undefined;
 
+    // Debug logging
+    console.log('Incoming Cookies:', req.cookies);
+    console.log('Authorization Header:', req.headers.authorization);
+    console.log('Raw Cookie Header:', req.headers.cookie);
+
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
+    } else if (req.headers.cookie) {
+      const match = req.headers.cookie.match(/accessToken=([^;]+)/);
+      if (match) token = match[1];
     }
 
     if (!token) {
@@ -43,6 +55,8 @@ export const protect = async (
 
     req.user = {
       id: currentUser._id.toString(),
+      name: currentUser.name,
+      email: currentUser.email,
       role: currentUser.role as UserRole,
       branchId: currentUser.branchId?.toString(),
       branchIds: (currentUser as any).branchIds?.map((id: any) => id.toString()),
@@ -71,6 +85,8 @@ export const optionalProtect = async (
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
     }
 
     if (!token) {
@@ -86,6 +102,8 @@ export const optionalProtect = async (
 
     req.user = {
       id: currentUser._id.toString(),
+      name: currentUser.name,
+      email: currentUser.email,
       role: currentUser.role as UserRole,
       branchId: currentUser.branchId?.toString(),
       branchIds: (currentUser as any).branchIds?.map((id: any) => id.toString()),
@@ -97,6 +115,7 @@ export const optionalProtect = async (
     next();
   }
 };
+
 
 export const restrictTo = (...roles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {

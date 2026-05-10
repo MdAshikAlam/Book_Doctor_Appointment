@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
@@ -31,18 +32,23 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    process.env.DASHBOARD_URL || 'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002'
+  ],
+  credentials: true,
+}));
 app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 app.use(branchHandler);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes',
-});
-app.use('/api', limiter);
+// Rate Limiting Disabled for debugging
+// const limiter = rateLimit({ ... });
+// app.use('/api', limiter);
 
 // Swagger Documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

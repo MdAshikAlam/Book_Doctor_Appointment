@@ -9,7 +9,10 @@ import {
   Download, 
   Filter, 
   Plus,
-  ArrowRight
+  ArrowRight,
+  IndianRupee,
+  TrendingUp,
+  Star
 } from 'lucide-react';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import Chart from '@/components/dashboard/Chart';
@@ -108,7 +111,9 @@ const iconMap = {
   Users: Users,
   Stethoscope: Stethoscope,
   CalendarCheck: CalendarCheck,
-  DollarSign: DollarSign
+  DollarSign: DollarSign,
+  IndianRupee: IndianRupee,
+  TrendingUp: TrendingUp
 };
 
 export default function DashboardPage() {
@@ -116,6 +121,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [performance, setPerformance] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const isReceptionist = user?.role === 'receptionist';
@@ -124,11 +130,9 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('accessToken');
+        // Using absolute URL to bypass proxy issues
         const res = await fetch(`${API_BASE_URL}/analytics/dashboard-stats`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         const data = await res.json();
 
@@ -136,6 +140,7 @@ export default function DashboardPage() {
           setStats(data.data.stats);
           setChartData(data.data.appointmentChartData);
           setAppointments(data.data.recentAppointments);
+          setPerformance(data.data.doctorPerformance || []);
         }
       } catch (err) {
         console.error('Failed to fetch dashboard stats', err);
@@ -210,6 +215,32 @@ export default function DashboardPage() {
 
       {/* Tables and List Section */}
       <div className={cn("grid grid-cols-1 gap-6", isReceptionist ? "xl:grid-cols-1" : "xl:grid-cols-3")}>
+        {/* Doctor Performance - NEW */}
+        {!isReceptionist && user?.role === 'admin' && (
+          <div className="xl:col-span-3">
+            <Card 
+              title="Doctor Performance" 
+              subtitle="Top performing doctors by revenue and appointments"
+              className="h-full"
+            >
+              <Table 
+                columns={[
+                  { header: 'Doctor Name', accessor: 'name' },
+                  { header: 'Specialty', accessor: 'specialty' },
+                  { header: 'Total Apps', accessor: 'totalAppointments' },
+                  { header: 'Completed', accessor: 'completedAppointments' },
+                  { 
+                    header: 'Revenue', 
+                    accessor: 'revenue',
+                    render: (row) => <span className="font-bold text-emerald-600">₹{row.revenue.toLocaleString()}</span>
+                  }
+                ]} 
+                data={performance} 
+              />
+            </Card>
+          </div>
+        )}
+
         {/* Recent Patients Table - Hidden for Receptionists */}
         {!isReceptionist && (
           <div className="xl:col-span-2">

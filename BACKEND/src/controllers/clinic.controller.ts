@@ -206,3 +206,14 @@ export const updateClinic = async (req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 };
+export const deleteClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await clinicService.deleteClinic(req.params.id as string, req.user!.id, req.user!.role);
+    res.status(204).json({
+      status: 'success',
+      data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
