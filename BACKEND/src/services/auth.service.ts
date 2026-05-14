@@ -51,8 +51,19 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
       throw new AppError('Email not registered.', 401);
     }
 
-    if (user.role === UserRole.ADMIN && user.status === 'pending') {
-      throw new AppError('Your admin application is pending approval. Please wait for the Super Admin to approve your account.', 403);
+    if (user.role === UserRole.ADMIN) {
+      if (user.status === 'pending') {
+        throw new AppError('Your admin application is pending approval. Please wait for the Super Admin to approve your account.', 403);
+      }
+      if (user.status === 'suspended') {
+        throw new AppError('Your account has been suspended. Please contact support.', 403);
+      }
+      if (user.status === 'inactive') {
+        throw new AppError('Your account is currently inactive.', 403);
+      }
+      if (user.status === 'deleted') {
+        throw new AppError('This account has been deleted.', 403);
+      }
     }
   }
 

@@ -53,6 +53,26 @@ export const protect = async (
       return next(new AppError('The user belonging to this token no longer exists.', 401));
     }
 
+    // 1. Check User Status
+    const loginAllowedStatus = ['active', 'approved'];
+    if (!loginAllowedStatus.includes(currentUser.status || '')) {
+      let message = 'Your account is currently inactive.';
+      if (currentUser.status === 'suspended') message = 'Your account has been suspended. Please contact support.';
+      if (currentUser.status === 'deleted') message = 'This account has been deleted.';
+      if (currentUser.status === 'pending') message = 'Your account is pending approval.';
+      if (currentUser.status === 'rejected') message = 'Your application was rejected.';
+      
+      return next(new AppError(message, 403));
+    }
+
+    // 2. Check if user changed password or logged out after the token was issued
+    if (currentUser.lastLogoutAt && decoded.iat) {
+      const changedTimestamp = Math.floor(currentUser.lastLogoutAt.getTime() / 1000);
+      if (decoded.iat < changedTimestamp) {
+        return next(new AppError('User recently logged out or session expired. Please log in again.', 401));
+      }
+    }
+
     req.user = {
       id: currentUser._id.toString(),
       name: currentUser.name,
@@ -138,6 +158,11 @@ export const checkAdminOwnership = async (req: AuthRequest, res: Response, next:
     const targetUser = await User.findById(targetId);
     if (!targetUser) return next(new AppError('User not found', 404));
 
+    // Super Admin has full access
+    if (requester.role === UserRole.SUPER_ADMIN) {
+      return next();
+    }
+
     // Admin Ownership Check
     if (requester.role === UserRole.ADMIN) {
       // Admin can only access users where they are the parentAdmin
@@ -175,6 +200,11 @@ export const checkDoctorOwnership = async (req: AuthRequest, res: Response, next
 
     const targetUser = (doctor as any).user;
     if (!targetUser) return next(new AppError('User profile not found for this doctor', 404));
+
+    // Super Admin has full access
+    if (requester.role === UserRole.SUPER_ADMIN) {
+      return next();
+    }
 
     // Admin Ownership Check
     if (requester.role === UserRole.ADMIN) {

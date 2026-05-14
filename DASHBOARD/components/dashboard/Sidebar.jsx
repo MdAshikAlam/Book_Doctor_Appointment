@@ -21,7 +21,8 @@ import {
   ShieldAlert,
   BarChart3,
   XCircle,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -43,9 +44,9 @@ const superAdminSections = [
   {
     title: 'Verification',
     items: [
-      { icon: UserPlus, label: 'Admin Requests', href: '/dashboard/admin-requests' },
-      { icon: FileCheck, label: 'Clinic Verification', href: '/dashboard/clinic-verification' },
-      { icon: FileCheck, label: 'Doctor Verification', href: '/dashboard/doctor-verification' },
+      { icon: UserPlus, label: 'Admin Requests', href: '/dashboard/admin-requests', category: 'adminRequests' },
+      { icon: FileCheck, label: 'Clinic Verification', href: '/dashboard/clinic-verification', category: 'clinicVerification' },
+      { icon: FileCheck, label: 'Doctor Verification', href: '/dashboard/doctor-verification', category: 'doctorVerification' },
     ]
   },
   {
@@ -62,6 +63,7 @@ const superAdminSections = [
     items: [
       { icon: Flag, label: 'Reports & Flags', href: '/dashboard/reports' },
       { icon: ShieldAlert, label: 'Block / Suspend', href: '/dashboard/safety' },
+      { icon: Trash2, label: 'Trash Bin', href: '/dashboard/trash' },
     ]
   },
   {
@@ -107,10 +109,46 @@ const staffItems = [
   { icon: UserRound, label: 'Profile', href: '/dashboard/profile' },
 ];
 
+import { useEffect } from 'react';
+import { analyticsApi } from '@/lib/api';
+
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState({});
   const pathname = usePathname();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === 'super_admin') {
+      fetchNotifications();
+      // Polling for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await analyticsApi.getNotifications();
+      setNotifications(response.data);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
+  const handleLinkClick = async (category) => {
+    if (category && notifications[category]?.new > 0) {
+      try {
+        await analyticsApi.markNotified(category);
+        setNotifications(prev => ({
+          ...prev,
+          [category]: { ...prev[category], new: 0 }
+        }));
+      } catch (err) {
+        console.error('Failed to mark notifications as viewed:', err);
+      }
+    }
+  };
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
@@ -119,11 +157,14 @@ const Sidebar = () => {
   const renderLink = (item, idx) => {
     const isActive = pathname === item.href;
     const Icon = item.icon;
+    const notification = notifications[item.category];
+    const showBadge = notification && notification.new > 0;
     
     return (
       <Link
         key={`${item.href}-${idx}`}
         href={item.href}
+        onClick={() => handleLinkClick(item.category)}
         className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-xl transition-all group relative",
           isActive 
@@ -133,14 +174,27 @@ const Sidebar = () => {
       >
         <Icon size={20} className={cn("shrink-0", isActive ? "text-white" : "group-hover:scale-110 transition-transform")} />
         {!isCollapsed && (
-          <span className="font-medium text-sm whitespace-nowrap overflow-hidden">
-            {item.label}
-          </span>
+          <div className="flex-1 flex items-center justify-between min-w-0">
+            <span className="font-medium text-sm whitespace-nowrap overflow-hidden truncate">
+              {item.label}
+            </span>
+            {showBadge && (
+              <span className="flex items-center justify-center bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full px-1 animate-pulse">
+                {notification.total}
+              </span>
+            )}
+          </div>
         )}
         {isCollapsed && (
-          <div className="absolute left-14 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
-            {item.label}
-          </div>
+          <>
+            {showBadge && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            )}
+            <div className="absolute left-14 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+              {item.label}
+              {showBadge && ` (${notification.total})`}
+            </div>
+          </>
         )}
       </Link>
     );

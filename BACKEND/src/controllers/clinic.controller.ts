@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { ClinicType } from '../models/Clinic';
 import { geocodeAddress } from '../utils/geocoder';
 import { AppError } from '../middlewares/error';
-import { UserRole } from '../models/User';
+import User, { UserRole } from '../models/User';
 
 import Clinic from '../models/Clinic';
 
@@ -166,6 +166,17 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
       owner: req.user!.id as any,
       createdByAdminId: req.user!.id as any,
     } as any, req.user!.id);
+
+    // Update the Admin user with the new clinic linkage
+    if (req.user!.role === UserRole.ADMIN) {
+      await User.findByIdAndUpdate(req.user!.id, {
+        $addToSet: { branchIds: clinic._id },
+        $set: { 
+          branchId: clinic._id, 
+          clinic: clinic._id 
+        }
+      });
+    }
 
     res.status(201).json({
       status: 'success',

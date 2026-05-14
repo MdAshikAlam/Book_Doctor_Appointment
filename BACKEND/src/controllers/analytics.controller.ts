@@ -4,6 +4,7 @@ import Appointment from '../models/Appointment';
 import User, { UserRole } from '../models/User';
 import Doctor from '../models/Doctor';
 import Patient from '../models/Patient';
+import Clinic from '../models/Clinic';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -191,3 +192,79 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
   }
 };
 
+export const getNotificationCounts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById((req as any).user.id);
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'User not found' });
+    }
+
+    const lastViewed = user.lastViewedNotifications || {
+      adminRequests: new Date(0),
+      clinicVerification: new Date(0),
+      doctorVerification: new Date(0)
+    };
+
+    // 1. Admin Requests (Pending users with role admin)
+    const [adminPending, adminNew] = await Promise.all([
+      User.countDocuments({ role: UserRole.ADMIN, status: 'pending' }),
+      User.countDocuments({ 
+        role: UserRole.ADMIN, 
+        status: 'pending', 
+        createdAt: { $gt: lastViewed.adminRequests || new Date(0) } 
+      })
+    ]);
+
+    // 2. Clinic Verification (Pending clinics)
+    const [clinicPending, clinicNew] = await Promise.all([
+      Clinic.countDocuments({ clinicStatus: 'pending' }),
+      Clinic.countDocuments({ 
+        clinicStatus: 'pending', 
+        createdAt: { $gt: lastViewed.clinicVerification || new Date(0) } 
+      })
+    ]);
+
+    // 3. Doctor Verification (Submitted doctors)
+    const [doctorPending, doctorNew] = await Promise.all([
+      Doctor.countDocuments({ status: 'submitted' }),
+      Doctor.countDocuments({ 
+        status: 'submitted', 
+        createdAt: { $gt: lastViewed.doctorVerification || new Date(0) } 
+      })
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        adminRequests: { total: adminPending, new: adminNew },
+        clinicVerification: { total: clinicPending, new: clinicNew },
+        doctorVerification: { total: doctorPending, new: doctorNew }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const markNotificationsViewed = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category } = req.body;
+    const userId = (req as any).user.id;
+
+    if (!['adminRequests', 'clinicVerification', 'doctorVerification'].includes(category)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid category' });
+    }
+
+    const updateField = `lastViewedNotifications.${category}`;
+    await User.findByIdAndUpdate(userId, {
+      $set: { [updateField]: new Date() }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: `Notifications for ${category} marked as viewed`
+    });
+  } catch (error) {
+    next(error);
+  }
+};

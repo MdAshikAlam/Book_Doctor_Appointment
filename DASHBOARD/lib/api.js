@@ -21,7 +21,16 @@ export const apiCall = async (endpoint, options = {}) => {
     credentials: 'include',
   });
 
-  const data = await response.json();
+  // Handle empty responses (like 204 No Content)
+  let data = {};
+  const text = await response.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse JSON:', e);
+    }
+  }
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
@@ -127,6 +136,21 @@ export const usersApi = {
     method: 'PATCH',
     body: JSON.stringify({ status, rejectionReason }),
   }),
+  suspend: (id) => apiCall(`/users/${id}/suspend`, { method: 'PATCH' }),
+  reactivate: (id) => apiCall(`/users/${id}/reactivate`, { method: 'PATCH' }),
+  resetPassword: (id, password) => apiCall(`/users/${id}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  }),
+  transferData: (data) => apiCall('/users/transfer-data', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getActivityLogs: () => apiCall('/users/activity-logs'),
+  getTrashBin: () => apiCall('/users/trash-bin'),
+  restoreFromTrash: (adminId) => apiCall(`/users/trash-bin/${adminId}/restore`, {
+    method: 'POST'
+  }),
 };
 
 export const utilityApi = {
@@ -154,6 +178,15 @@ export const clinicsApi = {
   }),
   delete: (id) => apiCall(`/clinics/${id}`, {
     method: 'DELETE',
+  }),
+};
+
+export const analyticsApi = {
+  getStats: () => apiCall('/analytics/dashboard-stats'),
+  getNotifications: () => apiCall('/analytics/notifications'),
+  markNotified: (category) => apiCall('/analytics/mark-notified', {
+    method: 'POST',
+    body: JSON.stringify({ category }),
   }),
 };
 
