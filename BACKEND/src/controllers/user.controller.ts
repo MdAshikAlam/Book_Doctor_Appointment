@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User, { UserRole } from '../models/User';
 import { AppError } from '../middlewares/error';
 import { z } from 'zod';
+import { logActivity } from '../utils/activityLogger';
 
 export const getPatients = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -96,53 +97,8 @@ export const updateUserStatus = async (req: Request, res: Response, next: NextFu
     user.status = status;
     if (rejectionReason) user.rejectionReason = rejectionReason;
 
-    // Admin Approval Logic: Automatically set up Organization and Clinic
-    if (user.role === UserRole.ADMIN && oldStatus === 'pending' && status === 'approved') {
-      const Organization = (await import('../models/Organization')).default;
-      const Clinic = (await import('../models/Clinic')).default;
-
-      // Only create if not already exists (safety for re-approval)
-      let clinicId = user.clinic;
-
-      if (!clinicId) {
-        // 1. Create Organization
-        const org = await Organization.create({
-          name: user.clinicName || `${user.name}'s Organization`,
-          owner: user._id as any,
-          email: user.email,
-          phone: user.phone || '0000000000'
-        });
-
-        // 2. Create Initial Clinic Branch
-        const clinic = await Clinic.create({
-          clinicName: user.clinicName || `${user.name}'s Clinic`,
-          legalName: user.clinicName || `${user.name}'s Clinic`,
-          ownerName: user.name,
-          ownerPhone: user.phone || '0000000000',
-          ownerEmail: user.email,
-          owner: user._id as any,
-          createdByAdminId: user._id as any,
-          city: user.city || 'Unknown',
-          state: user.state || 'Unknown',
-          address: user.city || 'Main Street',
-          pincode: '000000',
-          phone: user.phone || '0000000000',
-          email: user.email,
-          openingTime: '09:00',
-          closingTime: '21:00',
-          registrationNumber: user.governmentIdNumber || `REG-${user._id.toString().slice(-6)}`,
-          registrationProof: 'system-generated-proof',
-          location: { type: 'Point', coordinates: [0, 0] },
-          clinicStatus: 'approved' 
-        });
-
-        clinicId = clinic._id as any;
-      }
-
-      user.clinic = clinicId as any;
-      user.branchId = clinicId as any;
-      user.branchIds = [clinicId as any];
-    }
+    // Admin Approval logic handled by super admin manual review
+    // Clinic/Organization creation is now done manually by the Admin after login
 
     await user.save();
 
@@ -161,7 +117,7 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
     const branchId = (req as any).branchId;
     let query: any = {
       role: { $nin: [UserRole.SUPER_ADMIN, UserRole.PATIENT] },
-      status: 'approved'
+      status: { $in: ['active', 'approved', 'suspended', 'inactive'] }
     };
 
     // Data Isolation Logic
@@ -382,7 +338,7 @@ export const updateStaff = async (req: Request, res: Response, next: NextFunctio
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const user = await User.findById(id);
+    const user = await User.findById(id).select('+password +refreshToken +passwordResetToken +passwordResetExpires');
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -410,14 +366,83 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       // Super admin can delete anyone
     }
 
-    if (user.role === UserRole.DOCTOR) {
+    const deletedEmail = user.email;
+    const TrashBin = (await import('../models/TrashBin')).default;
+
+    // 1. If it's an Admin, we need to gather all related data
+    if (user.role === UserRole.ADMIN) {
+      // Find all Clinics owned by this admin
+      const Clinic = (await import('../models/Clinic')).default;
+      const clinics = await Clinic.find({ owner: id });
+      for (const clinic of clinics) {
+        await TrashBin.create({
+          originalId: clinic._id,
+          collectionName: 'clinics',
+          data: clinic.toObject(),
+          deletedBy: requester.id,
+          adminId: id as any
+        });
+        await Clinic.findByIdAndDelete(clinic._id);
+      }
+
+      // Find all Staff members belonging to this admin
+      const staffMembers = await User.find({ parentAdmin: id as any }).select('+password +refreshToken +passwordResetToken +passwordResetExpires');
+      for (const staff of staffMembers) {
+        // Find if they have a doctor profile
+        if (staff.role === UserRole.DOCTOR) {
+          const Doctor = (await import('../models/Doctor')).default;
+          const doctorProfile = await Doctor.findOne({ user: staff._id });
+          if (doctorProfile) {
+            await TrashBin.create({
+              originalId: doctorProfile._id,
+              collectionName: 'doctors',
+              data: doctorProfile.toObject(),
+              deletedBy: requester.id,
+              adminId: id as any
+            });
+            await Doctor.findByIdAndDelete(doctorProfile._id);
+          }
+        }
+        
+        await TrashBin.create({
+          originalId: staff._id,
+          collectionName: 'users',
+          data: staff.toObject(),
+          deletedBy: requester.id,
+          adminId: id as any
+        });
+        await User.findByIdAndDelete(staff._id);
+      }
+    } else if (user.role === UserRole.DOCTOR) {
+      // If single doctor deleted, move profile too
       const Doctor = (await import('../models/Doctor')).default;
-      await Doctor.findOneAndDelete({ user: id });
+      const doctorProfile = await Doctor.findOne({ user: id });
+      if (doctorProfile) {
+        await TrashBin.create({
+          originalId: doctorProfile._id,
+          collectionName: 'doctors',
+          data: doctorProfile.toObject(),
+          deletedBy: requester.id,
+          adminId: (user.parentAdmin || id) as any
+        });
+        await Doctor.findByIdAndDelete(doctorProfile._id);
+      }
     }
+
+    // Move the primary user to trash
+    await TrashBin.create({
+      originalId: user._id,
+      collectionName: 'users',
+      data: user.toObject(),
+      deletedBy: requester.id,
+      adminId: (user.role === UserRole.ADMIN ? user._id : user.parentAdmin || user._id) as any
+    });
 
     await User.findByIdAndDelete(id);
 
-    res.status(204).json({
+    await logActivity(req, 'DELETE_USER', 'User', id as any, `User ${deletedEmail} and related data moved to trash`);
+
+    res.status(200).json({
       status: 'success',
       data: null,
     });
@@ -495,12 +520,12 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
 
     // 1. Initial Match
     if (currentUser.role === UserRole.ADMIN) {
-      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: 'approved' } });
+      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: { $in: ['active', 'approved'] } } });
     } else if (currentUser.role === UserRole.RECEPTIONIST) {
-      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: 'approved' } });
+      stages.push({ $match: { _id: new mongoose.Types.ObjectId(currentUser.id), status: { $in: ['active', 'approved'] } } });
     } else if (currentUser.role === UserRole.SUPER_ADMIN) {
       // Super admin sees all admins as root of hierarchies
-      stages.push({ $match: { role: UserRole.ADMIN, status: 'approved' } });
+      stages.push({ $match: { role: UserRole.ADMIN, status: { $in: ['active', 'approved', 'suspended', 'inactive'] } } });
     } else {
       throw new AppError('Only Admins, Receptionists and Super Admins can view hierarchy', 403);
     }
@@ -517,7 +542,7 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
                 $and: [
                   { $eq: ['$role', UserRole.RECEPTIONIST] },
                   { $eq: ['$parentAdmin', '$$adminId'] },
-                  { $eq: ['$status', 'approved'] }
+                  { $in: ['$status', ['active', 'approved', 'suspended', 'inactive']] }
                 ]
               }
             }
@@ -533,7 +558,7 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
                       $and: [
                         { $eq: ['$role', UserRole.DOCTOR] },
                         { $eq: ['$parentReceptionist', '$$receptionistId'] },
-                        { $eq: ['$status', 'approved'] }
+                        { $in: ['$status', ['active', 'approved', 'suspended', 'inactive']] }
                       ]
                     }
                   }
@@ -561,7 +586,7 @@ export const getHierarchy = async (req: Request, res: Response, next: NextFuncti
                 $and: [
                   { $eq: ['$role', UserRole.DOCTOR] },
                   { $eq: ['$parentAdmin', '$$adminId'] },
-                  { $eq: ['$status', 'approved'] },
+                  { $in: ['$status', ['active', 'approved', 'suspended', 'inactive']] },
                   { $not: ['$parentReceptionist'] }
                 ]
               }
@@ -626,6 +651,200 @@ export const updatePatientStatus = async (req: Request, res: Response, next: Nex
       data: { patient },
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// --- Super Admin Management Features ---
+
+export const suspendUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('User not found', 404);
+
+    user.status = 'suspended';
+    user.lastLogoutAt = new Date(); // Invalidate current JWTs
+    (user as any).refreshToken = undefined; // Remove refresh token
+    await user.save();
+
+    await logActivity(req, 'SUSPEND_USER', 'User', user.id, `User ${user.email} suspended`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'User suspended successfully and logged out from all devices'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reactivateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('User not found', 404);
+
+    user.status = 'active';
+    await user.save();
+
+    await logActivity(req, 'REACTIVATE_USER', 'User', user.id, `User ${user.email} reactivated`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'User reactivated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetUserPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = z.object({
+      password: z.string().min(8)
+    }).parse(req.body);
+
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('User not found', 404);
+
+    user.password = password;
+    user.lastLogoutAt = new Date(); // Invalidate current JWTs
+    (user as any).refreshToken = undefined; // Logout from all devices
+    await user.save();
+
+    await logActivity(req, 'RESET_PASSWORD', 'User', user.id, `Password reset for user ${user.email}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset successfully and user logged out from all devices'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const transferAdminData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fromAdminId, toAdminId } = z.object({
+      fromAdminId: z.string(),
+      toAdminId: z.string()
+    }).parse(req.body);
+
+    const fromAdmin = await User.findById(fromAdminId);
+    const toAdmin = await User.findById(toAdminId);
+
+    if (!fromAdmin || !toAdmin) {
+      throw new AppError('One or both admins not found', 404);
+    }
+
+    // 1. Transfer Clinics ownership
+    const Clinic = (await import('../models/Clinic')).default;
+    await Clinic.updateMany(
+      { owner: fromAdminId },
+      { owner: toAdminId as any, createdByAdminId: toAdminId as any }
+    );
+
+    // 2. Transfer Staff hierarchy
+    await User.updateMany(
+      { parentAdmin: fromAdminId as any },
+      { parentAdmin: toAdminId as any }
+    );
+
+    // 3. Transfer Doctors (profile collection)
+    const Doctor = (await import('../models/Doctor')).default;
+    await Doctor.updateMany(
+      { parentAdmin: fromAdminId as any },
+      { parentAdmin: toAdminId as any }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Data ownership and hierarchy transferred successfully'
+    });
+
+    await logActivity(req, 'TRANSFER_DATA', 'User', fromAdminId, `Data transferred from ${fromAdmin.email} to ${toAdmin.email}`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getActivityLogs = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ActivityLog = (await import('../models/ActivityLog')).default;
+    const logs = await ActivityLog.find()
+      .populate('user', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.status(200).json({
+      status: 'success',
+      results: logs.length,
+      data: { logs }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTrashBin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const TrashBin = (await import('../models/TrashBin')).default;
+    const items = await TrashBin.find()
+      .populate('deletedBy', 'name email role')
+      .sort({ deletedAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: items.length,
+      data: { items }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restoreFromTrash = async (req: Request, res: Response, next: NextFunction) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { adminId } = req.params;
+    const TrashBin = (await import('../models/TrashBin')).default;
+    
+    // Find all items in trash belonging to this admin (including the admin itself)
+    const items = await TrashBin.find({ adminId: adminId as string });
+
+    if (items.length === 0) {
+      throw new AppError('No items found in trash for this administrator', 404);
+    }
+
+    for (const item of items) {
+      // Map collection names to correct Mongoose model names
+      let modelName = '';
+      if (item.collectionName === 'users') modelName = 'User';
+      else if (item.collectionName === 'clinics') modelName = 'Clinic';
+      else if (item.collectionName === 'doctors') modelName = 'Doctor';
+      else continue;
+
+      const Model = mongoose.model(modelName);
+      
+      // Use insertMany to bypass hooks (prevent re-hashing password)
+      await Model.insertMany([item.data], { session });
+      
+      // Remove from trash
+      await TrashBin.findByIdAndDelete(item._id).session(session);
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    await logActivity(req, 'RESTORE_DATA', 'User', adminId as any, `Data restored for admin ${adminId}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Data restored successfully from trash'
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     next(error);
   }
 };

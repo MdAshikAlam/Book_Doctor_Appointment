@@ -4,6 +4,7 @@ import config from '../config';
 interface TokenPayload {
   id: string;
   role: string;
+  iat?: number;
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {

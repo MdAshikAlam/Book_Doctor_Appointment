@@ -18,7 +18,17 @@ import {
   MoreVertical,
   Eye,
   CalendarCheck,
-  MapPin
+  MapPin,
+  PauseCircle,
+  PlayCircle,
+  KeyRound,
+  Repeat,
+  History,
+  Lock,
+  ArrowRightLeft,
+  AlertTriangle,
+  RotateCcw,
+  RefreshCw
 } from 'lucide-react';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -59,6 +69,16 @@ export default function StaffManagementPage() {
     phone: '',
     clinicId: '',
   });
+
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [showTransferDataModal, setShowTransferDataModal] = useState(false);
+  const [showActivityLogsModal, setShowActivityLogsModal] = useState(false);
+  const [showTrashBinModal, setShowTrashBinModal] = useState(false);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [trashItems, setTrashItems] = useState([]);
+  const [newPassword, setNewPassword] = useState('');
+  const [transferData, setTransferData] = useState({ fromAdminId: '', toAdminId: '' });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     try {
@@ -153,6 +173,107 @@ export default function StaffManagementPage() {
     }
   };
 
+  const handleSuspendUser = async (id) => {
+    try {
+      setIsProcessing(true);
+      await usersApi.suspend(id);
+      fetchStaff();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReactivateUser = async (id) => {
+    try {
+      setIsProcessing(true);
+      await usersApi.reactivate(id);
+      fetchStaff();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      await usersApi.resetPassword(editingUser._id, newPassword);
+      setShowResetPasswordModal(false);
+      setNewPassword('');
+      alert('Password reset successfully. The user has been logged out from all devices.');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleTransferData = async () => {
+    if (!transferData.fromAdminId || !transferData.toAdminId) {
+      alert('Please select both source and destination admins');
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      await usersApi.transferData(transferData);
+      setShowTransferDataModal(false);
+      setTransferData({ fromAdminId: '', toAdminId: '' });
+      fetchStaff();
+      alert('Data transferred successfully');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    try {
+      setIsProcessing(true);
+      setShowActivityLogsModal(true);
+      const res = await usersApi.getActivityLogs();
+      setActivityLogs(res.data.logs || []);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const fetchTrashBin = async () => {
+    try {
+      setIsProcessing(true);
+      setShowTrashBinModal(true);
+      const res = await usersApi.getTrashBin();
+      setTrashItems(res.data.items || []);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRestoreData = async (adminId) => {
+    try {
+      setIsProcessing(true);
+      await usersApi.restoreFromTrash(adminId);
+      setShowTrashBinModal(false);
+      fetchStaff();
+      alert('Data restored successfully!');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const filteredStaff = staff.filter(s => 
     s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -204,12 +325,39 @@ export default function StaffManagementPage() {
           <p className="text-slate-500 mt-1 font-medium">Manage platform administrators, receptionists, and medical staff permissions.</p>
         </div>
         {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (
-          <Button 
-            onClick={handleOpenAddModal}
-            className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2"
-          >
-            <UserPlus size={20} /> Add Member
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            {currentUser?.role === 'super_admin' && (
+              <>
+                <Button 
+                  onClick={fetchTrashBin}
+                  variant="outline"
+                  className="h-12 px-5 rounded-2xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                >
+                  <Trash2 size={18} /> Trash Bin
+                </Button>
+                <Button 
+                  onClick={fetchActivityLogs}
+                  variant="outline"
+                  className="h-12 px-5 rounded-2xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                >
+                  <History size={18} /> View Logs
+                </Button>
+                <Button 
+                  onClick={() => setShowTransferDataModal(true)}
+                  variant="outline"
+                  className="h-12 px-5 rounded-2xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                >
+                  <ArrowRightLeft size={18} /> Transfer Data
+                </Button>
+              </>
+            )}
+            <Button 
+              onClick={handleOpenAddModal}
+              className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2"
+            >
+              <UserPlus size={20} /> Add Member
+            </Button>
+          </div>
         )}
       </div>
 
@@ -241,7 +389,17 @@ export default function StaffManagementPage() {
             </div>
           ) : (
             hierarchy.map((admin) => (
-              <AdminTree key={admin._id} admin={admin} onEdit={handleOpenEditModal} onDelete={setUserToDelete} />
+              <AdminTree 
+                key={admin._id} 
+                admin={admin} 
+                onEdit={handleOpenEditModal} 
+                onDelete={setUserToDelete} 
+                currentUser={currentUser}
+                handleSuspendUser={handleSuspendUser}
+                handleReactivateUser={handleReactivateUser}
+                setEditingUser={setEditingUser}
+                setShowResetPasswordModal={setShowResetPasswordModal}
+              />
             ))
           )}
         </div>
@@ -343,9 +501,38 @@ export default function StaffManagementPage() {
                               <button 
                                 onClick={() => setUserToDelete(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
-                              >
+                                title="Delete User"
+                               >
                                 <Trash2 size={18} />
                               </button>
+                            )}
+                            {currentUser?.role === 'super_admin' && currentUser?._id !== member._id && (
+                              <div className="flex items-center gap-1 border-l border-slate-100 pl-2 ml-1">
+                                {member.status === 'suspended' ? (
+                                  <button 
+                                    onClick={() => handleReactivateUser(member._id)}
+                                    className="p-2 hover:bg-white hover:shadow-md rounded-xl text-emerald-400 hover:text-emerald-600 transition-all"
+                                    title="Reactivate User"
+                                  >
+                                    <PlayCircle size={18} />
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => handleSuspendUser(member._id)}
+                                    className="p-2 hover:bg-white hover:shadow-md rounded-xl text-amber-400 hover:text-amber-600 transition-all"
+                                    title="Suspend User"
+                                  >
+                                    <PauseCircle size={18} />
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => { setEditingUser(member); setShowResetPasswordModal(true); }}
+                                  className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                                  title="Reset Password"
+                                >
+                                  <KeyRound size={18} />
+                                </button>
+                              </div>
                             )}
                           </div>
                         </td>
@@ -537,11 +724,234 @@ export default function StaffManagementPage() {
           </div>
         )}
       </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        title="Administrative Password Reset"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
+            <Lock className="text-amber-500 shrink-0" size={24} />
+            <p className="text-sm text-amber-700 font-medium">
+              Resetting password for <strong>{editingUser?.name}</strong>. This will force a logout from all active devices and sessions for security.
+            </p>
+          </div>
+          <Input 
+            label="New Secure Password"
+            type="password"
+            placeholder="At least 8 characters..."
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <div className="flex gap-4 pt-2">
+            <Button variant="outline" onClick={() => setShowResetPasswordModal(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
+            <Button 
+              onClick={handleResetPassword}
+              disabled={!newPassword || isProcessing}
+              className="flex-[2] h-12 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100"
+            >
+              {isProcessing ? <Loader2 className="animate-spin" /> : 'Confirm Reset & Logout User'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Transfer Data Modal */}
+      <Modal
+        isOpen={showTransferDataModal}
+        onClose={() => setShowTransferDataModal(false)}
+        title="Transfer Administrator Data"
+        size="lg"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3">
+            <ArrowRightLeft className="text-blue-500 shrink-0" size={24} />
+            <p className="text-sm text-blue-700 font-medium">
+              Transfer all clinics, staff hierarchies, and doctor profiles from one administrator to another.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Source Administrator (From)</label>
+              <select 
+                value={transferData.fromAdminId}
+                onChange={(e) => setTransferData({...transferData, fromAdminId: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Source Admin</option>
+                {staff.filter(s => s.role === 'admin').map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.email})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Target Administrator (To)</label>
+              <select 
+                value={transferData.toAdminId}
+                onChange={(e) => setTransferData({...transferData, toAdminId: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Target Admin</option>
+                {staff.filter(s => s.role === 'admin' && s._id !== transferData.fromAdminId).map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.email})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setShowTransferDataModal(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
+            <Button 
+              onClick={handleTransferData}
+              disabled={!transferData.fromAdminId || !transferData.toAdminId || isProcessing}
+              className="flex-[2] h-12 bg-slate-900 text-white font-bold rounded-2xl shadow-lg shadow-slate-200"
+            >
+              {isProcessing ? <Loader2 className="animate-spin" /> : 'Execute Data Transfer'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Activity Logs Modal */}
+      <Modal
+        isOpen={showActivityLogsModal}
+        onClose={() => setShowActivityLogsModal(false)}
+        title="Administrative Activity Logs"
+        size="xl"
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+          {isProcessing && activityLogs.length === 0 ? (
+            <div className="py-20 text-center">
+              <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
+              <p className="font-bold text-slate-400">Loading audit trails...</p>
+            </div>
+          ) : activityLogs.length === 0 ? (
+            <div className="py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+              <History className="text-slate-300 mx-auto mb-4" size={40} />
+              <p className="font-bold text-slate-400">No activity logs found.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activityLogs.map((log) => (
+                <div key={log._id} className="p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-100 hover:shadow-sm transition-all group">
+                  <div className="flex items-start justify-between">
+                    <div className="flex gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        log.action.includes('SUSPEND') ? 'bg-amber-50 text-amber-600' :
+                        log.action.includes('DELETE') ? 'bg-red-50 text-red-600' :
+                        log.action.includes('RESET') ? 'bg-indigo-50 text-indigo-600' :
+                        'bg-blue-50 text-blue-600'
+                      }`}>
+                        {log.action.includes('PASSWORD') ? <KeyRound size={18} /> : 
+                         log.action.includes('TRANSFER') ? <ArrowRightLeft size={18} /> : 
+                         log.action.includes('DELETE') ? <Trash2 size={18} /> : <History size={18} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-slate-900 text-sm uppercase tracking-tight">{log.action.replace(/_/g, ' ')}</p>
+                          <span className="text-[10px] font-bold text-slate-400">•</span>
+                          <p className="text-[10px] font-bold text-slate-400">{new Date(log.createdAt).toLocaleString()}</p>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium mt-1">{log.details}</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <p className="text-[10px] font-bold text-blue-600">BY: {log.user?.name || 'System'}</p>
+                          <p className="text-[10px] font-bold text-slate-300">IP: {log.ipAddress || 'Unknown'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="pt-6">
+           <Button onClick={() => setShowActivityLogsModal(false)} className="w-full h-12 bg-slate-100 text-slate-900 font-bold rounded-2xl">Close Logs</Button>
+        </div>
+      </Modal>
+
+      {/* Trash Bin Modal */}
+      <Modal
+        isOpen={showTrashBinModal}
+        onClose={() => setShowTrashBinModal(false)}
+        title="Trash Bin (Restorable within 60 days)"
+        size="xl"
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+          {isProcessing && trashItems.length === 0 ? (
+            <div className="py-20 text-center">
+              <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
+              <p className="font-bold text-slate-400">Searching the vault...</p>
+            </div>
+          ) : trashItems.length === 0 ? (
+            <div className="py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+              <RefreshCw className="text-slate-300 mx-auto mb-4" size={40} />
+              <p className="font-bold text-slate-400">Your trash bin is empty.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex gap-3 mb-2">
+                <AlertTriangle className="text-amber-500 shrink-0" size={24} />
+                <p className="text-xs text-amber-700 font-medium">
+                  Items here are automatically deleted forever after 60 days. Restoring an Admin will also restore their clinics, receptionists, and doctors.
+                </p>
+              </div>
+              
+              {/* Grouping trash items by adminId to make it cleaner */}
+              {Array.from(new Set(trashItems.map(i => i.adminId))).map(adminId => {
+                const adminItem = trashItems.find(i => i.originalId === adminId && i.collectionName === 'users');
+                if (!adminItem) return null;
+                
+                return (
+                  <div key={adminId} className="p-5 bg-white border border-slate-100 rounded-[2rem] hover:border-blue-200 transition-all shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-600">
+                          {adminItem.data.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{adminItem.data.name} (Admin)</p>
+                          <p className="text-xs text-slate-400 font-medium">Deleted on {new Date(adminItem.deletedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => handleRestoreData(adminId)}
+                        className="h-10 px-6 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 flex items-center gap-2"
+                      >
+                        <RotateCcw size={16} /> Restore All
+                      </Button>
+                    </div>
+                    
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="px-3 py-1 rounded-full bg-slate-50 text-slate-500 text-[10px] font-bold border border-slate-100">
+                        {trashItems.filter(i => i.adminId === adminId && i.collectionName === 'clinics').length} Clinics
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-slate-50 text-slate-500 text-[10px] font-bold border border-slate-100">
+                        {trashItems.filter(i => i.adminId === adminId && i.collectionName === 'users' && i.originalId !== adminId).length} Staff Members
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="pt-6">
+           <Button onClick={() => setShowTrashBinModal(false)} className="w-full h-12 bg-slate-100 text-slate-900 font-bold rounded-2xl">Close Trash Bin</Button>
+        </div>
+      </Modal>
     </div>
   );
 }
 
-function AdminTree({ admin, onEdit, onDelete }) {
+function AdminTree({ 
+  admin, onEdit, onDelete, currentUser, 
+  handleSuspendUser, handleReactivateUser, 
+  setEditingUser, setShowResetPasswordModal 
+}) {
   return (
     <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 overflow-hidden">
       {/* Admin Row */}
@@ -565,6 +975,34 @@ function AdminTree({ admin, onEdit, onDelete }) {
 
         </div>
         <div className="flex items-center gap-2">
+          {currentUser?.role === 'super_admin' && admin._id !== currentUser.id && (
+            <div className="flex items-center gap-1 bg-white/50 p-1 rounded-xl shadow-sm mr-2">
+              {admin.status === 'suspended' ? (
+                <button 
+                  onClick={() => handleReactivateUser(admin._id)}
+                  className="p-2 hover:bg-white rounded-lg text-emerald-500 transition-all"
+                  title="Reactivate Admin"
+                >
+                  <PlayCircle size={18} />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleSuspendUser(admin._id)}
+                  className="p-2 hover:bg-white rounded-lg text-amber-500 transition-all"
+                  title="Suspend Admin"
+                >
+                  <PauseCircle size={18} />
+                </button>
+              )}
+              <button 
+                onClick={() => { setEditingUser(admin); setShowResetPasswordModal(true); }}
+                className="p-2 hover:bg-white rounded-lg text-indigo-600 transition-all"
+                title="Reset Password"
+              >
+                <KeyRound size={18} />
+              </button>
+            </div>
+          )}
           <button onClick={() => onEdit(admin)} className="p-3 hover:bg-white rounded-xl text-blue-600 transition-all shadow-sm"><Edit size={20}/></button>
           <button onClick={() => onDelete(admin)} className="p-3 hover:bg-white rounded-xl text-red-500 transition-all shadow-sm"><Trash2 size={20}/></button>
         </div>
@@ -589,6 +1027,16 @@ function AdminTree({ admin, onEdit, onDelete }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {currentUser?.role === 'super_admin' && (
+                        <div className="flex items-center gap-1 mr-1">
+                          {sub.status === 'suspended' ? (
+                            <button onClick={() => handleReactivateUser(sub._id)} className="p-1.5 hover:bg-white rounded-lg text-emerald-500 transition-all" title="Reactivate"><PlayCircle size={14}/></button>
+                          ) : (
+                            <button onClick={() => handleSuspendUser(sub._id)} className="p-1.5 hover:bg-white rounded-lg text-amber-500 transition-all" title="Suspend"><PauseCircle size={14}/></button>
+                          )}
+                          <button onClick={() => { setEditingUser(sub); setShowResetPasswordModal(true); }} className="p-1.5 hover:bg-white rounded-lg text-indigo-600 transition-all" title="Reset Password"><KeyRound size={14}/></button>
+                        </div>
+                      )}
                       <button onClick={() => onEdit(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all"><Edit size={16}/></button>
                       <button onClick={() => onDelete(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
                     </div>

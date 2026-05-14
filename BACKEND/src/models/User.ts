@@ -37,8 +37,14 @@ export interface IUser extends Document {
   clinicName?: string;
   city?: string;
   state?: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending' | 'approved' | 'rejected' | 'active' | 'inactive' | 'suspended' | 'deleted';
   rejectionReason?: string;
+  lastLogoutAt?: Date;
+  lastViewedNotifications?: {
+    adminRequests?: Date;
+    clinicVerification?: Date;
+    doctorVerification?: Date;
+  };
 
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -86,10 +92,16 @@ const userSchema = new Schema<IUser>(
     state: { type: String },
     status: { 
       type: String, 
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'approved' // Default to approved for existing users/staff
+      enum: ['pending', 'approved', 'rejected', 'active', 'inactive', 'suspended', 'deleted'],
+      default: 'active' 
     },
     rejectionReason: { type: String },
+    lastLogoutAt: { type: Date },
+    lastViewedNotifications: {
+      adminRequests: { type: Date, default: Date.now },
+      clinicVerification: { type: Date, default: Date.now },
+      doctorVerification: { type: Date, default: Date.now }
+    }
   },
   { timestamps: true }
 );

@@ -201,23 +201,23 @@ export default function ClinicsPage() {
   const resetForm = () => {
     setEditingClinicId(null);
     setFormData({
-      clinicName: '',
-      legalName: '',
-      ownerName: '',
-      ownerPhone: '',
-      ownerEmail: '',
+      clinicName: user?.clinicName || '',
+      legalName: user?.clinicName || '',
+      ownerName: user?.name || '',
+      ownerPhone: user?.phone || '',
+      ownerEmail: user?.email || '',
       clinicType: 'Private Clinic',
       description: '',
       images: [],
       address: '',
       addressLine2: '',
-      city: '',
-      state: '',
+      city: user?.city || '',
+      state: user?.state || '',
       pincode: '',
       country: 'India',
-      phone: '',
+      phone: user?.phone || '',
       alternatePhone: '',
-      email: '',
+      email: user?.email || '',
       openingTime: '09:00',
       closingTime: '21:00',
       workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -784,10 +784,10 @@ export default function ClinicsPage() {
                       3. Owner Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Owner Full Name" name="ownerName" value={formData.ownerName} onChange={handleInputChange} required />
-                       <Input label="Owner Phone" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} required />
+                       <Input label="Owner Full Name" name="ownerName" value={formData.ownerName} onChange={handleInputChange} readOnly={true} required />
+                       <Input label="Owner Phone" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} readOnly={true} required />
                        <div className="md:col-span-2">
-                         <Input label="Owner Email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} required />
+                         <Input label="Owner Email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} readOnly={true} required />
                        </div>
                     </div>
                   </section>
