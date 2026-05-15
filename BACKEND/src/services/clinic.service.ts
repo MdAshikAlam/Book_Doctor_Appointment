@@ -258,21 +258,18 @@ export const deleteClinic = async (id: string, requesterId: string, role: string
     throw new AppError('You are not authorized to delete this clinic', 403);
   }
 
-  // Remove clinic reference from doctors
-  const Doctor = (await import('../models/Doctor')).default;
-  await Doctor.updateMany(
-    { $or: [{ clinic: id }, { clinics: id }, { branchId: id }] },
-    { $unset: { clinic: 1, branchId: 1 }, $pull: { clinics: id } }
-  );
-
-  // Remove clinic reference from users
-  const User = (await import('../models/User')).default;
-  await User.updateMany(
-    { $or: [{ branchId: id }, { branchIds: id }] },
-    { $unset: { branchId: 1 }, $pull: { branchIds: id } }
-  );
+  // Move to Trash Bin
+  const TrashBin = (await import('../models/TrashBin')).default;
+  await TrashBin.create({
+    originalId: clinic._id,
+    collectionName: 'clinics',
+    data: clinic.toObject(),
+    deletedBy: requesterId as any,
+    adminId: (clinic.owner || requesterId) as any
+  });
 
   await Clinic.findByIdAndDelete(id);
   return true;
 };
+
 

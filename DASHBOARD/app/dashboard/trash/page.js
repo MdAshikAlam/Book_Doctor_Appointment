@@ -113,34 +113,47 @@ export default function TrashBinPage() {
              <p className="text-slate-300 font-medium mt-2">Any future deletions will appear here for 60 days.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-8">
             {Array.from(new Set(items.map(i => i.adminId))).map(adminId => {
-                const adminItem = items.find(i => i.originalId === adminId && i.collectionName === 'users');
-                if (!adminItem) return null;
+                // Find the admin user if they are in the trash
+                const adminItemInTrash = items.find(i => i.originalId === adminId && i.collectionName === 'users');
                 
+                // If admin is NOT in trash, we should still show the items under their "Account"
                 const relatedClinics = items.filter(i => i.adminId === adminId && i.collectionName === 'clinics');
                 const relatedStaff = items.filter(i => i.adminId === adminId && i.collectionName === 'users' && i.originalId !== adminId);
                 const relatedDoctors = items.filter(i => i.adminId === adminId && i.collectionName === 'doctors');
 
+                if (!adminItemInTrash && relatedClinics.length === 0 && relatedStaff.length === 0 && relatedDoctors.length === 0) return null;
+
                 return (
-                  <div key={adminId} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 hover:border-blue-200 transition-all group">
+                  <div key={adminId} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 hover:border-blue-200 transition-all group overflow-hidden">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-[2rem] bg-slate-50 flex items-center justify-center font-black text-3xl text-slate-600 border border-slate-100 shadow-inner">
-                          {adminItem.data.name?.charAt(0)}
+                        <div className="w-20 h-20 rounded-[2rem] bg-slate-900 flex items-center justify-center font-black text-3xl text-white border border-slate-100 shadow-xl overflow-hidden">
+                          {adminItemInTrash ? adminItemInTrash.data.name?.charAt(0) : <History size={32} />}
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
-                            <h3 className="text-2xl font-black text-slate-900">{adminItem.data.name}</h3>
-                            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-100">ADMIN</span>
+                            <h3 className="text-2xl font-black text-slate-900">
+                              {adminItemInTrash ? adminItemInTrash.data.name : `Account ID: ...${adminId.slice(-6)}`}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                              adminItemInTrash 
+                                ? 'bg-red-50 text-red-600 border-red-100' 
+                                : 'bg-blue-50 text-blue-600 border-blue-100'
+                            }`}>
+                              {adminItemInTrash ? 'DELETED ADMIN' : 'ACTIVE ADMIN DATA'}
+                            </span>
                           </div>
-                          <p className="text-slate-500 font-bold mt-1">{adminItem.data.email}</p>
-                          <div className="flex items-center gap-4 mt-3">
+                          <p className="text-slate-500 font-bold mt-1">
+                            {adminItemInTrash ? adminItemInTrash.data.email : 'Associated clinical records in trash'}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-4 mt-3">
                              <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                               <Calendar size={14} /> Deleted on {new Date(adminItem.deletedAt).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                               <Calendar size={14} /> Deleted on {new Date(items.find(i => i.adminId === adminId).deletedAt).toLocaleDateString(undefined, { dateStyle: 'long' })}
                              </p>
                              <p className="text-xs font-bold text-red-400 flex items-center gap-1.5">
-                               <History size={14} /> Purge in {Math.max(0, 60 - Math.floor((new Date().getTime() - new Date(adminItem.deletedAt).getTime()) / (1000 * 60 * 60 * 24)))} days
+                               <AlertTriangle size={14} /> Auto-purge enabled
                              </p>
                           </div>
                         </div>
@@ -153,33 +166,59 @@ export default function TrashBinPage() {
                           className="h-14 px-8 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2"
                         >
                           {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <RotateCcw size={20} />}
-                          Restore Administrator & Data
+                          Restore All Data
                         </Button>
                       </div>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-slate-50 grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Clinics</p>
-                        <p className="text-xl font-black text-slate-900">{relatedClinics.length}</p>
+                    <div className="mt-8 pt-8 border-t border-slate-50">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Objects in this bucket</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                          <Building2 size={20} className="text-blue-500 mb-2" />
+                          <p className="text-xl font-black text-slate-900">{relatedClinics.length}</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Clinics</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                          <Users size={20} className="text-emerald-500 mb-2" />
+                          <p className="text-xl font-black text-slate-900">{relatedStaff.length}</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Staff Members</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                          <RefreshCw size={20} className="text-amber-500 mb-2" />
+                          <p className="text-xl font-black text-slate-900">{relatedDoctors.length}</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Doctor Profiles</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex flex-col items-center justify-center">
+                          <History size={20} className="text-blue-600 mb-2" />
+                          <p className="text-xl font-black text-blue-600">
+                            {relatedClinics.length + relatedStaff.length + relatedDoctors.length + (adminItemInTrash ? 1 : 0)}
+                          </p>
+                          <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Total Items</p>
+                        </div>
                       </div>
-                      <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Staff Members</p>
-                        <p className="text-xl font-black text-slate-900">{relatedStaff.length}</p>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Doctor Profiles</p>
-                        <p className="text-xl font-black text-slate-900">{relatedDoctors.length}</p>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Objects</p>
-                        <p className="text-xl font-black text-blue-600">{relatedClinics.length + relatedStaff.length + relatedDoctors.length + 1}</p>
+
+                      {/* Detailed Item List */}
+                      <div className="mt-6 space-y-2">
+                        {relatedClinics.map(c => (
+                          <div key={c._id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 text-xs font-bold text-slate-600 border border-transparent hover:border-slate-200 transition-all">
+                            <span className="flex items-center gap-2"><Building2 size={14} className="text-slate-400" /> {c.data.clinicName} (Clinic)</span>
+                            <span className="text-[10px] text-slate-400 font-medium">Deleted on {new Date(c.deletedAt).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                        {relatedStaff.map(s => (
+                          <div key={s._id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 text-xs font-bold text-slate-600 border border-transparent hover:border-slate-200 transition-all">
+                            <span className="flex items-center gap-2"><Users size={14} className="text-slate-400" /> {s.data.name} ({s.data.role})</span>
+                            <span className="text-[10px] text-slate-400 font-medium">Deleted on {new Date(s.deletedAt).toLocaleDateString()}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 );
             })}
           </div>
+
         )}
       </div>
 

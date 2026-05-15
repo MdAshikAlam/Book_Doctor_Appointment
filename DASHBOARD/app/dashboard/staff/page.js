@@ -399,6 +399,7 @@ export default function StaffManagementPage() {
                 handleReactivateUser={handleReactivateUser}
                 setEditingUser={setEditingUser}
                 setShowResetPasswordModal={setShowResetPasswordModal}
+                setViewingUser={setViewingUser}
               />
             ))
           )}
@@ -506,24 +507,28 @@ export default function StaffManagementPage() {
                                 <Trash2 size={18} />
                               </button>
                             )}
-                            {currentUser?.role === 'super_admin' && currentUser?._id !== member._id && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && currentUser?._id !== member._id && (
                               <div className="flex items-center gap-1 border-l border-slate-100 pl-2 ml-1">
-                                {member.status === 'suspended' ? (
-                                  <button 
-                                    onClick={() => handleReactivateUser(member._id)}
-                                    className="p-2 hover:bg-white hover:shadow-md rounded-xl text-emerald-400 hover:text-emerald-600 transition-all"
-                                    title="Reactivate User"
-                                  >
-                                    <PlayCircle size={18} />
-                                  </button>
-                                ) : (
-                                  <button 
-                                    onClick={() => handleSuspendUser(member._id)}
-                                    className="p-2 hover:bg-white hover:shadow-md rounded-xl text-amber-400 hover:text-amber-600 transition-all"
-                                    title="Suspend User"
-                                  >
-                                    <PauseCircle size={18} />
-                                  </button>
+                                {currentUser?.role === 'super_admin' && (
+                                  <>
+                                    {member.status === 'suspended' ? (
+                                      <button 
+                                        onClick={() => handleReactivateUser(member._id)}
+                                        className="p-2 hover:bg-white hover:shadow-md rounded-xl text-emerald-400 hover:text-emerald-600 transition-all"
+                                        title="Reactivate User"
+                                      >
+                                        <PlayCircle size={18} />
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        onClick={() => handleSuspendUser(member._id)}
+                                        className="p-2 hover:bg-white hover:shadow-md rounded-xl text-amber-400 hover:text-amber-600 transition-all"
+                                        title="Suspend User"
+                                      >
+                                        <PauseCircle size={18} />
+                                      </button>
+                                    )}
+                                  </>
                                 )}
                                 <button 
                                   onClick={() => { setEditingUser(member); setShowResetPasswordModal(true); }}
@@ -534,6 +539,7 @@ export default function StaffManagementPage() {
                                 </button>
                               </div>
                             )}
+
                           </div>
                         </td>
                       </tr>
@@ -638,9 +644,10 @@ export default function StaffManagementPage() {
           <div className="w-20 h-20 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-6">
             <Trash2 size={40} />
           </div>
-          <h3 className="text-xl font-extrabold text-slate-900">Are you sure?</h3>
+          <h3 className="text-xl font-extrabold text-slate-900">Move to Trash?</h3>
           <p className="text-slate-500 mt-2 font-medium">
-            You are about to remove <span className="text-slate-900 font-bold">{userToDelete?.name}</span>'s access to the platform. This cannot be undone.
+            You are about to move <span className="text-slate-900 font-bold">{userToDelete?.name}</span> to the trash bin. 
+            They will be kept for 60 days before permanent deletion.
           </p>
           <div className="flex gap-4 mt-8">
             <Button variant="outline" onClick={() => setUserToDelete(null)} className="flex-1 h-14 rounded-2xl font-bold">Cancel</Button>
@@ -649,10 +656,11 @@ export default function StaffManagementPage() {
               disabled={isDeleting}
               className="flex-1 h-14 bg-red-500 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-600 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
             >
-              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Remove'}
+              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Move to Trash'}
             </Button>
           </div>
         </div>
+
       </Modal>
       
       {/* View Details Modal */}
@@ -950,8 +958,9 @@ export default function StaffManagementPage() {
 function AdminTree({ 
   admin, onEdit, onDelete, currentUser, 
   handleSuspendUser, handleReactivateUser, 
-  setEditingUser, setShowResetPasswordModal 
+  setEditingUser, setShowResetPasswordModal, setViewingUser
 }) {
+
   return (
     <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 overflow-hidden">
       {/* Admin Row */}
@@ -964,6 +973,12 @@ function AdminTree({
             <div className="flex items-center gap-3">
               <h3 className="text-xl font-black text-slate-900">{admin.name}</h3>
               <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">ADMIN</span>
+              {admin.status === 'suspended' && (
+                <span className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider animate-pulse">SUSPENDED</span>
+              )}
+              {admin.status === 'pending' && (
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider">PENDING APPROVAL</span>
+              )}
               {admin.branchName && (
                 <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                   <MapPin size={10} /> {admin.branchName}
@@ -975,7 +990,7 @@ function AdminTree({
 
         </div>
         <div className="flex items-center gap-2">
-          {currentUser?.role === 'super_admin' && admin._id !== currentUser.id && (
+          {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && admin._id !== currentUser.id && (
             <div className="flex items-center gap-1 bg-white/50 p-1 rounded-xl shadow-sm mr-2">
               {admin.status === 'suspended' ? (
                 <button 
@@ -1003,9 +1018,10 @@ function AdminTree({
               </button>
             </div>
           )}
-          <button onClick={() => onEdit(admin)} className="p-3 hover:bg-white rounded-xl text-blue-600 transition-all shadow-sm"><Edit size={20}/></button>
-          <button onClick={() => onDelete(admin)} className="p-3 hover:bg-white rounded-xl text-red-500 transition-all shadow-sm"><Trash2 size={20}/></button>
+          <button onClick={() => onEdit(admin)} className="p-3 hover:bg-white rounded-xl text-blue-600 transition-all shadow-sm" title="Edit Admin"><Edit size={20}/></button>
+          <button onClick={() => onDelete(admin)} className="p-3 hover:bg-white rounded-xl text-red-500 transition-all shadow-sm" title="Move to Trash"><Trash2 size={20}/></button>
         </div>
+
       </div>
 
       <div className="p-6 space-y-6">
@@ -1022,12 +1038,17 @@ function AdminTree({
                         {sub.name?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 leading-none">{sub.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-900 leading-none">{sub.name}</p>
+                          {sub.status === 'suspended' && (
+                            <span className="px-1.5 py-0.5 rounded bg-red-50 text-red-500 text-[8px] font-black uppercase border border-red-100">PAUSED</span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">RECEPTIONIST</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      {currentUser?.role === 'super_admin' && (
+                      {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
                         <div className="flex items-center gap-1 mr-1">
                           {sub.status === 'suspended' ? (
                             <button onClick={() => handleReactivateUser(sub._id)} className="p-1.5 hover:bg-white rounded-lg text-emerald-500 transition-all" title="Reactivate"><PlayCircle size={14}/></button>
@@ -1037,17 +1058,33 @@ function AdminTree({
                           <button onClick={() => { setEditingUser(sub); setShowResetPasswordModal(true); }} className="p-1.5 hover:bg-white rounded-lg text-indigo-600 transition-all" title="Reset Password"><KeyRound size={14}/></button>
                         </div>
                       )}
-                      <button onClick={() => onEdit(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all"><Edit size={16}/></button>
-                      <button onClick={() => onDelete(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
+                      <button onClick={() => setViewingUser(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all" title="View Details"><Eye size={16}/></button>
+                      <button onClick={() => onEdit(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all" title="Edit Receptionist"><Edit size={16}/></button>
+                      <button onClick={() => onDelete(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-red-500 transition-all" title="Move to Trash"><Trash2 size={16}/></button>
                     </div>
+
+
                   </div>
                   
                   {/* Doctors under Receptionist */}
                   {sub.doctors?.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ml-2">
                       {sub.doctors.map(doc => (
-                        <DoctorCard key={doc._id} doctor={doc} onEdit={onEdit} onDelete={onDelete} />
+                        <DoctorCard 
+                          key={doc._id} 
+                          doctor={doc} 
+                          onEdit={onEdit} 
+                          onDelete={onDelete} 
+                          setViewingUser={setViewingUser}
+                          setShowResetPasswordModal={setShowResetPasswordModal}
+                          setEditingUser={setEditingUser}
+                          handleSuspendUser={handleSuspendUser}
+                          handleReactivateUser={handleReactivateUser}
+                          currentUser={currentUser}
+                        />
                       ))}
+
+
                     </div>
                   ) : (
                     <p className="text-[10px] font-bold text-slate-300 ml-2 italic">No doctors assigned</p>
@@ -1064,8 +1101,21 @@ function AdminTree({
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-4">Direct Doctors</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ml-4">
               {admin.doctors.map(doc => (
-                <DoctorCard key={doc._id} doctor={doc} onEdit={onEdit} onDelete={onDelete} />
+                <DoctorCard 
+                  key={doc._id} 
+                  doctor={doc} 
+                  onEdit={onEdit} 
+                  onDelete={onDelete} 
+                  setViewingUser={setViewingUser}
+                  setShowResetPasswordModal={setShowResetPasswordModal}
+                  setEditingUser={setEditingUser}
+                  handleSuspendUser={handleSuspendUser}
+                  handleReactivateUser={handleReactivateUser}
+                  currentUser={currentUser}
+                />
               ))}
+
+
             </div>
           </div>
         )}
@@ -1080,7 +1130,13 @@ function AdminTree({
   );
 }
 
-function DoctorCard({ doctor, onEdit, onDelete }) {
+function DoctorCard({ 
+  doctor, onEdit, onDelete, setViewingUser, 
+  setShowResetPasswordModal, setEditingUser,
+  handleSuspendUser, handleReactivateUser, currentUser
+}) {
+
+
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between group shadow-sm hover:shadow-md transition-all">
       <div className="flex items-center gap-3">
@@ -1088,10 +1144,61 @@ function DoctorCard({ doctor, onEdit, onDelete }) {
           {doctor.avatar ? <img src={getFullImageUrl(doctor.avatar)} className="w-full h-full object-cover" /> : doctor.name?.charAt(0)}
         </div>
         <div>
-          <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doctor.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doctor.name}</p>
+            {doctor.status === 'suspended' && (
+              <span className="px-1.5 py-0.5 rounded bg-red-50 text-red-500 text-[8px] font-black uppercase border border-red-100">PAUSED</span>
+            )}
+          </div>
           <p className="text-[10px] text-slate-400 font-medium truncate max-w-[120px]">{doctor.email}</p>
         </div>
       </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={() => setViewingUser({ ...doctor, _id: doctor.user?._id || doctor._id })}
+          className="p-1.5 hover:bg-slate-50 rounded-lg text-blue-500 transition-all"
+          title="View Details"
+        >
+          <Eye size={14} />
+        </button>
+        <button 
+          onClick={() => { setEditingUser({ ...doctor, _id: doctor.user?._id || doctor._id }); setShowResetPasswordModal(true); }}
+          className="p-1.5 hover:bg-slate-50 rounded-lg text-indigo-500 transition-all"
+          title="Reset Password"
+        >
+          <KeyRound size={14} />
+        </button>
+        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+          <div className="flex items-center">
+            {doctor.status === 'suspended' ? (
+              <button 
+                onClick={() => handleReactivateUser(doctor.user?._id || doctor._id)}
+                className="p-1.5 hover:bg-slate-50 rounded-lg text-emerald-500 transition-all"
+                title="Reactivate Doctor"
+              >
+                <PlayCircle size={14} />
+              </button>
+            ) : (
+              <button 
+                onClick={() => handleSuspendUser(doctor.user?._id || doctor._id)}
+                className="p-1.5 hover:bg-slate-50 rounded-lg text-amber-500 transition-all"
+                title="Suspend Doctor"
+              >
+                <PauseCircle size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
+        <button 
+          onClick={() => onDelete({ ...doctor, _id: doctor.user?._id || doctor._id })}
+          className="p-1.5 hover:bg-slate-50 rounded-lg text-red-400 transition-all"
+          title="Move to Trash"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
+
   );
 }
