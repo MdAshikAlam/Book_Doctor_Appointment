@@ -25,7 +25,11 @@ import {
   Clock,
   XCircle,
   Check,
-  X
+  X,
+  KeyRound,
+  Lock,
+  PauseCircle,
+  PlayCircle
 } from 'lucide-react';
 import { usersApi, doctorsApi, utilityApi, clinicsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -101,6 +105,13 @@ export default function DoctorsPage() {
   const [districtsList, setDistrictsList] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Password Reset State
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resettingDoctor, setResettingDoctor] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
 
   const [isFetchingStates, setIsFetchingStates] = useState(false);
   const [isFetchingDistricts, setIsFetchingDistricts] = useState(false);
@@ -277,11 +288,33 @@ export default function DoctorsPage() {
     try {
       await doctorsApi.updateStatus(id, status, reason);
       setSuccessMsg(`Doctor ${status} successfully!`);
-      fetchData();
+      fetchDoctors(); // Fixed function name
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       console.error(err);
       alert('Failed to update status: ' + err.message);
+    }
+  };
+
+  const handleSuspendUser = async (id) => {
+    try {
+      await usersApi.suspend(id);
+      setSuccessMsg('Account suspended successfully');
+      fetchDoctors();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      alert(err.message || 'Failed to suspend user');
+    }
+  };
+
+  const handleReactivateUser = async (id) => {
+    try {
+      await usersApi.reactivate(id);
+      setSuccessMsg('Account reactivated successfully');
+      fetchDoctors();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      alert(err.message || 'Failed to reactivate user');
     }
   };
 
@@ -432,14 +465,39 @@ export default function DoctorsPage() {
     try {
       setIsDeleting(true);
       await doctorsApi.delete(doctorToDelete._id);
-      setDoctorToDelete(null);
+      setSuccessMsg('Doctor moved to trash bin successfully!');
       fetchDoctors();
+      setDoctorToDelete(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       alert(err.message);
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const handleResetPassword = async () => {
+    if (!resettingDoctor || !newPassword || newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+    
+    try {
+      setIsResetting(true);
+      await usersApi.resetPassword(resettingDoctor.user?._id || resettingDoctor.user, newPassword);
+      setSuccessMsg(`Password for Dr. ${resettingDoctor.user?.name} has been reset!`);
+      setShowResetPasswordModal(false);
+      setNewPassword('');
+      setResettingDoctor(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to reset password: ' + err.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
 
   const filteredDoctors = doctors.filter(doc =>
     doc.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -548,7 +606,12 @@ export default function DoctorsPage() {
                           )}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{doc.user?.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{doc.user?.name}</p>
+                            {doc.user?.status === 'suspended' && (
+                              <span className="px-1.5 py-0.5 rounded bg-red-50 text-red-500 text-[8px] font-black uppercase border border-red-100 animate-pulse">PAUSED</span>
+                            )}
+                          </div>
                           <p className="text-xs font-medium text-slate-400">{doc.user?.email}</p>
                         </div>
                       </div>
@@ -627,13 +690,48 @@ export default function DoctorsPage() {
                             </button>
                           )}
                           {canManage && (
+                            <button 
+                              onClick={() => {
+                                setResettingDoctor(doc);
+                                setShowResetPasswordModal(true);
+                              }}
+                              className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                              title="Reset Password"
+                            >
+                              <KeyRound size={18} />
+                            </button>
+                          )}
+                          {canManage && (
                             <button
                               onClick={() => setDoctorToDelete(doc)}
                               className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
+                              title="Move to Trash"
                             >
                               <Trash2 size={18} />
                             </button>
                           )}
+                          {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+                            <div className="border-l border-slate-100 pl-2 flex items-center">
+                              {doc.user?.status === 'suspended' ? (
+                                <button
+                                  onClick={() => handleReactivateUser(doc.user?._id)}
+                                  className="p-2 hover:bg-white hover:shadow-md rounded-xl text-emerald-500 transition-all"
+                                  title="Reactivate Account"
+                                >
+                                  <PlayCircle size={18} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleSuspendUser(doc.user?._id)}
+                                  className="p-2 hover:bg-white hover:shadow-md rounded-xl text-amber-500 transition-all"
+                                  title="Pause Account"
+                                >
+                                  <PauseCircle size={18} />
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                         </div>
                       </td>
                     )}
@@ -1056,28 +1154,30 @@ export default function DoctorsPage() {
       <Modal
         isOpen={!!doctorToDelete}
         onClose={() => setDoctorToDelete(null)}
-        title="Confirm Deletion"
+        title="Move Doctor to Trash Bin"
       >
         <div className="text-center py-6">
           <div className="w-20 h-20 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-6">
             <Trash2 size={40} />
           </div>
-          <h3 className="text-xl font-extrabold text-slate-900">Are you sure?</h3>
+          <h3 className="text-xl font-extrabold text-slate-900">Move to Trash?</h3>
           <p className="text-slate-500 mt-2 font-medium">
-            You are about to remove <span className="text-slate-900 font-bold">Dr. {doctorToDelete?.user?.name}</span> from the system. This action cannot be undone.
+            You are about to move <span className="text-slate-900 font-bold">Dr. {doctorToDelete?.user?.name}</span> to the trash bin. 
+            They can be restored within 60 days.
           </p>
           <div className="flex gap-4 mt-8">
-            <Button variant="outline" onClick={() => setDoctorToDelete(null)} className="flex-1 h-14 rounded-2xl font-bold">Keep Doctor</Button>
+            <Button variant="outline" onClick={() => setDoctorToDelete(null)} className="flex-1 h-14 rounded-2xl font-bold">Cancel</Button>
             <Button
               onClick={handleDeleteDoctor}
               disabled={isDeleting}
               className="flex-1 h-14 bg-red-500 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-600 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
             >
-              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Delete'}
+              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Move to Trash'}
             </Button>
           </div>
         </div>
       </Modal>
+
 
       {/* View Details Modal */}
       <Modal
@@ -1204,7 +1304,55 @@ export default function DoctorsPage() {
           </div>
         )}
       </Modal>
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        title="Reset Doctor Password"
+      >
+        <div className="space-y-6 p-4">
+          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
+            <Lock className="text-amber-500 shrink-0" size={24} />
+            <p className="text-sm text-amber-700 font-medium">
+              You are resetting the password for <strong>Dr. {resettingDoctor?.user?.name}</strong>. 
+              This will log them out from all devices for security.
+            </p>
+          </div>
+          <Input 
+            label="New Secure Password"
+            type="password"
+            placeholder="At least 8 characters..."
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <div className="flex gap-4 pt-2">
+            <Button variant="outline" onClick={() => setShowResetPasswordModal(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
+            <Button 
+              onClick={handleResetPassword}
+              disabled={!newPassword || isResetting}
+              className="flex-[2] h-12 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100"
+            >
+              {isResetting ? <Loader2 className="animate-spin" /> : 'Confirm Reset'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Notification */}
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 bg-emerald-600 text-white rounded-2xl shadow-2xl flex items-center gap-3 font-bold"
+          >
+            <CheckCircle size={24} /> {successMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+
   );
 }
 

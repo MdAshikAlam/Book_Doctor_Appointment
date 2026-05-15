@@ -51,9 +51,10 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
       throw new AppError('Email not registered.', 401);
     }
 
-    if (user.role === UserRole.ADMIN) {
+    // 1. Check User Account Status
+    if (user.role !== 'super_admin') {
       if (user.status === 'pending') {
-        throw new AppError('Your admin application is pending approval. Please wait for the Super Admin to approve your account.', 403);
+        throw new AppError('Your application is pending approval. Please wait for the administrator to approve your account.', 403);
       }
       if (user.status === 'suspended') {
         throw new AppError('Your account has been suspended. Please contact support.', 403);
@@ -61,10 +62,16 @@ export const loginUser = async (email: string, password?: string, isDashboard: b
       if (user.status === 'inactive') {
         throw new AppError('Your account is currently inactive.', 403);
       }
+      if (user.status === 'rejected') {
+        throw new AppError('Your application has been rejected.', 403);
+      }
       if (user.status === 'deleted') {
         throw new AppError('This account has been deleted.', 403);
       }
     }
+
+    // 2. Check Clinic/Branch Status
+    // Removed: Staff should still be able to login even if their clinic is paused (to view history/settings)
   }
 
   const accessToken = generateAccessToken({ id: user._id.toString(), role: user.role });

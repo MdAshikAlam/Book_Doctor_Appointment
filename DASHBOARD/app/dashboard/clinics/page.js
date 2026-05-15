@@ -26,9 +26,14 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Trash2
+  RefreshCw,
+  KeyRound,
+  Lock,
+  Trash2,
+  PauseCircle,
+  PlayCircle
 } from 'lucide-react';
-import { clinicsApi, doctorsApi } from '@/lib/api';
+import { clinicsApi, doctorsApi, usersApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -70,6 +75,13 @@ export default function ClinicsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [clinicToDelete, setClinicToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Password Reset State
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resettingClinic, setResettingClinic] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
 
 
   // Slot Modal State
@@ -150,7 +162,7 @@ export default function ClinicsPage() {
     try {
       setIsDeleting(true);
       await clinicsApi.delete(clinicToDelete._id);
-      setSuccessMsg('Clinic deleted successfully!');
+      setSuccessMsg('Clinic moved to trash bin successfully!');
       fetchData();
       setIsDeleteModalOpen(false);
       setClinicToDelete(null);
@@ -162,6 +174,43 @@ export default function ClinicsPage() {
       setIsDeleting(false);
     }
   };
+
+  const handleResetOwnerPassword = async () => {
+    if (!resettingClinic || !newPassword || newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+    
+    try {
+      setIsResetting(true);
+      // Resetting the clinic's owner password
+      await usersApi.resetPassword(resettingClinic.owner?._id || resettingClinic.owner, newPassword);
+      setSuccessMsg(`Password for ${resettingClinic.clinicName}'s owner has been reset!`);
+      setShowResetPasswordModal(false);
+      setNewPassword('');
+      setResettingClinic(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to reset password: ' + err.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id, status) => {
+    try {
+      await clinicsApi.updateStatus(id, status);
+      setSuccessMsg(`Clinic ${status === 'suspended' ? 'paused' : 'reactivated'} successfully!`);
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update status: ' + err.message);
+    }
+  };
+
+
 
   const handleEdit = (clinic) => {
     setEditingClinicId(clinic._id);
@@ -515,6 +564,39 @@ export default function ClinicsPage() {
                           >
                             <Pencil size={20} />
                           </button>
+                          {user?.role === 'super_admin' && (
+                            <>
+                              {clinic.clinicStatus === 'suspended' ? (
+                                <button 
+                                  onClick={() => handleUpdateStatus(clinic._id, 'approved')}
+                                  className="w-12 h-12 rounded-2xl bg-slate-50 text-emerald-400 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all shadow-sm"
+                                  title="Resume Clinic"
+                                >
+                                  <PlayCircle size={20} />
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => handleUpdateStatus(clinic._id, 'suspended')}
+                                  className="w-12 h-12 rounded-2xl bg-slate-50 text-amber-400 hover:bg-amber-50 hover:text-amber-600 flex items-center justify-center transition-all shadow-sm"
+                                  title="Pause Clinic"
+                                >
+                                  <PauseCircle size={20} />
+                                </button>
+                              )}
+                            </>
+                          )}
+
+                          <button 
+                            onClick={() => {
+                              setResettingClinic(clinic);
+                              setShowResetPasswordModal(true);
+                            }}
+                            className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center transition-all shadow-sm"
+                            title="Reset Owner Password"
+                          >
+                            <KeyRound size={20} />
+                          </button>
+
                           <button 
                             onClick={() => {
                               setClinicToDelete(clinic);
@@ -525,6 +607,7 @@ export default function ClinicsPage() {
                           >
                             <Trash2 size={20} />
                           </button>
+
                         </>
                       )}
                     </div>
@@ -1177,16 +1260,16 @@ export default function ClinicsPage() {
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Permanently Remove Clinic"
+        title="Move Clinic to Trash Bin"
       >
         <div className="text-center py-6">
           <div className="w-20 h-20 rounded-[2rem] bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-6">
             <Trash2 size={40} />
           </div>
-          <h3 className="text-xl font-extrabold text-slate-900">Final Confirmation</h3>
+          <h3 className="text-xl font-extrabold text-slate-900">Move to Trash?</h3>
           <p className="text-slate-500 mt-2 font-medium">
             Are you sure you want to delete <span className="text-slate-900 font-bold">{clinicToDelete?.clinicName}</span>? 
-            This action will permanently remove all associations with doctors and staff.
+            It will be kept in the trash bin for 60 days before permanent removal.
           </p>
           <div className="flex gap-4 mt-8">
             <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} className="flex-1 h-14 rounded-2xl font-bold">Cancel</Button>
@@ -1195,14 +1278,62 @@ export default function ClinicsPage() {
               disabled={isDeleting}
               className="flex-1 h-14 bg-red-500 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-600 disabled:opacity-70 transition-all flex items-center justify-center gap-2"
             >
-              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Delete Permanently'}
+              {isDeleting ? <Loader2 className="animate-spin" /> : 'Yes, Move to Trash'}
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* View Details Modal or Slot Modal if any */}
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        title="Reset Clinic Owner Password"
+      >
+        <div className="space-y-6 p-4">
+          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
+            <Lock className="text-amber-500 shrink-0" size={24} />
+            <p className="text-sm text-amber-700 font-medium">
+              You are resetting the password for the administrator of <strong>{resettingClinic?.clinicName}</strong>. 
+              This will log them out from all devices.
+            </p>
+          </div>
+          <Input 
+            label="New Secure Password"
+            type="password"
+            placeholder="At least 8 characters..."
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <div className="flex gap-4 pt-2">
+            <Button variant="outline" onClick={() => setShowResetPasswordModal(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
+            <Button 
+              onClick={handleResetOwnerPassword}
+              disabled={!newPassword || isResetting}
+              className="flex-[2] h-12 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100"
+            >
+              {isResetting ? <Loader2 className="animate-spin" /> : 'Confirm Reset'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Notification */}
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 bg-emerald-600 text-white rounded-2xl shadow-2xl flex items-center gap-3 font-bold"
+          >
+            <CheckCircle2 size={24} /> {successMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+
   );
 }
 

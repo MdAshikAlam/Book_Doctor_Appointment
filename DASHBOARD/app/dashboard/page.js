@@ -116,31 +116,27 @@ const iconMap = {
   TrendingUp: TrendingUp
 };
 
+import SuperAdminDashboard from '@/components/dashboard/roles/SuperAdminDashboard';
+import AdminDashboard from '@/components/dashboard/roles/AdminDashboard';
+import DoctorDashboard from '@/components/dashboard/roles/DoctorDashboard';
+import ReceptionistDashboard from '@/components/dashboard/roles/ReceptionistDashboard';
+
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [performance, setPerformance] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const isReceptionist = user?.role === 'receptionist';
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        // Using absolute URL to bypass proxy issues
         const res = await fetch(`${API_BASE_URL}/analytics/dashboard-stats`, {
           credentials: 'include'
         });
         const data = await res.json();
 
         if (data.status === 'success') {
-          setStats(data.data.stats);
-          setChartData(data.data.appointmentChartData);
-          setAppointments(data.data.recentAppointments);
-          setPerformance(data.data.doctorPerformance || []);
+          setDashboardData(data.data);
         }
       } catch (err) {
         console.error('Failed to fetch dashboard stats', err);
@@ -156,130 +152,59 @@ export default function DashboardPage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-500 font-medium animate-pulse">Loading Analytics...</p>
+        <p className="text-slate-500 font-medium animate-pulse">Synchronizing Dashboard...</p>
       </div>
     );
   }
+
+  const renderDashboard = () => {
+    if (!dashboardData) return null;
+
+    switch (user?.role) {
+      case 'super_admin':
+        return <SuperAdminDashboard data={dashboardData} />;
+      case 'admin':
+        return <AdminDashboard data={dashboardData} />;
+      case 'doctor':
+        return <DoctorDashboard data={dashboardData} />;
+      case 'receptionist':
+        return <ReceptionistDashboard data={dashboardData} />;
+      default:
+        return (
+          <div className="p-20 text-center">
+             <h2 className="text-xl font-bold text-slate-400 italic">Welcome to BookMyDoc Dashboard</h2>
+             <p className="text-slate-500 mt-2 font-medium">Please select a menu option to get started.</p>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Healthcare Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {isReceptionist 
-              ? "Welcome back. Here's your appointment overview." 
-              : "Welcome back. Here's what's happening across the platform."}
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+             {user?.role === 'super_admin' ? 'System Overview' : 
+              user?.role === 'admin' ? 'Clinic Dashboard' :
+              user?.role === 'doctor' ? 'Practice Overview' : 'Reception Desk'}
+          </h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">
+             Manage your healthcare operations and patient flow with ease.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
+          <Button variant="outline" size="sm" className="bg-white border-slate-200" leftIcon={<Filter size={16} />}>
             Filter
           </Button>
-          {!isReceptionist && (
-            <Button variant="outline" size="sm" leftIcon={<Download size={16} />}>
-              Export Data
-            </Button>
-          )}
+          <Button variant="outline" size="sm" className="bg-white border-slate-200" leftIcon={<Download size={16} />}>
+            Reports
+          </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => {
-          const Icon = iconMap[stat.icon] || Users;
-          return <DashboardCard key={i} {...stat} icon={Icon} />;
-        })}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card 
-          title="Appointments Over Time" 
-          subtitle="Weekly appointment volume tracking"
-          action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Details</Button>}
-        >
-          <Chart type="line" data={chartData} dataKey="appointments" color="#0284c7" />
-        </Card>
-        {!isReceptionist && (
-          <Card 
-            title="Platform Activity" 
-            subtitle="Patient registration & engagement"
-            action={<Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">Analytics</Button>}
-          >
-            <Chart type="bar" data={revenueChartData} dataKey="revenue" color="#10b981" />
-          </Card>
-        )}
-      </div>
-
-      {/* Tables and List Section */}
-      <div className={cn("grid grid-cols-1 gap-6", isReceptionist ? "xl:grid-cols-1" : "xl:grid-cols-3")}>
-        {/* Doctor Performance - NEW */}
-        {!isReceptionist && user?.role === 'admin' && (
-          <div className="xl:col-span-3">
-            <Card 
-              title="Doctor Performance" 
-              subtitle="Top performing doctors by revenue and appointments"
-              className="h-full"
-            >
-              <Table 
-                columns={[
-                  { header: 'Doctor Name', accessor: 'name' },
-                  { header: 'Specialty', accessor: 'specialty' },
-                  { header: 'Total Apps', accessor: 'totalAppointments' },
-                  { header: 'Completed', accessor: 'completedAppointments' },
-                  { 
-                    header: 'Revenue', 
-                    accessor: 'revenue',
-                    render: (row) => <span className="font-bold text-emerald-600">₹{row.revenue.toLocaleString()}</span>
-                  }
-                ]} 
-                data={performance} 
-              />
-            </Card>
-          </div>
-        )}
-
-        {/* Recent Patients Table - Hidden for Receptionists */}
-        {!isReceptionist && (
-          <div className="xl:col-span-2">
-            <Card 
-              title="Recent Patients" 
-              subtitle="Latest patient registrations"
-              className="h-full"
-              action={<Button variant="ghost" size="sm" rightIcon={<ArrowRight size={16} />}>View All</Button>}
-            >
-              <Table columns={patientTableColumns} data={patientData} />
-            </Card>
-          </div>
-        )}
-
-        {/* Recent Appointments List */}
-        <div className={cn(isReceptionist ? "w-full" : "xl:col-span-1")}>
-          <Card 
-            title="Recent Bookings" 
-            subtitle="Latest scheduled appointments"
-            className="h-full"
-            action={<Button variant="ghost" size="sm">Manage</Button>}
-          >
-            <div className="space-y-4">
-              {appointments.length > 0 ? (
-                appointments.map((appointment) => (
-                  <AppointmentCard key={appointment.id} {...appointment} />
-                ))
-              ) : (
-                <p className="text-center text-slate-400 py-10 italic">No recent appointments found.</p>
-              )}
-            </div>
-            <div className="mt-6">
-              <Button variant="outline" className="w-full text-slate-600 border-slate-200">
-                View Full Logs
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </div>
+      {renderDashboard()}
     </div>
   );
 }
+

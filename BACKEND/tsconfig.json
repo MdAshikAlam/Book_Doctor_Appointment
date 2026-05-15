@@ -47,5 +47,5 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
   },
-  "exclude": ["node_modules", "dist", "scratch"]
+  "exclude": ["node_modules", "dist", "scratch", "*.ts"]
 }

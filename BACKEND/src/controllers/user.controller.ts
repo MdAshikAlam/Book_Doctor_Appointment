@@ -659,13 +659,17 @@ export const updatePatientStatus = async (req: Request, res: Response, next: Nex
 
 export const suspendUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) throw new AppError('User not found', 404);
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { 
+        status: 'suspended',
+        lastLogoutAt: new Date(),
+        refreshToken: undefined 
+      },
+      { new: true }
+    );
 
-    user.status = 'suspended';
-    user.lastLogoutAt = new Date(); // Invalidate current JWTs
-    (user as any).refreshToken = undefined; // Remove refresh token
-    await user.save();
+    if (!user) throw new AppError('User not found', 404);
 
     await logActivity(req, 'SUSPEND_USER', 'User', user.id, `User ${user.email} suspended`);
 
@@ -680,11 +684,13 @@ export const suspendUser = async (req: Request, res: Response, next: NextFunctio
 
 export const reactivateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) throw new AppError('User not found', 404);
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: 'active' },
+      { new: true }
+    );
 
-    user.status = 'active';
-    await user.save();
+    if (!user) throw new AppError('User not found', 404);
 
     await logActivity(req, 'REACTIVATE_USER', 'User', user.id, `User ${user.email} reactivated`);
 
@@ -697,6 +703,7 @@ export const reactivateUser = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+
 export const resetUserPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { password } = z.object({
@@ -705,6 +712,31 @@ export const resetUserPassword = async (req: Request, res: Response, next: NextF
 
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('User not found', 404);
+
+    const requester = (req as any).user;
+
+    // Permission Check
+    if (requester.role !== UserRole.SUPER_ADMIN) {
+      if (requester.role === UserRole.ADMIN) {
+        // Admin can reset password for their own staff or themselves
+        if (user.parentAdmin?.toString() !== requester.id && user.id !== requester.id && user.createdBy?.toString() !== requester.id) {
+          throw new AppError('You are not authorized to reset this user\'s password', 403);
+        }
+      } else if (requester.role === UserRole.RECEPTIONIST) {
+        // Receptionist can reset password for doctors they created or themselves
+        if (user.role !== UserRole.DOCTOR && user.id !== requester.id) {
+           throw new AppError('You are not authorized to reset this user\'s password', 403);
+        }
+        if (user.role === UserRole.DOCTOR && user.createdBy?.toString() !== requester.id) {
+           throw new AppError('You can only reset passwords for doctors you created', 403);
+        }
+      } else {
+        // Doctors/Patients can only reset their own password (usually handled via profile update, but let's allow it here if ID matches)
+        if (user.id !== requester.id) {
+          throw new AppError('You are not authorized to reset this user\'s password', 403);
+        }
+      }
+    }
 
     user.password = password;
     user.lastLogoutAt = new Date(); // Invalidate current JWTs
@@ -721,6 +753,7 @@ export const resetUserPassword = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
 
 export const transferAdminData = async (req: Request, res: Response, next: NextFunction) => {
   try {
