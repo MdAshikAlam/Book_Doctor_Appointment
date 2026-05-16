@@ -16,20 +16,20 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Check if user already reviewed this clinic
-    const existingReview = await Review.findOne({ user: userId, clinic: clinicId });
+    const existingReview = await Review.findOne({ user: userId, clinic: clinicId } as any);
     if (existingReview) {
       throw new AppError('You have already reviewed this clinic', 400);
     }
 
     const review = await Review.create({
       user: userId,
-      clinic: clinicId,
+      clinic: clinicId as any,
       rating,
       comment
     });
 
     // Update clinic average rating and review count
-    const reviews = await Review.find({ clinic: clinicId });
+    const reviews = await Review.find({ clinic: clinicId } as any);
     const count = reviews.length;
     const avg = reviews.reduce((acc, item) => item.rating + acc, 0) / count;
 
@@ -51,7 +51,7 @@ export const getClinicReviews = async (req: Request, res: Response, next: NextFu
   try {
     const { clinicId } = req.params;
     
-    const reviews = await Review.find({ clinic: clinicId })
+    const reviews = await Review.find({ clinic: clinicId } as any)
       .populate('user', 'name avatar')
       .sort('-createdAt');
 

@@ -2,17 +2,23 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { encrypt, decrypt } from '../utils/encryption';
 
 export enum AppointmentStatus {
-  REGISTERED = 'registered',
+  BOOKED = 'booked',
+  CONFIRMED = 'confirmed',
+  CHECKED_IN = 'checked_in',
+  DRAFT_PREPARED = 'draft_prepared',
+  COMPLETED = 'completed',
+  PRESCRIPTION_ADDED = 'prescription_added',
+  FOLLOW_UP = 'follow_up',
+  MISSED = 'missed',
+  CANCELLED = 'cancelled',
+  // Legacy support for migrations if any
+  PENDING = 'pending',
   WAITING = 'waiting',
   IN_CONSULTATION = 'in_consultation',
-  COMPLETED = 'completed',
   ADMITTED = 'admitted',
   DISCHARGED = 'discharged',
-  CANCELLED = 'cancelled',
-  // Legacy support
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
   VISITED = 'visited',
+  REGISTERED = 'registered'
 }
 
 export interface IPrescription {
@@ -80,6 +86,20 @@ export interface IAppointment extends Document {
   city: string;
   visitedBefore: boolean;
   isMovedToPatients?: boolean;
+  checkedInAt?: Date;
+  completedAt?: Date;
+  prescriptionAddedAt?: Date;
+  followUpDate?: Date;
+  missedReason?: string;
+  tokenNumber?: string;
+  draftDiagnosis?: string;
+  draftPrescription?: string;
+  draftNotes?: string;
+  draftPreparedBy?: mongoose.Types.ObjectId;
+  draftPreparedAt?: Date;
+  doctorApprovedBy?: mongoose.Types.ObjectId;
+  doctorApprovedAt?: Date;
+  medicalRecordLocked?: boolean;
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -151,6 +171,20 @@ const appointmentSchema = new Schema<IAppointment>(
     city: { type: String, required: true },
     visitedBefore: { type: Boolean, default: false },
     isMovedToPatients: { type: Boolean, default: false },
+    checkedInAt: { type: Date },
+    completedAt: { type: Date },
+    prescriptionAddedAt: { type: Date },
+    followUpDate: { type: Date },
+    missedReason: { type: String },
+    tokenNumber: { type: String },
+    draftDiagnosis: { type: String },
+    draftPrescription: { type: String },
+    draftNotes: { type: String },
+    draftPreparedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    draftPreparedAt: { type: Date },
+    doctorApprovedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    doctorApprovedAt: { type: Date },
+    medicalRecordLocked: { type: Boolean, default: false }
   },
   { 
     timestamps: true,

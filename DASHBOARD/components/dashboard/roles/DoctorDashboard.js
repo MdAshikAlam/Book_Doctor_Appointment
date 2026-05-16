@@ -42,10 +42,12 @@ export default function DoctorDashboard({ data }) {
                     render: (row) => (
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
                         row.status === 'booked' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                        row.status === 'checked-in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        row.status === 'checked_in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        row.status === 'draft_prepared' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                        row.status === 'missed' ? 'bg-red-50 text-red-600 border-red-100' :
                         'bg-emerald-50 text-emerald-600 border-emerald-100'
                       }`}>
-                        {row.status}
+                        {row.status?.replace('_', ' ')}
                       </span>
                     )
                   },

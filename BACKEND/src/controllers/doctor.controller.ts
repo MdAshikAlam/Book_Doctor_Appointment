@@ -21,10 +21,13 @@ export const getDoctors = async (req: Request, res: Response, next: NextFunction
       } else {
         // Branch restricted: Enforce branch context
         if (!branchId) {
+          console.log('[getDoctors] ERROR: branchId is missing for user', currentUser.email);
           return next(new AppError('Unauthorized: Branch context missing', 403));
         }
       }
     }
+    
+    console.log('[getDoctors] Fetching doctors with query:', req.query, 'branchId:', branchId);
 
     const doctors = await doctorService.getAllDoctors(req.query, creatorId, branchId);
     res.status(200).json({

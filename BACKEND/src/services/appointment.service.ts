@@ -170,8 +170,17 @@ export const updateAppointmentStatus = async (
     reports?: any[];
     followUp?: any;
     dischargeSummary?: any;
+    draftDiagnosis?: string;
+    draftPrescription?: string;
+    draftNotes?: string;
   }
 ) => {
+  const existingApp = await Appointment.findById(id);
+  if (!existingApp) throw new AppError('Appointment not found', 404);
+  if (existingApp.medicalRecordLocked) {
+    throw new AppError('This consultation has been approved and completed by the doctor and is locked for edits.', 403);
+  }
+
   const filter: any = { _id: id };
   
   if (role === 'patient' || role === 'user') {
@@ -184,14 +193,13 @@ export const updateAppointmentStatus = async (
     const doctor = await Doctor.findOne({ user: userId });
     if (!doctor) throw new AppError('Doctor profile not found', 404);
     filter.doctor = doctor._id;
-    // Doctors can only mark as completed, cancelled, or in consultation
+    // Doctors can complete, cancel, follow up, prescription added, or draft prepared
     const allowedStatuses = [
       AppointmentStatus.COMPLETED, 
       AppointmentStatus.CANCELLED, 
-      AppointmentStatus.IN_CONSULTATION,
-      AppointmentStatus.WAITING,
-      AppointmentStatus.ADMITTED,
-      AppointmentStatus.DISCHARGED
+      AppointmentStatus.PRESCRIPTION_ADDED,
+      AppointmentStatus.FOLLOW_UP,
+      AppointmentStatus.DRAFT_PREPARED
     ];
     if (!allowedStatuses.includes(status)) {
       throw new AppError('Doctors are not authorized to set this status', 403);
@@ -216,28 +224,97 @@ export const updateAppointmentStatus = async (
     }
   }
 
+  const mongoose = require('mongoose');
   const update: any = { status };
   
+  if (status === AppointmentStatus.CHECKED_IN) update.checkedInAt = new Date();
+  if (status === AppointmentStatus.COMPLETED) update.completedAt = new Date();
+  if (status === AppointmentStatus.PRESCRIPTION_ADDED) update.prescriptionAddedAt = new Date();
+  if (status === AppointmentStatus.FOLLOW_UP) update.followUpDate = new Date(); 
+
   // Only doctors and admins can mark an appointment as completed
   if (status === AppointmentStatus.COMPLETED && role !== 'doctor' && role !== 'admin') {
     throw new AppError('Only doctors or clinic admins can mark an appointment as completed', 403);
   }
   
-  const hasMedicalData = medicalDetails && (medicalDetails.diagnosis || medicalDetails.prescription || medicalDetails.notes);
+  // Handle Draft Prepared status or draft details updates
+  const hasDraftData = status === AppointmentStatus.DRAFT_PREPARED || 
+    (medicalDetails && (medicalDetails.draftDiagnosis || medicalDetails.draftPrescription || medicalDetails.draftNotes));
+  
+  if (hasDraftData) {
+    if (medicalDetails?.draftDiagnosis) update.draftDiagnosis = medicalDetails.draftDiagnosis;
+    if (medicalDetails?.draftPrescription) update.draftPrescription = medicalDetails.draftPrescription;
+    if (medicalDetails?.draftNotes) update.draftNotes = medicalDetails.draftNotes;
+    
+    update.draftPreparedBy = new mongoose.Types.ObjectId(userId) as any;
+    update.draftPreparedAt = new Date();
 
-  if (hasMedicalData) {
-    // Only doctors (and admins for correction) can add diagnosis or prescriptions
-    if (role !== 'doctor' && role !== 'admin') {
-      throw new AppError('Only doctors can add diagnosis or prescriptions', 403);
+    // Draft updates are also allowed to suggest followUp or reports
+    if (medicalDetails?.reports) update.reports = medicalDetails.reports;
+    if (medicalDetails?.followUp) {
+      update.followUp = medicalDetails.followUp;
+      update.followUpDate = new Date(medicalDetails.followUp.date);
     }
-    if (medicalDetails.diagnosis) update.diagnosis = medicalDetails.diagnosis;
-    if (medicalDetails.prescription) update.prescription = medicalDetails.prescription;
-    if (medicalDetails.notes) update.notes = medicalDetails.notes;
-    if (medicalDetails.prescriptions) update.prescriptions = medicalDetails.prescriptions;
-    if (medicalDetails.consultationNotes) update.consultationNotes = medicalDetails.consultationNotes;
-    if (medicalDetails.reports) update.reports = medicalDetails.reports;
-    if (medicalDetails.followUp) update.followUp = medicalDetails.followUp;
-    if (medicalDetails.dischargeSummary) update.dischargeSummary = medicalDetails.dischargeSummary;
+  }
+
+  // Handle final Consultation Completion or Prescription Approval by Doctor
+  if (status === AppointmentStatus.COMPLETED) {
+    update.doctorApprovedBy = new mongoose.Types.ObjectId(userId) as any;
+    update.doctorApprovedAt = new Date();
+    update.medicalRecordLocked = true;
+
+    // Transition drafts to final medical record fields if final ones not provided
+    update.diagnosis = medicalDetails?.diagnosis || medicalDetails?.draftDiagnosis || existingApp.draftDiagnosis || existingApp.diagnosis;
+    update.prescription = medicalDetails?.prescription || medicalDetails?.draftPrescription || existingApp.draftPrescription || existingApp.prescription;
+    update.notes = medicalDetails?.notes || medicalDetails?.draftNotes || existingApp.draftNotes || existingApp.notes;
+
+    if (medicalDetails?.prescriptions) {
+      update.prescriptions = medicalDetails.prescriptions;
+    } else if ((medicalDetails?.draftPrescription || existingApp.draftPrescription) && !existingApp.prescriptions?.length) {
+      update.prescriptions = [{
+        medicine: medicalDetails?.draftPrescription || existingApp.draftPrescription,
+        dosage: 'As drafted',
+        timing: 'As drafted',
+        days: 1,
+        notes: 'Draft approved'
+      }];
+    }
+
+    if (medicalDetails?.consultationNotes) {
+      update.consultationNotes = medicalDetails.consultationNotes;
+    } else {
+      update.consultationNotes = {
+        symptoms: existingApp.consultationNotes?.symptoms || 'General Checkup',
+        diagnosis: update.diagnosis,
+        advice: update.notes
+      };
+    }
+    
+    if (medicalDetails?.reports) update.reports = medicalDetails.reports;
+    if (medicalDetails?.followUp) {
+      update.followUp = medicalDetails.followUp;
+      update.followUpDate = new Date(medicalDetails.followUp.date);
+    }
+  } else {
+    // Regular doctor final additions if not completing (e.g. PRESCRIPTION_ADDED)
+    const hasMedicalData = medicalDetails && (medicalDetails.diagnosis || medicalDetails.prescription || medicalDetails.notes);
+
+    if (hasMedicalData) {
+      if (role !== 'doctor' && role !== 'admin') {
+        throw new AppError('Only doctors can add diagnosis or prescriptions', 403);
+      }
+      if (medicalDetails.diagnosis) update.diagnosis = medicalDetails.diagnosis;
+      if (medicalDetails.prescription) update.prescription = medicalDetails.prescription;
+      if (medicalDetails.notes) update.notes = medicalDetails.notes;
+      if (medicalDetails.prescriptions) update.prescriptions = medicalDetails.prescriptions;
+      if (medicalDetails.consultationNotes) update.consultationNotes = medicalDetails.consultationNotes;
+      if (medicalDetails.reports) update.reports = medicalDetails.reports;
+      if (medicalDetails.followUp) {
+        update.followUp = medicalDetails.followUp;
+        update.followUpDate = new Date(medicalDetails.followUp.date);
+      }
+      if (medicalDetails.dischargeSummary) update.dischargeSummary = medicalDetails.dischargeSummary;
+    }
   }
 
   const appointment = await Appointment.findOneAndUpdate(filter, update, { new: true })

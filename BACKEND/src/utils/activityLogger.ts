@@ -20,7 +20,7 @@ export const logActivity = async (
       details,
       ipAddress: String(req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''),
       userAgent: req.headers['user-agent'] as string
-    });
+    } as any);
   } catch (error) {
     console.error('Failed to log activity:', error);
   }

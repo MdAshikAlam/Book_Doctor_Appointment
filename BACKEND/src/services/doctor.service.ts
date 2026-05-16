@@ -36,8 +36,19 @@ export const getAllDoctors = async (query: any, creatorId?: string, branchId?: s
   pipeline.push({
     $lookup: {
       from: 'clinics',
-      localField: 'clinic',
-      foreignField: '_id',
+      let: { clinicId: '$clinic', branchId: '$branchId' },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $or: [
+                { $eq: ['$_id', '$$clinicId'] },
+                { $eq: ['$_id', '$$branchId'] }
+              ]
+            }
+          }
+        }
+      ],
       as: 'clinic_info',
     },
   });
@@ -186,9 +197,15 @@ export const getAllDoctors = async (query: any, creatorId?: string, branchId?: s
 export const getDoctorById = async (idOrSlug: string) => {
   const isId = mongoose.Types.ObjectId.isValid(idOrSlug);
   const query = isId ? { _id: idOrSlug } : { slug: idOrSlug };
-  const doctor = await Doctor.findOne(query).populate('user', 'name email avatar phone').populate('clinic');
+  const doctor = await Doctor.findOne(query)
+    .populate('user', 'name email avatar phone')
+    .populate('clinic')
+    .populate('branchId');
   if (!doctor) {
     throw new AppError('Doctor not found', 404);
+  }
+  if (!doctor.clinic && doctor.branchId) {
+    doctor.clinic = doctor.branchId as any;
   }
   return doctor;
 };
@@ -282,9 +299,15 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
   return { user, doctor };
 };
 export const getDoctorByUserId = async (userId: string) => {
-  const doctor = await Doctor.findOne({ user: userId }).populate('user', 'name email avatar').populate('clinic');
+  const doctor = await Doctor.findOne({ user: userId })
+    .populate('user', 'name email avatar')
+    .populate('clinic')
+    .populate('branchId');
   if (!doctor) {
     throw new AppError('Doctor profile not found', 404);
+  }
+  if (!doctor.clinic && doctor.branchId) {
+    doctor.clinic = doctor.branchId as any;
   }
   return doctor;
 };

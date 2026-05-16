@@ -29,9 +29,9 @@ type DoctorDetails = {
     avatar?: string;
   };
   clinic?: {
-    name?: string;
-    addressLine1?: string;
-    district?: string;
+    clinicName?: string;
+    address?: string;
+    city?: string;
     state?: string;
     country?: string;
     phone?: string;
@@ -101,7 +101,7 @@ export default function DoctorProfilePage() {
   const fullAddress =
     [doctor.address, doctor.district, doctor.state].filter(Boolean).join(", ") || "Address not provided";
   const clinicAddress =
-    [doctor.clinic?.addressLine1, doctor.clinic?.district, doctor.clinic?.state, doctor.clinic?.country].filter(Boolean).join(", ") ||
+    [doctor.clinic?.address, doctor.clinic?.city, doctor.clinic?.state, doctor.clinic?.country].filter(Boolean).join(", ") ||
     "Clinic address not provided";
 
   return (
@@ -162,7 +162,7 @@ export default function DoctorProfilePage() {
                     href={`/clinics/${doctor.clinic?.slug || (doctor.clinic as any)?._id}`}
                     className="font-black text-primary hover:underline transition-all"
                   >
-                    {doctor.clinic?.name || "Clinic name not provided"}
+                    {doctor.clinic?.clinicName || "Clinic name not provided"}
                   </Link>
                 </p>
                 <p className="flex items-start gap-2">
@@ -175,7 +175,7 @@ export default function DoctorProfilePage() {
                 {doctor.clinic?.images?.[0] && (
                   <img
                     src={resolveImageUrl(doctor.clinic.images[0]) || doctor.clinic.images[0]}
-                    alt={doctor.clinic?.name || "Clinic"}
+                    alt={doctor.clinic?.clinicName || "Clinic"}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}

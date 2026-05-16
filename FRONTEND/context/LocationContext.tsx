@@ -23,7 +23,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [longitude, setLongitude] = useState<number | null>(null);
 
   useEffect(() => {
-    // Session-based location. No auto-loading from localStorage to prevent "automatic" selection.
+    // Initialize from localStorage on client-side
+    const storedState = localStorage.getItem('userState');
+    const storedDistrict = localStorage.getItem('userDistrict');
+    
+    if (storedState) setSelectedState(storedState);
+    if (storedDistrict) setSelectedDistrict(storedDistrict);
   }, []);
 
   const handleSetState = (state: string) => {
@@ -31,10 +36,22 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedDistrict(''); 
     setLatitude(null);
     setLongitude(null);
+    if (state) {
+      localStorage.setItem('userState', state);
+      localStorage.removeItem('userDistrict');
+    } else {
+      localStorage.removeItem('userState');
+      localStorage.removeItem('userDistrict');
+    }
   };
 
   const handleSetDistrict = async (district: string) => {
     setSelectedDistrict(district);
+    if (district) {
+      localStorage.setItem('userDistrict', district);
+    } else {
+      localStorage.removeItem('userDistrict');
+    }
   };
 
   const clearLocation = () => {
@@ -42,6 +59,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedDistrict('');
     setLatitude(null);
     setLongitude(null);
+    localStorage.removeItem('userState');
+    localStorage.removeItem('userDistrict');
   };
 
   return (

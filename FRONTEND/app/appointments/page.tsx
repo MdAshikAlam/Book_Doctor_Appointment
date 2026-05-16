@@ -9,8 +9,12 @@ import "../../styles/AppointmentForm.css";
 
 export default function Appointments() {
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout, login } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [formData, setFormData] = useState({
     department: "Pediatrics",
     city: "",
@@ -26,6 +30,7 @@ export default function Appointments() {
     gender: "",
     address: "",
     visitedBefore: false,
+    message: "",
   });
 
   const [doctorInfo, setDoctorInfo] = useState<any>(null);
@@ -100,18 +105,17 @@ export default function Appointments() {
     setStatus({ type: null, message: "" });
 
     try {
-      const token = localStorage.getItem("accessToken");
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           date: formData.appointmentDate,
           slot: formData.appointmentTime,
-          reason: `Appointment for ${formData.department}`
+          reason: formData.message ? `Appointment for ${formData.department}. Message: ${formData.message}` : `Appointment for ${formData.department}`
         }),
       });
 
@@ -132,9 +136,15 @@ export default function Appointments() {
           gender: "",
           address: "",
           visitedBefore: false,
+          message: "",
         });
       } else {
         const errorData = await response.json();
+        if (response.status === 401) {
+          setStatus({ type: "error", message: "Your token has expired. Please log in again to continue." });
+          setShowAuthModal(true);
+          return;
+        }
         setStatus({ type: "error", message: errorData.message || "Failed to book appointment. Please try again." });
       }
     } catch (error) {
@@ -324,6 +334,11 @@ export default function Appointments() {
             </div>
           </section>
 
+          <div className="input-group" style={{ marginBottom: "20px" }}>
+            <label htmlFor="message">Message / About your illness</label>
+            <textarea id="message" name="message" rows={4} placeholder="Describe your symptoms or reason for visit (optional)" value={formData.message} onChange={handleChange} className="form-control-custom"></textarea>
+          </div>
+
           <div className="input-group">
             <label htmlFor="visitedBefore">Have you visited before?</label>
             <label className="checkbox-group">
@@ -358,22 +373,45 @@ export default function Appointments() {
                 Please log in to your account to book an appointment with our specialists.
               </p>
               
-              <div className="flex flex-col gap-3">
-                <Link 
-                  href="/login"
-                  onClick={() => setShowAuthModal(false)}
-                  className="bg-primary text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+              {loginError && <p className="text-red-500 text-sm mb-4">{loginError}</p>}
+              
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setIsLoggingIn(true);
+                setLoginError("");
+                const result = await login(loginEmail, loginPassword);
+                if (result.success) {
+                  setShowAuthModal(false);
+                  setStatus({ type: "success", message: "Logged in successfully! You can now submit your appointment." });
+                } else {
+                  setLoginError(result.message || "Login failed");
+                }
+                setIsLoggingIn(false);
+              }} className="flex flex-col gap-4 text-left">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Enter your email" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
+                  <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Enter your password" />
+                </div>
+                <button 
+                  type="submit"
+                  disabled={isLoggingIn}
+                  className="bg-primary text-white py-4 mt-2 rounded-2xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <LogIn size={20} />
-                  Login Now
-                </Link>
-                <button 
-                  onClick={() => setShowAuthModal(false)}
-                  className="py-4 text-gray-500 font-bold hover:text-gray-700 transition-colors"
-                >
-                  Maybe Later
+                  {isLoggingIn ? "Logging in..." : "Login Now"}
                 </button>
-              </div>
+              </form>
+              
+              <button 
+                onClick={() => setShowAuthModal(false)}
+                className="py-4 text-gray-500 font-bold hover:text-gray-700 transition-colors w-full mt-2"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

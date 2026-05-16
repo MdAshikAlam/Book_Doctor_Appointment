@@ -100,7 +100,15 @@ export default function PatientDetailsPage({ params }) {
         </div>
       )
     },
-    { header: 'Reason', accessor: 'reason' },
+    { 
+      header: 'Reason', 
+      accessor: 'reason',
+      render: (row) => (
+        <div className="max-w-[200px] truncate text-sm text-slate-600" title={row.reason}>
+          {row.reason || 'General'}
+        </div>
+      )
+    },
     { 
       header: 'Status', 
       accessor: 'status',
