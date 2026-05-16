@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   UserPlus, CalendarCheck, Clock, CheckCircle2,
-  Printer, CreditCard, UserCheck, XCircle, Search
+  Printer, CreditCard, UserCheck, XCircle, Search, Users, FileText
 } from 'lucide-react';
 import DashboardCard from '../DashboardCard';
 import Card from '@/components/common/Card';
@@ -12,7 +12,7 @@ export default function ReceptionistDashboard({ data }) {
   const { stats, queue } = data;
 
   const iconMap = {
-    UserPlus, CalendarCheck, Clock, CheckCircle2
+    UserPlus, CalendarCheck, Clock, CheckCircle2, Users, FileText
   };
 
   return (
@@ -46,8 +46,8 @@ export default function ReceptionistDashboard({ data }) {
                     render: (row) => (
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
                         row.status === 'booked' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                        row.status === 'checked-in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        row.status === 'no-show' ? 'bg-red-50 text-red-600 border-red-100' :
+                        row.status === 'checked_in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        row.status === 'missed' ? 'bg-red-50 text-red-600 border-red-100' :
                         'bg-emerald-50 text-emerald-600 border-emerald-100'
                       }`}>
                         {row.status}

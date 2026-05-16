@@ -133,6 +133,7 @@ const clinicSchema = z.object({
   registrationNumber: z.string(),
   registrationProof: z.string(),
   addressProof: z.string().optional(),
+  receptionAssistantMode: z.boolean().optional(),
 });
 
 export const createClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {

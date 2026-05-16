@@ -6,6 +6,7 @@ import Doctor from '../models/Doctor';
 import Patient from '../models/Patient';
 import Clinic from '../models/Clinic';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { AppError } from '../middlewares/error';
 
 export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -89,21 +90,14 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       const branchObjId = new mongoose.Types.ObjectId(branchId);
       const [
-        totalDoctors, totalPatients, todayApts, completedApts,
-        pendingApts, revenueToday, upcomingApts
+        todayApts, checkedInApts, completedApts, missedApts,
+        upcomingApts
       ] = await Promise.all([
-        Doctor.countDocuments({ branchId: branchObjId }),
-        Patient.countDocuments({ branchId: branchObjId }),
         Appointment.countDocuments({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd } }),
+        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd }, status: 'checked_in' }),
         Appointment.countDocuments({ branchId: branchObjId, status: { $in: ['completed', 'visited'] } }),
-        Appointment.countDocuments({ branchId: branchObjId, status: 'booked' }),
-        Appointment.aggregate([
-          { $match: { branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd }, status: { $in: ['completed', 'visited'] } } },
-          { $lookup: { from: 'doctors', localField: 'doctor', foreignField: '_id', as: 'doc' } },
-          { $unwind: '$doc' },
-          { $group: { _id: null, total: { $sum: '$doc.consultationFee' } } }
-        ]),
-        Appointment.find({ branchId: branchObjId, date: { $gte: todayStart }, status: 'booked' })
+        Appointment.countDocuments({ branchId: branchObjId, status: 'missed' }),
+        Appointment.find({ branchId: branchObjId, date: { $gte: todayStart }, status: { $in: ['booked', 'confirmed', 'checked_in'] } })
           .populate('patient', 'name')
           .populate({ path: 'doctor', populate: { path: 'user', select: 'name' } })
           .sort('date')
@@ -112,12 +106,10 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       resultData = {
         stats: [
-          { title: 'Branch Doctors', value: totalDoctors.toLocaleString(), icon: 'Stethoscope', color: 'blue' },
-          { title: 'Branch Patients', value: totalPatients.toLocaleString(), icon: 'Users', color: 'orange' },
-          { title: 'Today\'s Apps', value: todayApts.toLocaleString(), icon: 'CalendarCheck', color: 'purple' },
-          { title: 'Completed Visits', value: completedApts.toLocaleString(), icon: 'CheckCircle2', color: 'green' },
-          { title: 'Pending Apps', value: pendingApts.toLocaleString(), icon: 'Clock', color: 'amber' },
-          { title: 'Today Revenue', value: `₹${(revenueToday[0]?.total || 0).toLocaleString()}`, icon: 'IndianRupee', color: 'emerald', isCurrency: true }
+          { title: 'Today Appointments', value: todayApts.toLocaleString(), icon: 'CalendarCheck', color: 'blue' },
+          { title: 'Checked-In Patients', value: checkedInApts.toLocaleString(), icon: 'Users', color: 'cyan' },
+          { title: 'Completed Consultations', value: completedApts.toLocaleString(), icon: 'CheckCircle2', color: 'green' },
+          { title: 'Missed Appointments', value: missedApts.toLocaleString(), icon: 'XCircle', color: 'red' },
         ],
         upcomingAppointments: upcomingApts.map(apt => ({
           id: apt._id,
@@ -133,30 +125,35 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       const doctorProfile = await Doctor.findOne({ user: currentUser.id });
       if (!doctorProfile) throw new AppError('Doctor profile not found', 404);
 
+      const Patient = (await import('../models/Patient')).default;
+
       const [
-        todayPatients, upcoming, completed, pending, schedule
+        pendingDrafts, todayPatients, completedAptsCount, followUps, schedule, patientsHistoryCount
       ] = await Promise.all([
+        Appointment.countDocuments({ doctor: doctorProfile._id, status: 'draft_prepared' }),
         Appointment.countDocuments({ doctor: doctorProfile._id, date: { $gte: todayStart, $lte: todayEnd } }),
-        Appointment.countDocuments({ doctor: doctorProfile._id, date: { $gte: todayEnd }, status: 'booked' }),
         Appointment.countDocuments({ doctor: doctorProfile._id, status: { $in: ['completed', 'visited'] } }),
-        Appointment.countDocuments({ doctor: doctorProfile._id, status: 'booked', date: { $lte: todayEnd } }),
+        Appointment.countDocuments({ doctor: doctorProfile._id, status: 'follow_up' }),
         Appointment.find({ doctor: doctorProfile._id, date: { $gte: todayStart, $lte: todayEnd } })
           .populate('patient', 'name phone')
-          .sort('slot')
+          .sort('slot'),
+        Patient.countDocuments({ doctorId: doctorProfile._id })
       ]);
+
+      const totalCompleted = completedAptsCount + patientsHistoryCount;
 
       resultData = {
         stats: [
-          { title: 'Today\'s Patients', value: todayPatients.toLocaleString(), icon: 'Users', color: 'blue' },
-          { title: 'Upcoming Apps', value: upcoming.toLocaleString(), icon: 'CalendarCheck', color: 'indigo' },
-          { title: 'Total Consulted', value: completed.toLocaleString(), icon: 'CheckCircle2', color: 'green' },
-          { title: 'Pending Today', value: pending.toLocaleString(), icon: 'Clock', color: 'amber' }
+          { title: 'Pending Draft Reviews', value: pendingDrafts.toLocaleString(), icon: 'Clock', color: 'amber' },
+          { title: 'Today Patients', value: todayPatients.toLocaleString(), icon: 'Users', color: 'blue' },
+          { title: 'Completed Consultations', value: totalCompleted.toLocaleString(), icon: 'CheckCircle2', color: 'green' },
+          { title: 'Follow-Ups', value: followUps.toLocaleString(), icon: 'CalendarCheck', color: 'indigo' },
         ],
         schedule: schedule.map(apt => ({
           id: apt._id,
           patientName: (apt as any).patient?.name || apt.fullName,
           timeSlot: apt.slot,
-          type: apt.appointmentType || 'Consultation',
+          type: (apt as any).appointmentType || 'Consultation',
           status: apt.status
         }))
       };
@@ -167,12 +164,12 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       const branchObjId = branchId ? new mongoose.Types.ObjectId(branchId) : null;
 
       const [
-        todayReg, todayApts, walkIns, pendingCheckins, queue
+        draftConsultations, checkedInApts, followUpPatients, reportsCount, queue
       ] = await Promise.all([
-        Patient.countDocuments({ branchId: branchObjId, createdAt: { $gte: todayStart, $lte: todayEnd } }),
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd } }),
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd }, appointmentType: 'Walk-in' }),
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd }, status: 'booked' }),
+        Appointment.countDocuments({ branchId: branchObjId, status: 'draft_prepared' }),
+        Appointment.countDocuments({ branchId: branchObjId, status: 'checked_in' }),
+        Appointment.countDocuments({ branchId: branchObjId, status: 'follow_up' }),
+        Appointment.countDocuments({ branchId: branchObjId, "reports.0": { $exists: true } }),
         Appointment.find({ branchId: branchObjId, date: { $gte: todayStart, $lte: todayEnd } })
           .populate('patient', 'name')
           .populate({ path: 'doctor', populate: { path: 'user', select: 'name' } })
@@ -181,10 +178,10 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       resultData = {
         stats: [
-          { title: 'New Registrations', value: todayReg.toLocaleString(), icon: 'UserPlus', color: 'blue' },
-          { title: 'Today\'s Total', value: todayApts.toLocaleString(), icon: 'CalendarCheck', color: 'purple' },
-          { title: 'Walk-in Patients', value: walkIns.toLocaleString(), icon: 'Walking', color: 'indigo' },
-          { title: 'Pending Check-ins', value: pendingCheckins.toLocaleString(), icon: 'Clock', color: 'amber' }
+          { title: 'Draft Consultations', value: draftConsultations.toLocaleString(), icon: 'Clock', color: 'amber' },
+          { title: 'Checked-In Patients', value: checkedInApts.toLocaleString(), icon: 'CheckCircle2', color: 'cyan' },
+          { title: 'Follow-Up Patients', value: followUpPatients.toLocaleString(), icon: 'CalendarCheck', color: 'purple' },
+          { title: 'Uploaded Reports', value: reportsCount.toLocaleString(), icon: 'Users', color: 'blue' }
         ],
         queue: queue.map(apt => ({
           id: apt._id,

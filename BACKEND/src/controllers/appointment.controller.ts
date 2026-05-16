@@ -82,7 +82,7 @@ export const getMyAppointments = async (req: Request, res: Response, next: NextF
 
 export const updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { status, diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary } = req.body;
+    const { status, diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary, draftDiagnosis, draftPrescription, draftNotes } = req.body;
     const branchId = (req as any).branchId || (req as any).user.branchId;
     
     const appointment = await appointmentService.updateAppointmentStatus(
@@ -91,7 +91,7 @@ export const updateStatus = async (req: AuthRequest, res: Response, next: NextFu
       req.user!.role,
       status as AppointmentStatus,
       branchId,
-      { diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary }
+      { diagnosis, prescription, notes, prescriptions, consultationNotes, reports, followUp, dischargeSummary, draftDiagnosis, draftPrescription, draftNotes }
     );
 
     res.status(200).json({

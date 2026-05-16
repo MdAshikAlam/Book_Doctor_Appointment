@@ -22,7 +22,8 @@ import {
   BarChart3,
   XCircle,
   History,
-  Trash2
+  Trash2,
+  CheckCircle2
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -36,77 +37,87 @@ const superAdminSections = [
   {
     title: 'Core',
     items: [
-      { icon: LayoutDashboard, label: 'Global Dashboard', href: '/dashboard' },
-      { icon: Building2, label: 'Clinics Management', href: '/dashboard/clinics' },
-      { icon: Shield, label: 'Admin Management', href: '/dashboard/staff' },
-    ]
-  },
-  {
-    title: 'Verification',
-    items: [
-      { icon: UserPlus, label: 'Admin Requests', href: '/dashboard/admin-requests', category: 'adminRequests' },
-      { icon: FileCheck, label: 'Clinic Verification', href: '/dashboard/clinic-verification', category: 'clinicVerification' },
-      { icon: FileCheck, label: 'Doctor Verification', href: '/dashboard/doctor-verification', category: 'doctorVerification' },
-    ]
-  },
-  {
-    title: 'Management',
-    items: [
-      { icon: GitBranch, label: 'Branch Management', href: '/dashboard/branches' },
-      { icon: Stethoscope, label: 'Doctor Management', href: '/dashboard/doctors' },
-      { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
-      { icon: Users, label: 'Patients Overview', href: '/dashboard/patients' },
-    ]
-  },
-  {
-    title: 'Safety',
-    items: [
-      { icon: Flag, label: 'Reports & Flags', href: '/dashboard/reports' },
-      { icon: ShieldAlert, label: 'Block / Suspend', href: '/dashboard/safety' },
-      { icon: Trash2, label: 'Trash Bin', href: '/dashboard/trash' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+      { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
+      { icon: Shield, label: 'Admins', href: '/dashboard/staff?role=admin' },
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
+      { icon: UserRound, label: 'Receptionists', href: '/dashboard/staff?role=receptionist' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
     ]
   },
   {
     title: 'System',
     items: [
+      { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
+      { icon: Flag, label: 'Revenue Reports', href: '/dashboard/reports' },
+      { icon: History, label: 'Activity Logs', href: '/dashboard/logs' },
       { icon: Settings, label: 'System Settings', href: '/dashboard/settings' },
-      { icon: BarChart3, label: 'Analytics & Logs', href: '/dashboard/analytics' },
     ]
   }
 ];
 
 const adminSections = [
   {
-    title: 'Clinic Operations',
+    title: 'Operations',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: Building2, label: 'Clinic Profile', href: '/dashboard/clinics' },
-      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-      { icon: XCircle, label: 'Cancelled Appt.', href: '/dashboard/appointments/cancelled' },
+      { icon: CheckCircle2, label: 'Completed Visits', href: '/dashboard/appointments?filter=completed' },
+      { icon: XCircle, label: 'Missed Appointments', href: '/dashboard/appointments?filter=missed' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
     ]
   },
   {
-    title: 'Staffing & History',
+    title: 'Management',
     items: [
+      { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
       { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
-      { icon: Users, label: 'Patient History', href: '/dashboard/patients' },
-    ]
-  },
-  {
-    title: 'Account',
-    items: [
+      { icon: Flag, label: 'Reports', href: '/dashboard/reports' },
       { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
     ]
   }
 ];
 
-const staffItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-  { icon: XCircle, label: 'Cancelled Appt.', href: '/dashboard/appointments/cancelled' },
-  { icon: Users, label: 'Patient History', href: '/dashboard/patients' },
-  { icon: UserRound, label: 'Profile', href: '/dashboard/profile' },
+const receptionistSections = [
+  {
+    title: 'Operations',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
+      { icon: CheckCircle2, label: 'Completed Visits', href: '/dashboard/appointments?filter=completed' },
+      { icon: XCircle, label: 'Missed Appointments', href: '/dashboard/appointments?filter=missed' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
+    ]
+  },
+  {
+    title: 'Management',
+    items: [
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
+      { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
+      { icon: Flag, label: 'Reports', href: '/dashboard/reports' },
+      { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    ]
+  }
+];
+
+const doctorSections = [
+  {
+    title: 'Consultation',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+      { icon: CalendarCheck, label: 'Today Appointments', href: '/dashboard/appointments?filter=today' },
+      { icon: CheckCircle2, label: 'Completed Consultations', href: '/dashboard/appointments?filter=completed' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
+      { icon: CalendarCheck, label: 'Follow-Ups', href: '/dashboard/appointments?filter=follow_up' },
+    ]
+  },
+  {
+    title: 'Account',
+    items: [
+      { icon: UserRound, label: 'Profile Settings', href: '/dashboard/profile' },
+    ]
+  }
 ];
 
 import { useEffect } from 'react';
@@ -253,11 +264,37 @@ const Sidebar = () => {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="space-y-1">
-            {staffItems.map((item, idx) => renderLink(item, idx))}
+        ) : user?.role === 'receptionist' ? (
+          <div className="space-y-8">
+            {receptionistSections.map((section, sIdx) => (
+              <div key={sIdx} className="space-y-2">
+                {!isCollapsed && (
+                  <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
+                    {section.title}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        ) : user?.role === 'doctor' ? (
+          <div className="space-y-8">
+            {doctorSections.map((section, sIdx) => (
+              <div key={sIdx} className="space-y-2">
+                {!isCollapsed && (
+                  <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
+                    {section.title}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </nav>
 
       {/* Toggle Button */}

@@ -77,6 +77,7 @@ export interface IClinic extends Document {
   isDeleted: boolean;
   averageRating: number;
   reviewCount: number;
+  receptionAssistantMode: boolean;
 }
 
 const clinicSchema = new Schema<IClinic>(
@@ -153,6 +154,7 @@ const clinicSchema = new Schema<IClinic>(
     parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
+    receptionAssistantMode: { type: Boolean, default: false },
     averageRating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
   },

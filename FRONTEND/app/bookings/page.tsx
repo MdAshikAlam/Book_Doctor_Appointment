@@ -40,13 +40,8 @@ export default function MyAppointmentsPage() {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem("accessToken");
-      if (!token) throw new Error("Please log in to view your appointments");
-
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/my`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        credentials: "include"
       });
       const data = await res.json();
 
@@ -77,13 +72,12 @@ export default function MyAppointmentsPage() {
 
     try {
       setCancelLoading(id);
-      const token = localStorage.getItem("accessToken");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${id}/status`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
+        credentials: "include",
         body: JSON.stringify({ status: "cancelled" })
       });
       const data = await res.json();

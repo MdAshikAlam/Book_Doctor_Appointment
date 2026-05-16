@@ -137,7 +137,7 @@ export default function HeaderSearch() {
           <div className="text-left">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-none mb-1">Your Location</p>
             <p className="text-sm font-extrabold text-gray-900 leading-none truncate max-w-[120px]">
-              {selectedDistrict || 'Select District'}
+              {selectedDistrict || selectedState || 'Select District'}
             </p>
           </div>
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />

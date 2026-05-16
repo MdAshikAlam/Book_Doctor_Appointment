@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Calendar, 
   Clock, 
@@ -47,9 +47,10 @@ const getFullImageUrl = (path) => {
 export default function AppointmentsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('upcoming'); 
+  const [filter, setFilter] = useState(searchParams.get('filter') || 'upcoming'); 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingAppointment, setViewingAppointment] = useState(null);
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
@@ -87,9 +88,46 @@ export default function AppointmentsPage() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  useEffect(() => {
+    const qFilter = searchParams.get('filter');
+    if (qFilter) {
+      setFilter(qFilter);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (notesModal) {
+      setNotesForm({
+        symptoms: notesModal.consultationNotes?.symptoms || '',
+        diagnosis: notesModal.consultationNotes?.diagnosis || '',
+        observations: notesModal.consultationNotes?.observations || '',
+        advice: notesModal.consultationNotes?.advice || ''
+      });
+    }
+  }, [notesModal]);
+
+  useEffect(() => {
+    if (prescriptionModal) {
+      if (prescriptionModal.prescriptions && prescriptionModal.prescriptions.length > 0) {
+        setPrescriptionForm(prescriptionModal.prescriptions);
+      } else {
+        setPrescriptionForm([{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+      }
+    }
+  }, [prescriptionModal]);
+
   const handleStatusUpdate = async (id, status, extraData = {}) => {
     try {
-      await appointmentsApi.updateStatus(id, { status, ...extraData });
+      let targetStatus = status;
+      if (
+        (user?.role === 'receptionist' || user?.role === 'admin') &&
+        (status === 'booked' || status === 'confirmed' || status === 'checked_in' || status === 'waiting' || status === 'in_consultation' || status === 'draft_prepared')
+      ) {
+        if (extraData.prescriptions || extraData.consultationNotes || extraData.reports || extraData.followUp) {
+          targetStatus = 'draft_prepared';
+        }
+      }
+      await appointmentsApi.updateStatus(id, { status: targetStatus, ...extraData });
       if (status === 'completed' || status === 'discharged') {
         router.push('/dashboard/patients');
       } else {
@@ -137,16 +175,16 @@ export default function AppointmentsPage() {
   };
 
   const filteredAppointments = appointments.filter(app => {
-    if (app.status === 'cancelled') return false;
+    if (app.status === 'cancelled' && filter !== 'cancelled') return false;
     
     let matchesFilter = false;
     const appDate = new Date(app.date).toDateString();
     const today = new Date().toDateString();
 
     if (filter === 'upcoming') {
-      matchesFilter = ['confirmed', 'pending', 'registered', 'waiting', 'in_consultation'].includes(app.status);
+      matchesFilter = ['booked', 'confirmed'].includes(app.status);
     } else if (filter === 'today') {
-      matchesFilter = appDate === today && ['confirmed', 'pending', 'registered', 'waiting', 'in_consultation'].includes(app.status);
+      matchesFilter = appDate === today && ['booked', 'confirmed'].includes(app.status);
     } else {
       matchesFilter = app.status === filter;
     }
@@ -160,14 +198,18 @@ export default function AppointmentsPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'booked': return 'text-slate-600 bg-slate-100 border-slate-200';
+      case 'confirmed': return 'text-blue-600 bg-blue-50 border-blue-100';
+      case 'checked_in': return 'text-cyan-600 bg-cyan-50 border-cyan-100';
+      case 'completed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      case 'prescription_added': return 'text-teal-600 bg-teal-50 border-teal-100';
+      case 'follow_up': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
+      case 'missed': return 'text-red-600 bg-red-50 border-red-100';
+      case 'cancelled': return 'text-rose-800 bg-rose-100 border-rose-200';
+      // Legacy support
       case 'registered': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
       case 'waiting': return 'text-amber-600 bg-amber-50 border-amber-100';
-      case 'in_consultation': return 'text-blue-600 bg-blue-50 border-blue-100';
-      case 'completed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-      case 'admitted': return 'text-red-600 bg-red-50 border-red-100';
-      case 'discharged': return 'text-slate-600 bg-slate-50 border-slate-100';
-      case 'cancelled': return 'text-rose-600 bg-rose-50 border-rose-100';
-      case 'confirmed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      case 'in_consultation': return 'text-purple-600 bg-purple-50 border-purple-100';
       case 'pending': return 'text-amber-600 bg-amber-50 border-amber-100';
       default: return 'text-slate-600 bg-slate-50 border-slate-100';
     }
@@ -190,7 +232,7 @@ export default function AppointmentsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="bg-slate-100/50 p-1.5 rounded-[1.5rem] flex items-center gap-1 overflow-x-auto max-w-full no-scrollbar">
-            {['upcoming', 'today', 'registered', 'waiting', 'in_consultation'].map((f) => (
+            {['upcoming', 'today', 'checked_in', 'draft_prepared', 'follow_up', 'completed', 'missed', 'cancelled'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -201,7 +243,10 @@ export default function AppointmentsPage() {
                     : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
                 )}
               >
-                {f.replace('_', ' ')}
+                {f === 'missed' ? 'Missed Appointments' : 
+                 f === 'follow_up' ? 'Follow-Up Visits' : 
+                 f === 'draft_prepared' ? 'Draft Prepared' : 
+                 f.replace('_', ' ')}
               </button>
             ))}
           </div>
@@ -261,12 +306,12 @@ export default function AppointmentsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   key={app._id}
-                  className="bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden group"
+                  className="bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 group"
                 >
                   <div className="p-1">
                     <div className="flex flex-col lg:flex-row lg:items-stretch">
                       {/* Date Block */}
-                      <div className="lg:w-32 bg-slate-50/50 flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors">
+                      <div className="lg:w-32 rounded-t-[2rem] lg:rounded-tr-none lg:rounded-l-[2rem] bg-slate-50/50 flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors">
                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
                         <p className="text-3xl font-black text-slate-900 mt-1">{new Date(app.date).getDate()}</p>
                         <div className="h-1 w-6 bg-blue-600 rounded-full mt-2" />
@@ -302,7 +347,7 @@ export default function AppointmentsPage() {
                               <Stethoscope size={24} />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-0.5">Physician</p>
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{app.doctor?.specialty || 'Physician'}</p>
                               <p className="text-sm font-black text-slate-900 truncate">Dr. {app.doctor?.user?.name || 'Expert'}</p>
                             </div>
                           </div>
@@ -310,7 +355,7 @@ export default function AppointmentsPage() {
                       </div>
 
                       {/* Status & Actions */}
-                      <div className="lg:w-80 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-4">
+                      <div className="lg:w-80 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem] p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-4">
                         <div className={cn(
                           "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
                           getStatusColor(app.status)
@@ -326,16 +371,6 @@ export default function AppointmentsPage() {
                           >
                             <Eye size={20} />
                           </button>
-
-                          {user?.role === 'doctor' && app.status !== 'completed' && (
-                            <button 
-                              onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
-                              className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                              title="Start Consultation"
-                            >
-                              <Stethoscope size={20} />
-                            </button>
-                          )}
 
                           <div className="relative">
                             <button 
@@ -374,20 +409,14 @@ export default function AppointmentsPage() {
                                     {user?.role === 'doctor' && (
                                       <>
                                         <MenuButton 
-                                          icon={<Stethoscope size={18} />} 
-                                          label="Start Consultation" 
-                                          color="text-blue-600"
-                                          onClick={() => handleStatusUpdate(app._id, 'in_consultation')} 
+                                          icon={<ClipboardList size={18} />} 
+                                          label="Add Diagnosis" 
+                                          onClick={() => { setNotesModal(app); setActiveMenu(null); }} 
                                         />
                                         <MenuButton 
                                           icon={<Pill size={18} />} 
                                           label="Add Prescription" 
                                           onClick={() => { setPrescriptionModal(app); setActiveMenu(null); }} 
-                                        />
-                                        <MenuButton 
-                                          icon={<ClipboardList size={18} />} 
-                                          label="Add Notes" 
-                                          onClick={() => { setNotesModal(app); setActiveMenu(null); }} 
                                         />
                                         <MenuButton 
                                           icon={<FileUp size={18} />} 
@@ -396,23 +425,22 @@ export default function AppointmentsPage() {
                                         />
                                         <MenuButton 
                                           icon={<Calendar size={18} />} 
-                                          label="Add Follow-up" 
+                                          label="Schedule Follow-up" 
                                           onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
                                         />
-                                        <MenuButton 
-                                          icon={<Hospital size={18} />} 
-                                          label="Admit Patient" 
-                                          onClick={() => handleStatusUpdate(app._id, 'admitted')} 
-                                        />
-                                        <MenuButton 
-                                          icon={<LogOut size={18} />} 
-                                          label="Discharge Patient" 
-                                          onClick={() => { setDischargeModal(app); setActiveMenu(null); }} 
-                                        />
-                                        <div className="h-px bg-slate-50 my-2" />
+                                                                                 <MenuButton 
+                                           icon={<Calendar size={18} />} 
+                                           label="Reschedule Appointment" 
+                                           onClick={() => {
+                                             setReschedulingAppointment(app);
+                                             setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
+                                             setActiveMenu(null);
+                                           }} 
+                                         />
+                                         <div className="h-px bg-slate-50 my-2" />
                                         <MenuButton 
                                           icon={<CheckCircle2 size={18} />} 
-                                          label="Complete Visit" 
+                                          label="Complete Consultation" 
                                           color="text-emerald-600"
                                           onClick={() => { setCompletingAppointment(app); setActiveMenu(null); }} 
                                         />
@@ -423,12 +451,50 @@ export default function AppointmentsPage() {
                                       <>
                                         <MenuButton 
                                           icon={<Calendar size={18} />} 
-                                          label="Reschedule" 
+                                          label="Reschedule Appointment" 
                                           onClick={() => {
                                             setReschedulingAppointment(app);
                                             setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
                                             setActiveMenu(null);
                                           }} 
+                                        />
+                                        <MenuButton 
+                                          icon={<User size={18} />} 
+                                          label="Check-In Patient" 
+                                          color="text-cyan-600"
+                                          onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                        />
+                                        {(app.clinic?.receptionAssistantMode === true || app.doctor?.clinic?.receptionAssistantMode === true || app.doctor?.branchId?.receptionAssistantMode === true) && (
+                                          <>
+                                            <div className="h-px bg-slate-50 my-1" />
+                                            <MenuButton 
+                                              icon={<ClipboardList size={18} />} 
+                                              label="Draft Diagnosis" 
+                                              onClick={() => { setNotesModal(app); setActiveMenu(null); }} 
+                                            />
+                                            <MenuButton 
+                                              icon={<Pill size={18} />} 
+                                              label="Draft Prescription" 
+                                              onClick={() => { setPrescriptionModal(app); setActiveMenu(null); }} 
+                                            />
+                                            <MenuButton 
+                                              icon={<FileUp size={18} />} 
+                                              label="Upload Report" 
+                                              onClick={() => { setReportModal(app); setActiveMenu(null); }} 
+                                            />
+                                            <MenuButton 
+                                              icon={<Calendar size={18} />} 
+                                              label="Schedule Follow-up" 
+                                              onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
+                                            />
+                                            <div className="h-px bg-slate-50 my-1" />
+                                          </>
+                                        )}
+                                        <MenuButton 
+                                          icon={<XCircle size={18} />} 
+                                          label="Mark as Missed" 
+                                          color="text-orange-600"
+                                          onClick={() => handleStatusUpdate(app._id, 'missed')} 
                                         />
                                         <MenuButton 
                                           icon={<XCircle size={18} />} 
@@ -438,39 +504,6 @@ export default function AppointmentsPage() {
                                         />
                                       </>
                                     )}
-
-                                    {(user?.role === 'admin' || user?.role === 'receptionist') && (
-                                      <>
-                                        <MenuButton 
-                                          icon={<Calendar size={18} />} 
-                                          label="Reschedule" 
-                                          onClick={() => {
-                                            setReschedulingAppointment(app);
-                                            setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
-                                            setActiveMenu(null);
-                                          }} 
-                                        />
-                                        <MenuButton 
-                                          icon={<XCircle size={18} />} 
-                                          label="Cancel Appointment" 
-                                          color="text-red-600"
-                                          onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
-                                        />
-                                      </>
-                                    )}
-
-                                    <div className="h-px bg-slate-50 my-2" />
-                                    
-                                    <MenuButton 
-                                      icon={<XCircle size={18} />} 
-                                      label="Deactivate" 
-                                      color="text-red-600"
-                                      onClick={() => {
-                                        if (confirm("Are you sure you want to deactivate this record?")) {
-                                          handleStatusUpdate(app._id, 'cancelled');
-                                        }
-                                      }} 
-                                    />
                                   </div>
                                 </motion.div>
                               </>
@@ -493,7 +526,11 @@ export default function AppointmentsPage() {
       {/* Prescription Modal */}
       <AnimatePresence>
         {prescriptionModal && (
-          <Modal title="Add Prescription" icon={<Pill />} onClose={() => setPrescriptionModal(null)}>
+          <Modal 
+            title={((user?.role === 'receptionist' || user?.role === 'admin') && (prescriptionModal.clinic?.receptionAssistantMode === true || prescriptionModal.doctor?.clinic?.receptionAssistantMode === true || prescriptionModal.doctor?.branchId?.receptionAssistantMode === true)) ? "Prepare Draft Prescription" : "Add Prescription"} 
+            icon={<Pill />} 
+            onClose={() => setPrescriptionModal(null)}
+          >
             <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
               {prescriptionForm.map((med, index) => (
                 <div key={index} className="p-6 rounded-[2rem] bg-slate-50 border border-slate-100 relative group/med">
@@ -596,7 +633,11 @@ export default function AppointmentsPage() {
       {/* Notes Modal */}
       <AnimatePresence>
         {notesModal && (
-          <Modal title="Clinical Consultation Notes" icon={<ClipboardList />} onClose={() => setNotesModal(null)}>
+          <Modal 
+            title={((user?.role === 'receptionist' || user?.role === 'admin') && (notesModal.clinic?.receptionAssistantMode === true || notesModal.doctor?.clinic?.receptionAssistantMode === true || notesModal.doctor?.branchId?.receptionAssistantMode === true)) ? "Prepare Draft Consultation Notes" : "Clinical Consultation Notes"} 
+            icon={<ClipboardList />} 
+            onClose={() => setNotesModal(null)}
+          >
             <div className="space-y-4">
               <NoteField label="Symptoms" value={notesForm.symptoms} onChange={(v) => setNotesForm({...notesForm, symptoms: v})} placeholder="Describe patient symptoms..." />
               <NoteField label="Diagnosis" value={notesForm.diagnosis} onChange={(v) => setNotesForm({...notesForm, diagnosis: v})} placeholder="Enter medical diagnosis..." />
@@ -773,6 +814,18 @@ export default function AppointmentsPage() {
                     <DetailItem label="Aadhaar ID" value={viewingAppointment.aadhaar} icon={<CreditCard size={14} />} className="col-span-2" />
                   </div>
                 </div>
+
+                {/* Reason for Visit & Illness Message */}
+                {viewingAppointment.reason && (
+                  <div className="p-6 rounded-[2rem] bg-amber-50/50 border border-amber-100">
+                    <h4 className="text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                      <MessageSquare size={14} /> Reason for Visit / Message
+                    </h4>
+                    <p className="text-sm font-bold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {viewingAppointment.reason}
+                    </p>
+                  </div>
+                )}
 
                 {/* Medical History Section (If available) */}
                 {viewingAppointment.isHistorical && (

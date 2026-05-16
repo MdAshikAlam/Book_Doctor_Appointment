@@ -121,6 +121,7 @@ export default function ClinicsPage() {
     closingTime: '21:00',
     workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     emergencyAvailable: false,
+    receptionAssistantMode: false,
     doctors: [],
     services: [],
     facilities: [],
@@ -236,6 +237,7 @@ export default function ClinicsPage() {
       closingTime: clinic.closingTime || '21:00',
       workingDays: clinic.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       emergencyAvailable: clinic.emergencyAvailable || false,
+      receptionAssistantMode: clinic.receptionAssistantMode || false,
       doctors: clinic.doctors?.map(d => typeof d === 'object' ? d._id : d) || [],
       services: clinic.services || [],
       facilities: clinic.facilities || [],
@@ -271,6 +273,7 @@ export default function ClinicsPage() {
       closingTime: '21:00',
       workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       emergencyAvailable: false,
+      receptionAssistantMode: false,
       doctors: [],
       services: [],
       facilities: [],
@@ -1005,6 +1008,34 @@ export default function ClinicsPage() {
                     </h3>
                     <div className="grid grid-cols-1 gap-6">
                        <Input label="Registration Fee" name="registrationFee" type="number" value={formData.registrationFee} onChange={handleInputChange} icon={CreditCard} />
+                    </div>
+                  </section>
+
+                  {/* 8.5 Operations Settings */}
+                  <section className="space-y-6">
+                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                      8.5 Operations Settings
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6">
+                       <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                          <input 
+                            type="checkbox" 
+                            name="receptionAssistantMode" 
+                            checked={formData.receptionAssistantMode || false}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                receptionAssistantMode: e.target.checked
+                              }));
+                            }}
+                            className="w-5 h-5 rounded-lg text-blue-600"
+                          />
+                          <div>
+                            <label className="text-sm font-black text-slate-800">Enable Reception Assistant Mode</label>
+                            <p className="text-xs text-slate-500 font-bold mt-1">When enabled, receptionists can help doctors prepare patient consults by drafting clinical records (status Draft Prepared).</p>
+                          </div>
+                       </div>
                     </div>
                   </section>
 
