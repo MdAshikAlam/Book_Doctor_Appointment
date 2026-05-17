@@ -102,23 +102,29 @@ export default function Home() {
       <Hero onSearch={handleSearch} />
 
       {/* Specialties Overview */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div className="max-w-2xl">
-              <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">Specialties</h2>
-              <h3 className="text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1]">
+      <section className="py-28 bg-gradient-to-b from-white via-slate-50/30 to-white relative overflow-hidden">
+        {/* Soft Radial Background Accent */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-[#00B5B5]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto px-6 lg:px-12 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
+            <div className="max-w-2xl text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00B5B5]/10 border border-[#00B5B5]/20 text-[#00B5B5] text-[10px] font-black uppercase tracking-widest mb-4">
+                Clinical Expertise
+              </div>
+              <h3 className="text-4xl lg:text-6xl font-black text-slate-900 leading-[1.05] tracking-tight">
                 Specialists trained in <br />
-                <span className="text-[#00B5B5]">modern medicine</span>
+                <span className="bg-gradient-to-r from-[#00B5B5] to-[#008F8F] bg-clip-text text-transparent">modern medicine</span>
               </h3>
             </div>
-            <button className="bg-white hover:bg-[#F0FDFD] text-slate-900 px-10 h-16 rounded-full font-black transition-all border-2 border-slate-100 hover:border-[#00B5B5] shadow-sm flex items-center gap-2">
+            
+            <button className="bg-white hover:bg-slate-900 text-slate-900 hover:text-white px-8 h-14 rounded-2xl font-black transition-all duration-300 border border-slate-100 hover:border-slate-900 shadow-md hover:shadow-xl shadow-slate-200/50 flex items-center gap-3 shrink-0 group">
               View All Specialties
-              <ArrowRight size={20} />
+              <ArrowRight size={18} className="transform group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {specialties.map((specialty, index) => (
               <SpecialtyCard key={index} {...specialty} />
             ))}
