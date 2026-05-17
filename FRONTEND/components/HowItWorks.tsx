@@ -1,52 +1,89 @@
-import { Search, Calendar, CheckCircle } from 'lucide-react';
+import { Search, Calendar, CheckCircle2, ArrowRight } from 'lucide-react';
 
 const steps = [
   {
-    title: "Find Your Doctor",
-    description: "Search for doctors by specialty, location, or insurance provider with our easy-to-use search tool.",
+    title: "Select Your Specialist",
+    description: "Easily navigate our curated list of world-class medical experts by specialty, experience, or proximity.",
     icon: Search,
-    color: "bg-blue-50 text-blue-600"
+    color: "from-blue-500/10 to-teal-500/10 text-[#00B5B5]"
   },
   {
-    title: "Book an Appointment",
-    description: "Select a convenient time slot and book your appointment instantly without any phone calls.",
+    title: "Secure Instant Slot",
+    description: "Book directly without telephone delays. Select a highly convenient hour and secure your slot in seconds.",
     icon: Calendar,
-    color: "bg-teal-50 text-teal-600"
+    color: "from-teal-500/10 to-emerald-500/10 text-[#00B5B5]"
   },
   {
-    title: "Get Quality Care",
-    description: "Visit your doctor at the scheduled time and receive top-notch medical attention and follow-ups.",
-    icon: CheckCircle,
-    color: "bg-purple-50 text-purple-600"
+    title: "Receive Quality Care",
+    description: "Consult your doctor at the scheduled hour to receive modern medical solutions, therapies, and follow-ups.",
+    icon: CheckCircle2,
+    color: "from-indigo-500/10 to-purple-500/10 text-[#00B5B5]"
   }
 ];
 
 const HowItWorks = () => {
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
-      <div className="container mx-auto px-6 lg:px-12">
+    <section className="py-28 bg-gradient-to-b from-[#F0FDFD]/20 via-[#F9FCFC] to-[#F0FDFD]/20 relative overflow-hidden">
+      {/* Absolute Soothing Ambient Glows */}
+      <div className="absolute top-10 left-10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[#00B5B5]/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="container mx-auto px-6 lg:px-12 relative z-10">
+        {/* Soothing Header */}
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-sm font-black text-[#00B5B5] uppercase tracking-[0.2em] mb-4">How It Works</h2>
-          <h3 className="text-4xl lg:text-5xl font-black text-slate-900 mb-6">3 simple steps to better health</h3>
-          <p className="text-slate-500 text-lg font-medium">We&apos;ve simplified the process of seeking medical care, so you can focus on what matters most—your recovery.</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00B5B5]/10 border border-[#00B5B5]/20 text-[#00B5B5] text-[10px] font-black uppercase tracking-widest mb-4">
+            Patient Guide
+          </div>
+          <h3 className="text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1] mb-6">
+            3 simple steps to <span className="bg-gradient-to-r from-[#00B5B5] to-[#008F8F] bg-clip-text text-transparent">better health</span>
+          </h3>
+          <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
+            We have simplified the clinical intake process, allowing you to bypass administrative friction and focus entirely on your recovery.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 relative">
-          {/* Connector Line (Desktop) */}
-          <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-1 bg-slate-50 -z-10 rounded-full" />
-          
-          {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center text-center group">
-              <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl shadow-slate-200/50 group-hover:scale-110 transition-all duration-500 relative border-4 border-slate-50 group-hover:border-[#00B5B5]/20">
-                <step.icon size={36} className="text-[#00B5B5]" />
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-[#00B5B5] text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-lg shadow-[#00B5B5]/20">
-                  {index + 1}
+        {/* Dynamic Connected Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <div 
+                key={index}
+                className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-lg shadow-slate-200/20 hover:shadow-2xl hover:shadow-[#00B5B5]/10 hover:-translate-y-2 transition-all duration-500 group relative flex flex-col justify-between"
+              >
+                <div>
+                  {/* Floating Number Overlay */}
+                  <div className="absolute top-8 right-10 text-8xl font-black text-slate-50/70 select-none group-hover:text-[#00B5B5]/10 transition-colors pointer-events-none">
+                    0{index + 1}
+                  </div>
+
+                  {/* Icon Container with glowing base */}
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#00B5B5]/5 to-transparent border border-slate-100 flex items-center justify-center mb-8 relative z-10 group-hover:bg-[#00B5B5] group-hover:text-white transition-all duration-500 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-[#00B5B5]/20">
+                    <Icon size={26} className="text-[#00B5B5] group-hover:text-white transition-colors duration-500" />
+                  </div>
+
+                  {/* Title */}
+                  <h4 className="text-xl font-extrabold text-slate-900 mb-3 relative z-10 group-hover:text-[#00B5B5] transition-colors leading-tight">
+                    {step.title}
+                  </h4>
+
+                  {/* Description */}
+                  <p className="text-slate-400 text-xs font-semibold leading-relaxed relative z-10 mb-6 group-hover:text-slate-500 transition-colors">
+                    {step.description}
+                  </p>
                 </div>
+
+                {/* Animated Learn More Hook */}
+                <div className="pt-4 border-t border-slate-50 relative z-10 flex items-center gap-1.5 text-[10px] font-black text-[#00B5B5] uppercase tracking-widest">
+                  Learn Details
+                  <ArrowRight size={12} className="transform group-hover:translate-x-1 transition-transform duration-300" />
+                </div>
+
+                {/* Card Glow Border */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00B5B5]/60 to-transparent transition-transform duration-500 scale-x-0 group-hover:scale-x-100 rounded-b-[2.5rem]" />
               </div>
-              <h4 className="text-2xl font-black text-slate-900 mb-4">{step.title}</h4>
-              <p className="text-slate-500 leading-relaxed max-w-xs font-medium">{step.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

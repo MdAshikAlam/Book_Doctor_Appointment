@@ -46,28 +46,6 @@ const Hero = ({ onSearch }: HeroProps) => {
               </button>
             </div>
 
-            {/* Trust Badges */}
-            <div className="mt-12 flex items-center justify-center lg:justify-start gap-8 border-t border-slate-100 pt-8">
-              <div className="flex -space-x-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden shadow-sm">
-                    <img src={`https://i.pravatar.cc/150?u=${i + 10}`} alt="Patient" />
-                  </div>
-                ))}
-                <div className="w-12 h-12 rounded-full border-4 border-white bg-[#00B5B5] flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                  +2k
-                </div>
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-1 mb-1">
-                  {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill="#FFB800" stroke="none" />)}
-                </div>
-                <p className="text-[13px] font-bold text-slate-900 leading-tight">
-                  Trusted by <span className="text-[#00B5B5]">20,000+</span> <br />
-                  patients worldwide
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Right Content - Visuals */}

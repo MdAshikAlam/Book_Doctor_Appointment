@@ -113,7 +113,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         ],
         upcomingAppointments: upcomingApts.map(apt => ({
           id: apt._id,
-          patient: (apt as any).patient?.name || apt.fullName,
+          patient: apt.fullName || (apt as any).patient?.name,
           doctor: (apt as any).doctor?.user?.name,
           time: apt.slot,
           status: apt.status
@@ -151,7 +151,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         ],
         schedule: schedule.map(apt => ({
           id: apt._id,
-          patientName: (apt as any).patient?.name || apt.fullName,
+          patientName: apt.fullName || (apt as any).patient?.name,
           timeSlot: apt.slot,
           type: (apt as any).appointmentType || 'Consultation',
           status: apt.status
@@ -185,7 +185,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         ],
         queue: queue.map(apt => ({
           id: apt._id,
-          patientName: (apt as any).patient?.name || apt.fullName,
+          patientName: apt.fullName || (apt as any).patient?.name,
           doctorName: (apt as any).doctor?.user?.name,
           time: apt.slot,
           status: apt.status

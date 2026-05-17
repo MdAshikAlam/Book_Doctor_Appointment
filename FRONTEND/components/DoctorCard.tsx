@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Star, Clock, MapPin, CheckCircle } from 'lucide-react';
+import { Star, Clock, MapPin, CheckCircle, Navigation } from 'lucide-react';
 import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
 
 interface DoctorCardProps {
@@ -34,70 +34,94 @@ const DoctorCard = ({
   const initialAvatar = useMemo(() => resolveImageUrl(avatarUrl) || fallbackAvatar, [avatarUrl, fallbackAvatar]);
   const [imgSrc, setImgSrc] = useState(initialAvatar);
 
+  // Formatted distance display for local specialists
+  const formattedDistance = useMemo(() => {
+    if (distance === undefined) return null;
+    if (distance < 1000) return `${distance.toFixed(0)} m away`;
+    return `${(distance / 1000).toFixed(1)} km away`;
+  }, [distance]);
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 group">
-      <div className="flex flex-col sm:flex-row gap-6">
-        <div className="relative shrink-0">
-          <img 
-            src={imgSrc}
-            alt={name}
-            onError={() => setImgSrc(fallbackAvatar)}
-            className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] object-cover ring-4 ring-slate-50 group-hover:ring-[#00B5B5]/20 transition-all duration-500"
-          />
-          <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow-lg border border-slate-50">
-            <CheckCircle className="w-5 h-5 text-[#00B5B5] fill-[#F0FDFD]" />
+    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-lg shadow-slate-200/20 hover:shadow-2xl hover:shadow-[#00B5B5]/10 hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between h-full">
+      {/* Decorative gradient overlay */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      <div className="flex flex-col sm:flex-row gap-6 items-start">
+        {/* Profile Avatar Container with premium border ring */}
+        <div className="relative shrink-0 mx-auto sm:mx-0">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[2.2rem] overflow-hidden bg-slate-50 ring-4 ring-slate-100/50 group-hover:ring-[#00B5B5]/20 shadow-sm transition-all duration-500">
+            <img 
+              src={imgSrc}
+              alt={name}
+              onError={() => setImgSrc(fallbackAvatar)}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+          </div>
+          {/* Verified Badge */}
+          <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md border border-slate-50 animate-bounce duration-[4000ms]">
+            <CheckCircle size={18} className="text-[#00B5B5] fill-[#F0FDFD]" />
           </div>
         </div>
 
-        <div className="flex-grow">
-          <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-2">
+        {/* Content Section */}
+        <div className="flex-grow w-full text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start mb-4 gap-2">
             <div>
-              <h3 className="text-xl font-black text-slate-900 group-hover:text-[#00B5B5] transition-colors leading-tight mb-1">{name}</h3>
-              <p className="text-[#00B5B5] font-black text-xs uppercase tracking-widest">{specialization}</p>
-            </div>
-            <div className="bg-[#F0FDFD] text-[#00B5B5] px-4 py-1.5 rounded-full text-xs font-black flex items-center border border-[#E0F7F7]">
-              <Star className="w-3 h-3 mr-1.5 fill-current" /> {rating} ({reviews})
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center text-slate-500 text-[13px] font-bold">
-              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3 text-slate-400 group-hover:text-[#00B5B5] transition-colors">
-                <Clock size={16} />
-              </div>
-              <span>{experience} Yrs Exp.</span>
-            </div>
-            <div className="flex items-center text-slate-500 text-[13px] font-bold">
-              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3 text-slate-400 group-hover:text-[#00B5B5] transition-colors">
-                <MapPin size={16} />
-              </div>
-              <span className="truncate max-w-[120px]">{location}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between pt-5 border-t border-slate-100 gap-4">
-            <div className="text-center sm:text-left">
-              <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.15em] mb-1">Status</p>
-              <p className="text-xs font-black text-emerald-500 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {availability}
+              <h3 className="text-lg font-black text-slate-900 group-hover:text-[#00B5B5] transition-colors leading-tight mb-1">
+                {name}
+              </h3>
+              <p className="text-[#00B5B5] font-black text-[10px] uppercase tracking-widest leading-none">
+                {specialization}
               </p>
             </div>
-            <div className="w-full sm:w-auto flex gap-3">
-              <Link
-                href={`/doctors/${slug || id}`}
-                className="flex-1 sm:flex-none text-center border-2 border-slate-100 hover:border-[#00B5B5] text-slate-900 px-6 h-12 flex items-center justify-center rounded-full font-black text-sm transition-all"
-              >
-                Profile
-              </Link>
-              <Link
-                href={`/appointments?doctorId=${slug || id}`}
-                className="flex-1 sm:flex-none text-center bg-[#00B5B5] hover:bg-[#009A9A] text-white px-8 h-12 flex items-center justify-center rounded-full font-black text-sm transition-all shadow-lg shadow-[#00B5B5]/10"
-              >
-                Book
-              </Link>
+            {/* Rating badge */}
+            <div className="bg-[#F0FDFD] text-[#00B5B5] px-3 py-1 rounded-xl text-[11px] font-black flex items-center border border-[#E0F7F7] shrink-0 mt-2 sm:mt-0">
+              <Star size={12} className="mr-1 fill-current text-amber-500" /> {rating} ({reviews})
             </div>
           </div>
+
+          {/* Quick Metrics Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+            <div className="flex items-center justify-center sm:justify-start text-slate-500 text-xs font-bold gap-2">
+              <Clock size={14} className="text-slate-400" />
+              <span>{experience} Yrs Exp</span>
+            </div>
+            <div className="flex items-center justify-center sm:justify-start text-slate-500 text-xs font-bold gap-2">
+              <MapPin size={14} className="text-slate-400 shrink-0" />
+              <span className="truncate max-w-[100px]">{location}</span>
+            </div>
+            {formattedDistance && (
+              <div className="col-span-2 flex items-center justify-center sm:justify-start text-[#00B5B5] text-[11px] font-black uppercase tracking-widest gap-2 pt-1.5 border-t border-slate-100/60">
+                <Navigation size={12} className="animate-pulse" />
+                <span>{formattedDistance}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Section */}
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-5 border-t border-slate-100 gap-4 mt-2">
+        <div className="text-center sm:text-left shrink-0">
+          <p className="text-[9px] text-slate-400 uppercase font-black tracking-[0.15em] mb-1">Clinic Status</p>
+          <p className="text-xs font-black text-emerald-500 flex items-center gap-1 justify-center sm:justify-start">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            {availability}
+          </p>
+        </div>
+        <div className="w-full sm:w-auto flex gap-2.5">
+          <Link
+            href={`/doctors/${slug || id}`}
+            className="flex-1 sm:flex-none text-center border border-slate-100 hover:border-slate-300 text-slate-700 hover:bg-slate-50 px-5 h-11 flex items-center justify-center rounded-xl font-bold text-xs transition-all"
+          >
+            Profile
+          </Link>
+          <Link
+            href={`/bookings?doctorId=${id}`}
+            className="flex-1 sm:flex-none text-center bg-[#00B5B5] hover:bg-[#009A9A] text-white px-6 h-11 flex items-center justify-center rounded-xl font-black text-xs transition-all shadow-md shadow-[#00B5B5]/15"
+          >
+            Book Slot
+          </Link>
         </div>
       </div>
     </div>
