@@ -7,8 +7,10 @@ import DashboardCard from '../DashboardCard';
 import Card from '@/components/common/Card';
 import Table from '../Table';
 import Button from '@/components/common/Button';
+import Chart from '../Chart';
+import CalendarWidget from '../CalendarWidget';
 
-export default function AdminDashboard({ data }) {
+export default function AdminDashboard({ data, selectedDate, onDateSelect }) {
   const { stats, upcomingAppointments } = data;
 
   const iconMap = {
@@ -17,17 +19,24 @@ export default function AdminDashboard({ data }) {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats?.map((stat, i) => (
           <DashboardCard key={i} {...stat} icon={iconMap[stat.icon] || CalendarCheck} />
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
            <Card 
-             title="Upcoming Appointments" 
-             subtitle="Confirmed bookings for the next 24 hours"
+             title="Appointment Volume Trend" 
+             subtitle="Visual representation of patient flow over time"
+           >
+             <Chart type="line" data={data.appointmentChartData || []} dataKey="appointments" color="#0ea5e9" />
+           </Card>
+
+           <Card 
+             title="Appointments Listing" 
+             subtitle="Bookings for the selected filter range"
              action={<Button variant="ghost" size="sm" className="text-blue-600">View Schedule</Button>}
            >
               <Table 
@@ -39,12 +48,16 @@ export default function AdminDashboard({ data }) {
                     header: 'Status', 
                     accessor: 'status',
                     render: (row) => (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
+                        row.status === 'booked' || row.status === 'confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                        row.status === 'checked_in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        row.status === 'missed' ? 'bg-red-50 text-red-600 border-red-100' :
+                        'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      }`}>
                         {row.status}
                       </span>
                     )
                   }
-
                 ]} 
                 data={upcomingAppointments || []} 
               />
@@ -52,6 +65,8 @@ export default function AdminDashboard({ data }) {
         </div>
         
         <div className="space-y-6">
+           <CalendarWidget selectedDate={selectedDate} onDateSelect={onDateSelect} />
+
            <Card title="Quick Actions" subtitle="Administrative tasks">
               <div className="grid grid-cols-1 gap-3">
                  <Button className="w-full justify-start gap-3 h-12 bg-white border-slate-200 text-slate-700 hover:bg-slate-50" variant="outline">
