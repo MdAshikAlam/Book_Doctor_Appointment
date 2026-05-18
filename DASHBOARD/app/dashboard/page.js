@@ -125,12 +125,29 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [filterRange, setFilterRange] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/analytics/dashboard-stats`, {
+        let url = `${API_BASE_URL}/analytics/dashboard-stats`;
+        if (filterRange) {
+          url += `?range=${filterRange}`;
+        } else if (selectedDate) {
+          url += `?date=${selectedDate}`;
+        } else {
+          url += `?range=today`;
+        }
+
+        const res = await fetch(url, {
           credentials: 'include'
         });
         const data = await res.json();
@@ -146,7 +163,7 @@ export default function DashboardPage() {
     };
 
     fetchStats();
-  }, []);
+  }, [filterRange, selectedDate]);
 
   if (loading) {
     return (
@@ -160,15 +177,24 @@ export default function DashboardPage() {
   const renderDashboard = () => {
     if (!dashboardData) return null;
 
+    const props = {
+      data: dashboardData,
+      selectedDate: selectedDate,
+      onDateSelect: (date) => {
+        setFilterRange('');
+        setSelectedDate(date);
+      }
+    };
+
     switch (user?.role) {
       case 'super_admin':
-        return <SuperAdminDashboard data={dashboardData} />;
+        return <SuperAdminDashboard {...props} />;
       case 'admin':
-        return <AdminDashboard data={dashboardData} />;
+        return <AdminDashboard {...props} />;
       case 'doctor':
-        return <DoctorDashboard data={dashboardData} />;
+        return <DoctorDashboard {...props} />;
       case 'receptionist':
-        return <ReceptionistDashboard data={dashboardData} />;
+        return <ReceptionistDashboard {...props} />;
       default:
         return (
           <div className="p-20 text-center">
@@ -194,10 +220,29 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="bg-white border-slate-200" leftIcon={<Filter size={16} />}>
-            Filter
-          </Button>
-          <Button variant="outline" size="sm" className="bg-white border-slate-200" leftIcon={<Download size={16} />}>
+          <div className="relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm hover:border-slate-300 transition duration-200">
+            <Filter size={16} className="text-slate-400 mr-2" />
+            <select
+              value={filterRange || 'custom'}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val !== 'custom') {
+                  setFilterRange(val);
+                  setSelectedDate(null);
+                }
+              }}
+              className="bg-transparent text-sm font-semibold text-slate-700 outline-none cursor-pointer pr-4 appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundPosition: 'right -4px center', backgroundSize: '18px', backgroundRepeat: 'no-repeat' }}
+            >
+              {selectedDate && <option value="custom" disabled>Custom Date ({selectedDate})</option>}
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="week">Last 1 Week</option>
+              <option value="month">Last Month</option>
+              <option value="year">Last 1 Year</option>
+            </select>
+          </div>
+          <Button variant="outline" size="sm" className="bg-white border-slate-200 h-[38px]" leftIcon={<Download size={16} />}>
             Reports
           </Button>
         </div>

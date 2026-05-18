@@ -8,8 +8,10 @@ import DashboardCard from '../DashboardCard';
 import Card from '@/components/common/Card';
 import Table from '../Table';
 import Button from '@/components/common/Button';
+import Chart from '../Chart';
+import CalendarWidget from '../CalendarWidget';
 
-export default function DoctorDashboard({ data }) {
+export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
   const { stats, schedule } = data;
 
   const iconMap = {
@@ -25,7 +27,14 @@ export default function DoctorDashboard({ data }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+           <Card 
+             title="Consultation Trend" 
+             subtitle="Patient consultation history over the selected interval"
+           >
+             <Chart type="line" data={data.appointmentChartData || []} dataKey="appointments" color="#10b981" />
+           </Card>
+
            <Card 
              title="Today's Appointment Queue" 
              subtitle="Real-time patient visits"
@@ -70,6 +79,8 @@ export default function DoctorDashboard({ data }) {
         </div>
 
         <div className="space-y-6">
+           <CalendarWidget selectedDate={selectedDate} onDateSelect={onDateSelect} />
+
            <Card title="Patient Management" subtitle="Quick treatment actions">
               <div className="grid grid-cols-1 gap-3">
                  <Button className="w-full justify-start gap-3 h-12 bg-white border-slate-200 text-slate-700 hover:bg-slate-50" variant="outline">

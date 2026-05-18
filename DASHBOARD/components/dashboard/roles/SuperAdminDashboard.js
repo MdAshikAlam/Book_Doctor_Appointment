@@ -9,8 +9,9 @@ import Chart from '../Chart';
 import Card from '@/components/common/Card';
 import Table from '../Table';
 import Button from '@/components/common/Button';
+import CalendarWidget from '../CalendarWidget';
 
-export default function SuperAdminDashboard({ data }) {
+export default function SuperAdminDashboard({ data, selectedDate, onDateSelect }) {
   const { stats, appointmentChartData, branchPerformance, recentActivity } = data;
 
   const iconMap = {
@@ -67,7 +68,9 @@ export default function SuperAdminDashboard({ data }) {
               </div>
            </Card>
         </div>
-        <div>
+        <div className="space-y-6">
+           <CalendarWidget selectedDate={selectedDate} onDateSelect={onDateSelect} />
+
            <Card title="Recent Activity" subtitle="Live system updates">
               <div className="space-y-4">
                  {recentActivity?.map(activity => (

@@ -7,8 +7,10 @@ import DashboardCard from '../DashboardCard';
 import Card from '@/components/common/Card';
 import Table from '../Table';
 import Button from '@/components/common/Button';
+import Chart from '../Chart';
+import CalendarWidget from '../CalendarWidget';
 
-export default function ReceptionistDashboard({ data }) {
+export default function ReceptionistDashboard({ data, selectedDate, onDateSelect }) {
   const { stats, queue } = data;
 
   const iconMap = {
@@ -24,7 +26,14 @@ export default function ReceptionistDashboard({ data }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+           <Card 
+             title="Reception Flow Trend" 
+             subtitle="Appointment distribution over the selected interval"
+           >
+             <Chart type="line" data={data.appointmentChartData || []} dataKey="appointments" color="#4f46e5" />
+           </Card>
+
            <Card 
              title="Live Patient Queue" 
              subtitle="Monitor and manage check-ins"
@@ -75,6 +84,8 @@ export default function ReceptionistDashboard({ data }) {
         </div>
 
         <div className="space-y-6">
+           <CalendarWidget selectedDate={selectedDate} onDateSelect={onDateSelect} />
+
            <Card title="Quick Actions" subtitle="Front desk operations">
               <div className="grid grid-cols-1 gap-3">
                  <Button className="w-full justify-start gap-3 h-12 bg-white border-slate-200 text-slate-700 hover:bg-slate-50" variant="outline">
