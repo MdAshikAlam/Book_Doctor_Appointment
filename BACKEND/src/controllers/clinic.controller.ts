@@ -86,36 +86,36 @@ export const getClinic = async (req: Request, res: Response, next: NextFunction)
 };
 
 const clinicSchema = z.object({
-  clinicName: z.string().min(2),
-  legalName: z.string().min(2),
-  clinicType: z.nativeEnum(ClinicType),
+  clinicName: z.string().min(2, { message: "Clinic display name must be at least 2 characters" }),
+  legalName: z.string().min(2, { message: "Legal registered name must be at least 2 characters" }),
+  clinicType: z.nativeEnum(ClinicType, { message: "Please select a valid clinic type" }),
   description: z.string().optional(),
   images: z.array(z.string()).optional(),
   
   // Owner info
-  ownerName: z.string().min(2),
-  ownerPhone: z.string().min(10),
-  ownerEmail: z.string().email(),
+  ownerName: z.string().optional(),
+  ownerPhone: z.string().optional(),
+  ownerEmail: z.string().optional(),
 
   // Location
-  address: z.string(),
+  address: z.string().min(1, { message: "Detailed address is required" }),
   addressLine2: z.string().optional(),
-  city: z.string(),
-  state: z.string(),
-  pincode: z.string(),
+  city: z.string().min(1, { message: "City is required" }),
+  state: z.string().min(1, { message: "State is required" }),
+  pincode: z.string().min(1, { message: "Pincode is required" }),
   country: z.string().default('India'),
   location: z.object({
     coordinates: z.array(z.number()).length(2), // [lng, lat]
   }).optional(),
 
   // Contact
-  phone: z.string(),
+  phone: z.string().min(1, { message: "Public phone number is required" }),
   alternatePhone: z.string().optional(),
-  email: z.string().email(),
+  email: z.string().email({ message: "Please enter a valid public email address" }),
 
   // Timing
-  openingTime: z.string(),
-  closingTime: z.string(),
+  openingTime: z.string().min(1, { message: "Opening time is required" }),
+  closingTime: z.string().min(1, { message: "Closing time is required" }),
   workingDays: z.array(z.string()).default(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']),
   emergencyAvailable: z.boolean().default(false),
 
@@ -130,8 +130,8 @@ const clinicSchema = z.object({
   registrationFee: z.number().optional(),
 
   // Verification
-  registrationNumber: z.string(),
-  registrationProof: z.string(),
+  registrationNumber: z.string().min(1, { message: "Registration number is required" }),
+  registrationProof: z.string().min(1, { message: "Registration proof document is required" }),
   addressProof: z.string().optional(),
   receptionAssistantMode: z.boolean().optional(),
 });
@@ -158,8 +158,16 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
       }
     }
 
+    const user = await User.findById(req.user!.id);
+    const ownerName = user?.name || req.user!.name || 'Owner';
+    const ownerPhone = user?.phone || validatedData.phone || '0000000000';
+    const ownerEmail = user?.email || req.user!.email || validatedData.email;
+
     const clinic = await clinicService.createClinic({
       ...validatedData,
+      ownerName,
+      ownerPhone,
+      ownerEmail,
       location: {
         type: 'Point',
         coordinates,

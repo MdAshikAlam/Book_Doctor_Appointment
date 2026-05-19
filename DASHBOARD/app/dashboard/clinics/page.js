@@ -69,6 +69,7 @@ export default function ClinicsPage() {
   const [editingClinicId, setEditingClinicId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState(null);
 
   // Delete State
@@ -215,6 +216,7 @@ export default function ClinicsPage() {
 
   const handleEdit = (clinic) => {
     setEditingClinicId(clinic._id);
+    setFieldErrors({});
     setFormData({
       clinicName: clinic.clinicName || '',
       legalName: clinic.legalName || '',
@@ -251,6 +253,7 @@ export default function ClinicsPage() {
 
   const resetForm = () => {
     setEditingClinicId(null);
+    setFieldErrors({});
     setFormData({
       clinicName: user?.clinicName || '',
       legalName: user?.clinicName || '',
@@ -336,6 +339,13 @@ export default function ClinicsPage() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -423,6 +433,7 @@ export default function ClinicsPage() {
     e.preventDefault();
     setIsSaving(true);
     setFormError(null);
+    setFieldErrors({});
     try {
       const payload = {
         ...formData,
@@ -448,7 +459,47 @@ export default function ClinicsPage() {
         }, 2000);
       }
     } catch (err) {
-      setFormError(err.message || 'Failed to process request');
+      let parsedErrors = null;
+      try {
+        parsedErrors = JSON.parse(err.message);
+      } catch (e) {
+        // Not a JSON error
+      }
+
+      if (Array.isArray(parsedErrors)) {
+        const errorsMap = {};
+        const errorMessages = [];
+        parsedErrors.forEach(errorItem => {
+          if (errorItem.path && Array.isArray(errorItem.path) && errorItem.path.length > 0) {
+            const fieldPath = errorItem.path.join('.');
+            errorsMap[fieldPath] = errorItem.message;
+
+            const fieldName = errorItem.path[errorItem.path.length - 1];
+            const humanFieldName = fieldName
+              .replace(/([A-Z])/g, ' $1')
+              .replace(/^./, str => str.toUpperCase());
+            errorMessages.push(`${humanFieldName}: ${errorItem.message}`);
+          } else {
+            errorMessages.push(errorItem.message);
+          }
+        });
+        setFieldErrors(errorsMap);
+        setFormError(errorMessages);
+
+        // Scroll and focus the first invalid field
+        const firstErrorField = parsedErrors[0]?.path?.[0];
+        if (firstErrorField) {
+          setTimeout(() => {
+            const element = document.getElementsByName(firstErrorField)[0];
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.focus();
+            }
+          }, 150);
+        }
+      } else {
+        setFormError(err.message || 'Failed to process request');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -777,8 +828,7 @@ export default function ClinicsPage() {
 
               <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 <form onSubmit={handleSubmit} className="space-y-12">
-                  
-                  {/* 1. Basic Info */}
+                                   {/* 1. Basic Info */}
                   <section className="space-y-6">
                     <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
@@ -791,6 +841,7 @@ export default function ClinicsPage() {
                         placeholder="e.g. Apollo Healthcare" 
                         value={formData.clinicName} 
                         onChange={handleInputChange} 
+                        error={fieldErrors.clinicName}
                         required 
                       />
                       <Input 
@@ -799,6 +850,7 @@ export default function ClinicsPage() {
                         placeholder="e.g. Apollo Hospitals Enterprise Ltd" 
                         value={formData.legalName} 
                         onChange={handleInputChange} 
+                        error={fieldErrors.legalName}
                         required 
                       />
                       <div className="space-y-2">
@@ -807,10 +859,17 @@ export default function ClinicsPage() {
                           name="clinicType"
                           value={formData.clinicType}
                           onChange={handleInputChange}
-                          className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
+                          className={`w-full h-11 px-4 rounded-xl bg-slate-50 border-2 transition-all outline-none font-bold text-sm ${
+                            fieldErrors.clinicType 
+                              ? 'border-red-500 focus:bg-white focus:border-red-500' 
+                              : 'border-transparent focus:bg-white focus:border-blue-600'
+                          }`}
                         >
                           {CLINIC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
+                        {fieldErrors.clinicType && (
+                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.clinicType}</p>
+                        )}
                       </div>
                       <div className="md:col-span-2 space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-1">Description (About Clinic)</label>
@@ -818,9 +877,16 @@ export default function ClinicsPage() {
                           name="description"
                           value={formData.description}
                           onChange={handleInputChange}
-                          className="w-full p-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm min-h-[100px]"
+                          className={`w-full p-4 rounded-xl bg-slate-50 border-2 transition-all outline-none font-bold text-sm min-h-[100px] ${
+                            fieldErrors.description 
+                              ? 'border-red-500 focus:bg-white focus:border-red-500' 
+                              : 'border-transparent focus:bg-white focus:border-blue-600'
+                          }`}
                           placeholder="Briefly describe the clinic and its history..."
                         />
+                        {fieldErrors.description && (
+                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.description}</p>
+                        )}
                       </div>
                       <div className="md:col-span-2 space-y-2">
                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Logo / Image</label>
@@ -831,7 +897,11 @@ export default function ClinicsPage() {
                                </div>
                             )}
                             <label className="flex-1">
-                               <div className="w-full h-12 px-4 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600">
+                               <div className={`w-full h-12 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
+                                 fieldErrors.images 
+                                   ? 'border-red-500 bg-red-50/50 text-red-600 hover:border-red-600' 
+                                   : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-500 hover:text-blue-600'
+                               }`}>
                                   {isUploading ? (
                                      <><Loader2 size={18} className="animate-spin" /> Uploading...</>
                                    ) : (
@@ -841,6 +911,9 @@ export default function ClinicsPage() {
                                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'images')} />
                             </label>
                          </div>
+                         {fieldErrors.images && (
+                           <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.images}</p>
+                         )}
                       </div>
                     </div>
                   </section>
@@ -853,30 +926,16 @@ export default function ClinicsPage() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2">
-                        <Input label="Detailed Address" name="address" value={formData.address} onChange={handleInputChange} required />
+                        <Input label="Detailed Address" name="address" value={formData.address} onChange={handleInputChange} error={fieldErrors.address} required />
                       </div>
-                      <Input label="Building/Floor (Optional)" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} />
-                      <Input label="City" name="city" value={formData.city} onChange={handleInputChange} required />
-                      <Input label="State" name="state" value={formData.state} onChange={handleInputChange} required />
-                      <Input label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} required />
-                      <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} required />
+                      <Input label="Building/Floor (Optional)" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} error={fieldErrors.addressLine2} />
+                      <Input label="City" name="city" value={formData.city} onChange={handleInputChange} error={fieldErrors.city} required />
+                      <Input label="State" name="state" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} required />
+                      <Input label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} error={fieldErrors.pincode} required />
+                      <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} error={fieldErrors.country} required />
                     </div>
                   </section>
 
-                  {/* 3. Owner Details */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      3. Owner Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Owner Full Name" name="ownerName" value={formData.ownerName} onChange={handleInputChange} readOnly={true} required />
-                       <Input label="Owner Phone" name="ownerPhone" value={formData.ownerPhone} onChange={handleInputChange} readOnly={true} required />
-                       <div className="md:col-span-2">
-                         <Input label="Owner Email" name="ownerEmail" value={formData.ownerEmail} onChange={handleInputChange} readOnly={true} required />
-                       </div>
-                    </div>
-                  </section>
 
                   {/* 4. Contact Details */}
                   <section className="space-y-6">
@@ -885,9 +944,9 @@ export default function ClinicsPage() {
                       4. Clinic Contact
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Public Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} icon={Phone} required />
-                       <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleInputChange} icon={Phone} />
-                       <Input label="Public Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} required />
+                       <Input label="Public Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} error={fieldErrors.phone} icon={Phone} required />
+                       <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleInputChange} error={fieldErrors.alternatePhone} icon={Phone} />
+                       <Input label="Public Email Address" name="email" value={formData.email} onChange={handleInputChange} error={fieldErrors.email} icon={Mail} required />
                     </div>
                   </section>
 
@@ -898,8 +957,8 @@ export default function ClinicsPage() {
                       5. Working Hours
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Opening Time" name="openingTime" type="time" value={formData.openingTime} onChange={handleInputChange} icon={Clock} required />
-                       <Input label="Closing Time" name="closingTime" type="time" value={formData.closingTime} onChange={handleInputChange} icon={Clock} required />
+                       <Input label="Opening Time" name="openingTime" type="time" value={formData.openingTime} onChange={handleInputChange} error={fieldErrors.openingTime} icon={Clock} required />
+                       <Input label="Closing Time" name="closingTime" type="time" value={formData.closingTime} onChange={handleInputChange} error={fieldErrors.closingTime} icon={Clock} required />
                        <div className="md:col-span-2 space-y-3">
                           <label className="text-sm font-bold text-slate-700 ml-1">Working Days</label>
                           <div className="flex flex-wrap gap-2">
@@ -907,7 +966,16 @@ export default function ClinicsPage() {
                                <button
                                  key={day}
                                  type="button"
-                                 onClick={() => handleArrayToggle('workingDays', day)}
+                                 onClick={() => {
+                                    handleArrayToggle('workingDays', day);
+                                    if (fieldErrors.workingDays) {
+                                      setFieldErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.workingDays;
+                                        return next;
+                                      });
+                                    }
+                                 }}
                                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                                    formData.workingDays.includes(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                  }`}
@@ -916,6 +984,9 @@ export default function ClinicsPage() {
                                </button>
                              ))}
                           </div>
+                          {fieldErrors.workingDays && (
+                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.workingDays}</p>
+                          )}
                        </div>
                        <div className="md:col-span-2 flex items-center gap-3 p-4 bg-red-50 rounded-2xl border border-red-100">
                           <input 
@@ -943,7 +1014,16 @@ export default function ClinicsPage() {
                               <button
                                 key={doc._id}
                                 type="button"
-                                onClick={() => handleArrayToggle('doctors', doc._id)}
+                                onClick={() => {
+                                  handleArrayToggle('doctors', doc._id);
+                                  if (fieldErrors.doctors) {
+                                    setFieldErrors(prev => {
+                                      const next = { ...prev };
+                                      delete next.doctors;
+                                      return next;
+                                    });
+                                  }
+                                }}
                                 className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
                                   formData.doctors.includes(doc._id) ? 'border-blue-600 bg-blue-50 shadow-inner' : 'border-slate-100 hover:border-blue-200'
                                 }`}
@@ -955,6 +1035,9 @@ export default function ClinicsPage() {
                               </button>
                            ))}
                         </div>
+                        {fieldErrors.doctors && (
+                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.doctors}</p>
+                        )}
                     </div>
                   </section>
 
@@ -971,7 +1054,16 @@ export default function ClinicsPage() {
                              {SERVICES.map(s => (
                                <button
                                  key={s} type="button"
-                                 onClick={() => handleArrayToggle('services', s)}
+                                 onClick={() => {
+                                   handleArrayToggle('services', s);
+                                   if (fieldErrors.services) {
+                                     setFieldErrors(prev => {
+                                       const next = { ...prev };
+                                       delete next.services;
+                                       return next;
+                                     });
+                                   }
+                                 }}
                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
                                    formData.services.includes(s) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
                                  }`}
@@ -980,6 +1072,9 @@ export default function ClinicsPage() {
                                </button>
                              ))}
                           </div>
+                          {fieldErrors.services && (
+                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.services}</p>
+                          )}
                        </div>
                        <div className="space-y-3">
                           <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Common Facilities</label>
@@ -987,7 +1082,16 @@ export default function ClinicsPage() {
                              {FACILITIES.map(f => (
                                <button
                                  key={f} type="button"
-                                 onClick={() => handleArrayToggle('facilities', f)}
+                                 onClick={() => {
+                                   handleArrayToggle('facilities', f);
+                                   if (fieldErrors.facilities) {
+                                     setFieldErrors(prev => {
+                                       const next = { ...prev };
+                                       delete next.facilities;
+                                       return next;
+                                     });
+                                   }
+                                 }}
                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
                                    formData.facilities.includes(f) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
                                  }`}
@@ -996,6 +1100,9 @@ export default function ClinicsPage() {
                                </button>
                              ))}
                           </div>
+                          {fieldErrors.facilities && (
+                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.facilities}</p>
+                          )}
                        </div>
                     </div>
                   </section>
@@ -1007,7 +1114,7 @@ export default function ClinicsPage() {
                       8. Fee Settings
                     </h3>
                     <div className="grid grid-cols-1 gap-6">
-                       <Input label="Registration Fee" name="registrationFee" type="number" value={formData.registrationFee} onChange={handleInputChange} icon={CreditCard} />
+                       <Input label="Registration Fee" name="registrationFee" type="number" value={formData.registrationFee} onChange={handleInputChange} error={fieldErrors.registrationFee} icon={CreditCard} />
                     </div>
                   </section>
 
@@ -1046,7 +1153,7 @@ export default function ClinicsPage() {
                       9. Verification Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Registration Number (GST/License)" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required />
+                       <Input label="Registration Number (GST/License)" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} error={fieldErrors.registrationNumber} required />
                        <div className="space-y-2">
                           <label className="text-sm font-bold text-slate-700 ml-1">Registration Proof (Mandatory)</label>
                            <div className="flex items-center gap-4">
@@ -1057,9 +1164,11 @@ export default function ClinicsPage() {
                              )}
                              <label className="flex-1 block">
                                 <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                  formData.registrationProof 
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
+                                  fieldErrors.registrationProof 
+                                    ? 'bg-red-50 border-red-200 text-red-600 hover:border-red-600' 
+                                    : formData.registrationProof 
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
                                 }`}>
                                    {isUploading ? (
                                       <><Loader2 size={18} className="animate-spin" /> Uploading...</>
@@ -1072,6 +1181,9 @@ export default function ClinicsPage() {
                                 <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'registrationProof')} />
                              </label>
                            </div>
+                           {fieldErrors.registrationProof && (
+                             <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.registrationProof}</p>
+                           )}
                        </div>
                        <div className="md:col-span-2 space-y-2">
                           <label className="text-sm font-bold text-slate-700 ml-1">Address Proof (Optional)</label>
@@ -1083,9 +1195,11 @@ export default function ClinicsPage() {
                              )}
                              <label className="flex-1 block">
                                 <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                  formData.addressProof 
-                                    ? 'bg-blue-50 border-blue-200 text-blue-600' 
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
+                                  fieldErrors.addressProof 
+                                    ? 'bg-red-50 border-red-200 text-red-600 hover:border-red-600' 
+                                    : formData.addressProof 
+                                      ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
                                 }`}>
                                    {isUploading ? (
                                       <><Loader2 size={18} className="animate-spin" /> Uploading...</>
@@ -1098,13 +1212,26 @@ export default function ClinicsPage() {
                                 <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'addressProof')} />
                              </label>
                            </div>
+                           {fieldErrors.addressProof && (
+                             <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.addressProof}</p>
+                           )}
                        </div>
                     </div>
                   </section>
 
                   {formError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-bold flex items-center gap-3">
-                       <AlertCircle size={20} /> {formError}
+                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-bold flex flex-col gap-2">
+                       <div className="flex items-center gap-3">
+                          <AlertCircle size={20} className="shrink-0" />
+                          <span>Please correct the following errors:</span>
+                       </div>
+                       <ul className="list-disc pl-8 space-y-1 font-medium text-xs">
+                          {Array.isArray(formError) ? (
+                            formError.map((err, idx) => <li key={idx}>{err}</li>)
+                          ) : (
+                            <li>{formError}</li>
+                          )}
+                       </ul>
                     </div>
                   )}
 
