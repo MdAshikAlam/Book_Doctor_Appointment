@@ -1,10 +1,15 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import ProfileDropdown from './ProfileDropdown';
 import HeaderSearch from './HeaderSearch';
 
 const Header = () => {
+  const pathname = usePathname();
+
   return (
     <header className="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm backdrop-blur-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,15 +37,20 @@ const Header = () => {
               { name: 'My Bookings', href: '/bookings' },
               { name: 'About Us', href: '/about' },
               { name: 'Contact', href: '/contact' }
-            ].map((link, i) => (
-              <Link 
-                key={link.name} 
-                href={link.href} 
-                className={`text-sm font-black transition-all ${i === 0 ? 'text-[#00B5B5]' : 'text-slate-500 hover:text-[#00B5B5]'}`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            ].map((link) => {
+              const isActive = pathname 
+                ? (link.href === '/' ? pathname === '/' : pathname.startsWith(link.href))
+                : link.href === '/';
+              return (
+                <Link 
+                  key={link.name} 
+                  href={link.href} 
+                  className={`text-sm font-black transition-all ${isActive ? 'text-[#00B5B5]' : 'text-slate-500 hover:text-[#00B5B5]'}`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Actions */}

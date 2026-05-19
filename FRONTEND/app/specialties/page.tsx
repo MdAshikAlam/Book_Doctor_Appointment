@@ -95,19 +95,34 @@ export default function SpecialtiesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-slate-50/50 pb-20">
       {/* Page Header / Hero */}
-      <section className="bg-white border-b border-gray-100 pt-32 pb-16">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F0FDFD] via-[#F6FCFC] to-slate-50/50 pt-36 pb-20 border-b border-slate-100">
+        {/* Subtle Background Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+          backgroundSize: '40px 40px'
+        }} />
+
+        {/* Ambient Glowing Orbs */}
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#00B5B5]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-5 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '12s' }} />
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6">
+            {/* Animated Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 backdrop-blur-md border border-[#00B5B5]/20 text-[#00B5B5] text-sm font-bold shadow-sm mb-6 animate-in fade-in duration-700">
               <Stethoscope className="w-4 h-4" />
               <span>Expert Medical Directory</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
-              Find the Right <span className="text-primary italic">Specialist</span> for Your Health
+
+            {/* Main Title */}
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-6">
+              Find the Right <span className="text-[#00B5B5] italic">Specialist</span> for Your Health
             </h1>
-            <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
+
+            {/* Subtitle */}
+            <p className="text-lg md:text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
               Browse through our network of certified healthcare professionals across various medical specialties.
             </p>
           </div>
@@ -115,44 +130,36 @@ export default function SpecialtiesPage() {
       </section>
 
       {/* Specialty Selector Section */}
-      <section className="py-12 -mt-8 relative z-10">
+      <section className="py-12 -mt-10 relative z-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 px-4">
+          <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 md:p-10 border border-slate-100/80">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6 px-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <div className="w-10 h-10 bg-[#00B5B5]/10 rounded-xl flex items-center justify-center text-[#00B5B5]">
                   <LayoutGrid className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Explore Categories</h3>
+                <h3 className="text-xl font-bold text-slate-900">Explore Categories</h3>
               </div>
               <div className="relative w-full md:w-96 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#00B5B5] transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Search specialists by name or role..."
-                  className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all font-medium"
+                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-[#00B5B5]/20 focus:bg-white transition-all font-medium text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div 
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <SpecialtyCard 
+                name="All Experts"
+                icon={Users}
+                count={730}
+                isActive={selectedSpecialty === ''}
                 onClick={() => setSelectedSpecialty('')}
-                className={`p-6 rounded-3xl border transition-all cursor-pointer text-center group flex flex-col items-center justify-center gap-3 ${
-                  selectedSpecialty === '' 
-                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
-                    : 'bg-gray-50 border-transparent hover:bg-white hover:border-primary/20'
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                  selectedSpecialty === '' ? 'bg-white/20' : 'bg-white shadow-sm'
-                }`}>
-                  <Users className="w-6 h-6" />
-                </div>
-                <span className="font-bold text-sm">All Experts</span>
-              </div>
+              />
 
               {specialties.map((specialty, index) => (
                 <div key={index} className="h-full">
