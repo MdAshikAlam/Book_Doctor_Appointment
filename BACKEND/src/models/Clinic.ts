@@ -2,7 +2,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export enum ClinicType {
   PRIVATE_CLINIC = 'Private Clinic',
-  DIAGNOSTIC_CENTER = 'Diagnostic Center'
+  DIAGNOSTIC_CENTER = 'Diagnostic Center',
+  DIAGNOSTIC_CLINIC = 'Diagnostic Clinic',
+  DENTAL_CLINIC = 'Dental Clinic',
+  MULTI_SPECIALITY = 'Multi Speciality',
+  SKIN_CLINIC = 'Skin Clinic',
+  EYE_CLINIC = 'Eye Clinic'
 }
 
 export enum VerificationStatus {
