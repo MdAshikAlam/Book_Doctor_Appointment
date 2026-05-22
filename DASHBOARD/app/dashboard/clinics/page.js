@@ -49,7 +49,7 @@ const getFullImageUrl = (path) => {
   return `${BACKEND_URL}${path}`;
 };
 
-const CLINIC_TYPES = ['Private Clinic', 'Diagnostic Center'];
+const CLINIC_TYPES = ['Private Clinic', 'Diagnostic Center', 'Diagnostic Clinic', 'Dental Clinic', 'Multi Speciality', 'Skin Clinic', 'Eye Clinic'];
 const WORKING_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SERVICES = ['OPD', 'Emergency', 'Lab Test', 'Pharmacy'];
 const FACILITIES = ['ICU', 'Ambulance', 'Parking', 'Wheelchair Access'];

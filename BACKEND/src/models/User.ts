@@ -40,6 +40,7 @@ export interface IUser extends Document {
   status?: 'pending' | 'approved' | 'rejected' | 'active' | 'inactive' | 'suspended' | 'deleted';
   rejectionReason?: string;
   lastLogoutAt?: Date;
+  shift?: string;
   lastViewedNotifications?: {
     adminRequests?: Date;
     clinicVerification?: Date;
@@ -82,6 +83,7 @@ const userSchema = new Schema<IUser>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     parentAdmin: { type: Schema.Types.ObjectId, ref: 'User' },
     parentReceptionist: { type: Schema.Types.ObjectId, ref: 'User' },
+    shift: { type: String },
 
     // Admin Registration Fields
     governmentIdType: { type: String, enum: ['Aadhar', 'PAN', 'Passport'] },
