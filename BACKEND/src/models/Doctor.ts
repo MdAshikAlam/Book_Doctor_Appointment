@@ -35,6 +35,10 @@ export interface IDoctor extends Document {
     type: string;
     coordinates: number[]; // [longitude, latitude]
   };
+  videoConsultation?: boolean;
+  emergencyConsultation?: boolean;
+  insuranceAccepted?: boolean;
+  languages?: string[];
   clinic: mongoose.Types.ObjectId;
   branchId: mongoose.Types.ObjectId;
   clinics: mongoose.Types.ObjectId[];
@@ -91,6 +95,10 @@ const doctorSchema = new Schema<IDoctor>(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
+    videoConsultation: { type: Boolean, default: false },
+    emergencyConsultation: { type: Boolean, default: false },
+    insuranceAccepted: { type: Boolean, default: true },
+    languages: [{ type: String, default: ['English', 'Hindi'] }],
     clinic: { type: Schema.Types.ObjectId, ref: 'Clinic' },
     branchId: { type: Schema.Types.ObjectId, ref: 'Clinic', required: true },
     clinics: [{ type: Schema.Types.ObjectId, ref: 'Clinic' }],
@@ -115,6 +123,9 @@ const doctorSchema = new Schema<IDoctor>(
 
 doctorSchema.index({ location: '2dsphere' });
 doctorSchema.index({ specialty: 'text', bio: 'text' });
+doctorSchema.index({ status: 1 });
+doctorSchema.index({ branchId: 1 });
+doctorSchema.index({ clinic: 1 });
 
 const Doctor = mongoose.model<IDoctor>('Doctor', doctorSchema);
 export default Doctor;
