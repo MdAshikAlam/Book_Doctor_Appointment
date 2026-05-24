@@ -15,17 +15,17 @@ export const getDoctors = async (req: Request, res: Response, next: NextFunction
     let creatorId: string | undefined;
 
     // Data Isolation Logic
-    if (currentUser) {
-      if (currentUser.role === UserRole.SUPER_ADMIN) {
-        // Global access: No creator or branch restriction unless selected
-      } else {
-        // Branch restricted: Enforce branch context
-        if (!branchId) {
-          console.log('[getDoctors] ERROR: branchId is missing for user', currentUser.email);
-          return next(new AppError('Unauthorized: Branch context missing', 403));
-        }
+    // Staff roles (admin, receptionist, doctor) are branch-scoped.
+    // Super admins, patients, and unauthenticated visitors can browse all verified doctors globally.
+    const STAFF_ROLES = [UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.DOCTOR];
+    if (currentUser && STAFF_ROLES.includes(currentUser.role)) {
+      // Branch restricted: Enforce branch context for clinic staff
+      if (!branchId) {
+        console.log('[getDoctors] ERROR: branchId is missing for user', currentUser.email);
+        return next(new AppError('Unauthorized: Branch context missing', 403));
       }
     }
+    // Super admins, patients, and unauthenticated users → global query (no branchId filter)
     
     console.log('[getDoctors] Fetching doctors with query:', req.query, 'branchId:', branchId);
 

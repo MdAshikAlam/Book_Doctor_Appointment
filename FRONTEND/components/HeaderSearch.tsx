@@ -25,7 +25,7 @@ interface DoctorSuggestion {
   specialty: string;
 }
 
-export default function HeaderSearch() {
+export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = {}) {
   const { selectedState, selectedDistrict, setSelectedState, setSelectedDistrict, latitude, longitude } = useLocation();
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [states, setStates] = useState<string[]>([]);
@@ -141,12 +141,12 @@ export default function HeaderSearch() {
   }, [query, latitude, longitude, selectedDistrict, selectedState]);
 
   return (
-    <div className="hidden lg:flex items-center gap-2">
+    <div className={mobile ? "flex flex-col gap-3 w-full" : "hidden lg:flex items-center gap-2"}>
       {/* Location Selector */}
       <div className="relative" ref={locationRef}>
         <button 
           onClick={() => setIsLocationOpen(!isLocationOpen)}
-          className="flex items-center gap-2 bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 rounded-2xl px-4 py-2.5 transition-all group"
+          className={`flex items-center gap-2 bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 rounded-2xl px-4 py-2.5 transition-all group ${mobile ? 'w-full justify-between' : ''}`}
         >
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
             <MapPin size={16} />
@@ -166,7 +166,7 @@ export default function HeaderSearch() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute top-full left-0 mt-3 w-80 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
+              className={`absolute top-full mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60] ${mobile ? 'left-0 right-0 w-full' : 'left-0 w-80'}`}
             >
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
@@ -219,7 +219,7 @@ export default function HeaderSearch() {
       </div>
 
       {/* Main Search Bar */}
-      <div className="relative w-80 xl:w-96" ref={searchRef}>
+      <div className={`relative ${mobile ? 'w-full' : 'w-80 xl:w-96'}`} ref={searchRef}>
         <div className="flex items-center bg-gray-50 border border-transparent focus-within:border-primary/20 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-primary/5 rounded-2xl px-4 py-2.5 transition-all group">
           <Search size={18} className="text-gray-400 group-focus-within:text-primary transition-colors" />
           <input 

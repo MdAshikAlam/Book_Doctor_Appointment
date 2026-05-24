@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import * as doctorService from './src/services/doctor.service';
+import Doctor from './src/models/Doctor';
+import './src/models/User';
+import './src/models/Clinic';
 dotenv.config();
 
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/book_doctor_appointment';
@@ -8,18 +10,19 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/book_doc
 async function run() {
   await mongoose.connect(MONGO_URI);
   
-  // Fake what an admin would send
-  // We know the branchId is 69f7a90962bf2ca129d692f9
-  const branchId = '69f7a90962bf2ca129d692f9';
+  console.log('Testing Find and Populate...');
+  console.time('find-populate');
+  const docs = await Doctor.find()
+    .populate('user')
+    .populate('clinic')
+    .populate('branchId');
+  console.timeEnd('find-populate');
+  console.log('Fetched doctors count:', docs.length);
   
-  console.log('Fetching doctors for branch:', branchId);
-  try {
-    const doctors = await doctorService.getAllDoctors({ isDashboard: 'true', status: 'all' }, undefined, branchId);
-    console.log(`Found ${doctors.length} doctors`);
-    console.log(JSON.stringify(doctors.map(d => d._id), null, 2));
-  } catch (err) {
-    console.error(err);
-  }
+  docs.forEach((d: any, index: number) => {
+    console.log(`[Doctor ${index}] ID: ${d._id}, Name: ${d.user?.name}, Status: ${d.status}, isVerified: ${d.isVerified}, District: ${d.district}, State: ${d.state}`);
+  });
+  
   process.exit(0);
 }
 run();
