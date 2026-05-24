@@ -1,14 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
-
-const dataPath = path.join(__dirname, '../data/india_states_districts.json');
+import indiaData from '../data/india_states_districts.json';
 
 export const getStates = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rawData = fs.readFileSync(dataPath, 'utf8');
-    const data = JSON.parse(rawData);
-    const states = Object.keys(data).sort();
+    const states = Object.keys(indiaData).sort();
 
     res.status(200).json({
       status: 'success',
@@ -29,9 +24,7 @@ export const getDistricts = async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    const rawData = fs.readFileSync(dataPath, 'utf8');
-    const data = JSON.parse(rawData);
-    const districts = data[state as string] || [];
+    const districts = (indiaData as Record<string, string[]>)[state as string] || [];
 
     res.status(200).json({
       status: 'success',
