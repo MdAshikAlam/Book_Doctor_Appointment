@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Navigation, MapPin, Loader2, Search, ArrowRight } from 'lucide-react';
+import { MapPin, Loader2, Search, ArrowRight } from 'lucide-react';
 import Hero from '@/components/Hero';
 import SpecialtyCard from '@/components/SpecialtyCard';
 import DoctorCard from '@/components/DoctorCard';
@@ -12,22 +12,35 @@ import { specialties, testimonials } from '@/data/mock';
 
 import { useLocation } from '@/context/LocationContext';
 
+interface Doctor {
+  _id: string;
+  slug?: string;
+  user: {
+    name: string;
+    avatar?: string;
+  };
+  specialty: string;
+  experience: number;
+  district: string;
+  state: string;
+  distance?: number;
+  isFallback?: boolean;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function Home() {
   const { selectedDistrict, selectedState, latitude, longitude } = useLocation();
-  const [doctors, setDoctors] = useState([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
   const [searchRadius, setSearchRadius] = useState(5000); // 5km default for browser locate
 
   const fetchDoctors = useCallback(async (lat?: number, lng?: number, searchName?: string) => {
     try {
       setLoading(true);
-      setError(null);
       
-      let url = `${API_BASE_URL}/doctors`;
+      const url = `${API_BASE_URL}/doctors`;
       const params = new URLSearchParams();
       
       if (searchName) {
@@ -57,19 +70,12 @@ export default function Home() {
       } else {
         throw new Error(data.message || 'Failed to fetch doctors');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Fetch error:', err);
-      setError(err.message);
     } finally {
       setLoading(false);
     }
   }, [searchRadius, selectedDistrict, selectedState, latitude, longitude]);
-
-  const handleSearch = (query: string, location: string) => {
-    // If location is provided in search bar, we could geocode it or just pass as name/district
-    // For now, let's just use query for name/specialty/clinic
-    fetchDoctors(undefined, undefined, query);
-  };
 
   useEffect(() => {
     fetchDoctors();
@@ -99,7 +105,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <Hero onSearch={handleSearch} />
+      <Hero />
 
       {/* Specialties Overview */}
       <section className="py-28 bg-gradient-to-b from-white via-slate-50/30 to-white relative overflow-hidden">
@@ -176,7 +182,7 @@ export default function Home() {
             </div>
           ) : doctors.length > 0 ? (
             <>
-              {doctors.some((d: any) => d.isFallback) && (
+              {doctors.some((d: Doctor) => d.isFallback) && (
                 <div className="bg-amber-50 border border-amber-100 p-6 rounded-3xl mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
                   <p className="text-amber-800 font-bold">
                     No doctors currently available in {selectedDistrict || 'your selected area'}. 
@@ -185,7 +191,7 @@ export default function Home() {
                 </div>
               )}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {doctors.map((doctor: any) => (
+                {doctors.map((doctor: Doctor) => (
                   <DoctorCard 
                     key={doctor._id}
                     id={doctor._id}
@@ -210,7 +216,7 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No Doctors Found</h3>
               <p className="text-gray-500 max-w-sm mx-auto">
-                We couldn't find any healthcare professionals in this area. Try increasing your search radius or searching by specialty.
+                We couldn&apos;t find any healthcare professionals in this area. Try increasing your search radius or searching by specialty.
               </p>
             </div>
           )}

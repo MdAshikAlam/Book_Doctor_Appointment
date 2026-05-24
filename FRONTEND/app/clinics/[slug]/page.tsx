@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  Loader2, MapPin, Phone, Mail, Globe, Clock,
-  CheckCircle2, Hospital, Stethoscope, ArrowRight,
-  ShieldCheck, Info, Award as AwardIcon, Users as UsersIcon, Star as StarIcon, MessageSquare as MessageSquareIcon,
+  Loader2, MapPin, Phone, Mail, Globe,
+  Hospital, Stethoscope, ArrowRight,
+  ShieldCheck, Award as AwardIcon, Users as UsersIcon, Star as StarIcon, MessageSquare as MessageSquareIcon,
   Send as SendIcon, Lock
 } from "lucide-react";
 import { resolveImageUrl } from "../../../lib/resolveImageUrl";
@@ -54,14 +54,25 @@ type ClinicDetails = {
   }[];
 };
 
+type Review = {
+  _id: string;
+  user?: {
+    name?: string;
+    avatar?: string;
+  };
+  rating: number;
+  comment: string;
+  createdAt?: string;
+};
+
 export default function ClinicDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [clinic, setClinic] = useState<ClinicDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -78,8 +89,8 @@ export default function ClinicDetailsPage() {
         } else {
           throw new Error(data.message || "Failed to load clinic details");
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load clinic details");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load clinic details");
       } finally {
         setLoading(false);
       }
@@ -137,7 +148,7 @@ export default function ClinicDetailsPage() {
       } else {
         alert(data.message || "Failed to submit review");
       }
-    } catch (err) {
+    } catch {
       alert("Error submitting review");
     } finally {
       setSubmittingReview(false);
@@ -433,7 +444,7 @@ export default function ClinicDetailsPage() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-gray-600 font-medium italic leading-relaxed">"{rev.comment}"</p>
+                      <p className="text-gray-600 font-medium italic leading-relaxed">&ldquo;{rev.comment}&rdquo;</p>
                       <p className="text-[10px] text-gray-400 font-bold mt-4">
                         {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                       </p>

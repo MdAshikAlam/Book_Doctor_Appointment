@@ -47,15 +47,15 @@ export default function MyAppointmentsPage() {
 
       if (data.status === "success") {
         // Sort appointments by date descending
-        const sorted = data.data.appointments.sort((a: any, b: any) => 
+        const sorted = data.data.appointments.sort((a: Appointment, b: Appointment) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setAppointments(sorted);
       } else {
         throw new Error(data.message || "Failed to load appointments");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to load appointments");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load appointments");
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function MyAppointmentsPage() {
       } else {
         alert(data.message || "Failed to cancel appointment");
       }
-    } catch (err: any) {
+    } catch {
       alert("Failed to cancel appointment");
     } finally {
       setCancelLoading(null);
@@ -381,7 +381,7 @@ export default function MyAppointmentsPage() {
                     <Calendar size={28} />
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2">No Upcoming Appointments</h3>
-                  <p className="text-slate-500 mb-6 max-w-sm mx-auto text-sm font-medium">You don't have any scheduled appointments right now. Ready to consult with an expert?</p>
+                  <p className="text-slate-500 mb-6 max-w-sm mx-auto text-sm font-medium">You don&apos;t have any scheduled appointments right now. Ready to consult with an expert?</p>
                   <Link href="/specialties" className="inline-flex items-center gap-2 bg-[#00B5B5] text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-[#00B5B5]/25 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm">
                     Book an Appointment
                   </Link>

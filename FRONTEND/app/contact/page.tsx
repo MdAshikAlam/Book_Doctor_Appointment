@@ -2,19 +2,15 @@
 
 import { useState } from 'react';
 import { 
-  MapPin, 
   Mail, 
-  Phone, 
   ShieldAlert, 
   Globe, 
   Clock, 
-  Sparkles, 
   CheckCircle2, 
   MessageSquare,
   ArrowRight,
   Send
 } from 'lucide-react';
-import Link from 'next/link';
 
 export default function Contact() {
   const [formData, setFormData] = useState({

@@ -1,12 +1,29 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, ChevronDown, Loader2, X, Navigation } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Loader2, Navigation } from 'lucide-react';
 import { useLocation } from '@/context/LocationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+
+interface ClinicSuggestion {
+  _id: string;
+  slug?: string;
+  name: string;
+  clinicType: string;
+  images?: string[];
+}
+
+interface DoctorSuggestion {
+  _id: string;
+  user: {
+    name: string;
+    avatar?: string;
+  };
+  specialty: string;
+}
 
 export default function HeaderSearch() {
   const { selectedState, selectedDistrict, setSelectedState, setSelectedDistrict, latitude, longitude } = useLocation();
@@ -16,7 +33,7 @@ export default function HeaderSearch() {
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<{ doctors: any[], clinics: any[] }>({ doctors: [], clinics: [] });
+  const [suggestions, setSuggestions] = useState<{ doctors: DoctorSuggestion[], clinics: ClinicSuggestion[] }>({ doctors: [], clinics: [] });
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
@@ -121,7 +138,7 @@ export default function HeaderSearch() {
 
     const debounce = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounce);
-  }, [query, latitude, longitude, selectedDistrict]);
+  }, [query, latitude, longitude, selectedDistrict, selectedState]);
 
   return (
     <div className="hidden lg:flex items-center gap-2">
@@ -319,7 +336,7 @@ export default function HeaderSearch() {
                       </>
                     ) : !isLoadingSuggestions && (
                       <div className="p-8 text-center">
-                        <p className="text-sm font-bold text-gray-400 mb-1">No matches found for "{query}"</p>
+                        <p className="text-sm font-bold text-gray-400 mb-1">No matches found for &ldquo;{query}&rdquo;</p>
                         <p className="text-[11px] font-medium text-gray-300">
                           Try searching with a broader name or check in another location.
                         </p>
