@@ -3,7 +3,6 @@ import {
   HeartPulse, 
   Target, 
   Compass, 
-  Users, 
   Award, 
   ShieldCheck, 
   Activity, 

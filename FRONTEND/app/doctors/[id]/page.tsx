@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, MapPin, Star, BadgeDollarSign, Briefcase, Hospital, CalendarDays } from "lucide-react";
+import { Loader2, MapPin, Star, BadgeDollarSign, Briefcase, Hospital } from "lucide-react";
 import { getAvatarFallback, resolveImageUrl } from "@/lib/resolveImageUrl";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
@@ -29,6 +29,7 @@ type DoctorDetails = {
     avatar?: string;
   };
   clinic?: {
+    _id?: string;
     clinicName?: string;
     address?: string;
     city?: string;
@@ -59,8 +60,8 @@ export default function DoctorProfilePage() {
         } else {
           throw new Error(data.message || "Failed to load doctor profile");
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load doctor profile");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load doctor profile");
       } finally {
         setLoading(false);
       }
@@ -159,7 +160,7 @@ export default function DoctorProfilePage() {
                 <p className="flex items-start gap-2">
                   <Hospital className="w-4 h-4 mt-0.5" />
                   <Link 
-                    href={`/clinics/${doctor.clinic?.slug || (doctor.clinic as any)?._id}`}
+                    href={`/clinics/${doctor.clinic?.slug || doctor.clinic?._id}`}
                     className="font-black text-primary hover:underline transition-all"
                   >
                     {doctor.clinic?.clinicName || "Clinic name not provided"}

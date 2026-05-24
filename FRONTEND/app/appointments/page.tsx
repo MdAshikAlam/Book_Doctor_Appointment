@@ -1,15 +1,38 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Stethoscope, User, LogIn, X, MapPin } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
 import "../../styles/AppointmentForm.css";
 
-export default function Appointments() {
+interface DoctorAvailability {
+  day: string;
+  slots: string[];
+}
+
+interface DoctorLeave {
+  startDate: string;
+  endDate: string;
+}
+
+interface DoctorInfo {
+  _id: string;
+  specialty?: string;
+  address?: string;
+  district?: string;
+  state?: string;
+  slug?: string;
+  user?: {
+    name: string;
+  };
+  leaves?: DoctorLeave[];
+  availability?: DoctorAvailability[];
+}
+
+function AppointmentsForm() {
   const searchParams = useSearchParams();
-  const { isAuthenticated, logout, login } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -33,7 +56,7 @@ export default function Appointments() {
     message: "",
   });
 
-  const [doctorInfo, setDoctorInfo] = useState<any>(null);
+  const [doctorInfo, setDoctorInfo] = useState<DoctorInfo | null>(null);
   
   useEffect(() => {
     const doctorId = searchParams.get("doctorId");
@@ -245,7 +268,7 @@ export default function Appointments() {
                   selectedDate.setHours(0, 0, 0, 0);
 
                   // Check if doctor is on leave
-                  const isLeave = doctorInfo.leaves?.some((leave: any) => {
+                  const isLeave = doctorInfo.leaves?.some((leave: DoctorLeave) => {
                     const start = new Date(leave.startDate);
                     start.setHours(0, 0, 0, 0);
                     const end = new Date(leave.endDate);
@@ -261,7 +284,7 @@ export default function Appointments() {
                   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   const dayName = days[selectedDate.getDay()];
                   
-                  const dayAvailability = doctorInfo.availability?.find((a: any) => a.day === dayName);
+                  const dayAvailability = doctorInfo.availability?.find((a: DoctorAvailability) => a.day === dayName);
                   const availableSlots = dayAvailability?.slots || [];
 
                   if (availableSlots.length === 0) {
@@ -417,5 +440,13 @@ export default function Appointments() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Appointments() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin" /></div>}>
+      <AppointmentsForm />
+    </Suspense>
   );
 }

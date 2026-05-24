@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Stethoscope, 
@@ -9,8 +9,7 @@ import {
   AlertCircle, 
   Users,
   LayoutGrid,
-  Filter,
-  MapPin
+  Filter
 } from 'lucide-react';
 import SpecialtyCard from '@/components/SpecialtyCard';
 import DoctorCard from '@/components/DoctorCard';
@@ -20,13 +19,28 @@ import { useLocation } from '@/context/LocationContext';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
-export default function SpecialtiesPage() {
+interface Doctor {
+  _id: string;
+  slug?: string;
+  user: {
+    name: string;
+    avatar?: string;
+  };
+  specialty: string;
+  experience: number;
+  district: string;
+  state: string;
+  distance?: number;
+  isFallback?: boolean;
+}
+
+function SpecialtiesList() {
   const searchParams = useSearchParams();
   const { selectedDistrict, selectedState, latitude, longitude } = useLocation();
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
-  const [doctors, setDoctors] = useState([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -41,7 +55,7 @@ export default function SpecialtiesPage() {
       setLoading(true);
       setError(null);
       
-      let url = `${API_BASE_URL}/doctors`;
+      const url = `${API_BASE_URL}/doctors`;
       const params = new URLSearchParams();
       
       const category = specialtyParam !== undefined ? specialtyParam : selectedSpecialty;
@@ -69,9 +83,9 @@ export default function SpecialtiesPage() {
       } else {
         throw new Error(data.message || 'Failed to fetch specialists');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Fetch error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to fetch specialists');
     } finally {
       setLoading(false);
     }
@@ -89,7 +103,7 @@ export default function SpecialtiesPage() {
     }
   };
 
-  const filteredDoctors = doctors.filter((doc: any) => 
+  const filteredDoctors = doctors.filter((doc: Doctor) => 
     doc.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.specialty.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -212,7 +226,7 @@ export default function SpecialtiesPage() {
             </div>
           ) : filteredDoctors.length > 0 ? (
             <>
-              {filteredDoctors.some((d: any) => d.isFallback) && (
+              {filteredDoctors.some((d: Doctor) => d.isFallback) && (
                 <div className="bg-amber-50 border border-amber-100 p-6 rounded-[2.5rem] mb-10 text-center animate-in fade-in slide-in-from-top-4 duration-500">
                   <p className="text-amber-800 font-bold">
                     No specialists currently available in {selectedDistrict || 'your selected area'}. 
@@ -221,7 +235,7 @@ export default function SpecialtiesPage() {
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredDoctors.map((doctor: any) => (
+                {filteredDoctors.map((doctor: Doctor) => (
                   <DoctorCard 
                     key={doctor._id}
                     id={doctor._id}
@@ -246,7 +260,7 @@ export default function SpecialtiesPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No Specialists Found</h3>
               <p className="text-gray-500 max-w-sm mx-auto mb-8">
-                We couldn't find any {selectedSpecialty ? `${selectedSpecialty}` : 'healthcare'} professionals in your selected area at the moment.
+                We couldn&apos;t find any {selectedSpecialty ? `${selectedSpecialty}` : 'healthcare'} professionals in your selected area at the moment.
               </p>
               <button 
                 onClick={() => setSelectedSpecialty('')}
@@ -259,5 +273,13 @@ export default function SpecialtiesPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function SpecialtiesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin" /></div>}>
+      <SpecialtiesList />
+    </Suspense>
   );
 }

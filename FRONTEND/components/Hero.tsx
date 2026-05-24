@@ -1,10 +1,6 @@
-import { Stethoscope, Pill, HeartPulse, Star, Phone, CheckCircle2, ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 
-interface HeroProps {
-  onSearch?: (query: string, location: string) => void;
-}
-
-const Hero = ({ onSearch }: HeroProps) => {
+const Hero = () => {
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[#F0FDFD] pt-8 pb-20">
       {/* Subtle Background Pattern */}
