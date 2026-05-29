@@ -1,4 +1,4 @@
-import { Heart, Brain, Baby, Bone, Activity, Eye } from 'lucide-react';
+import { Heart, Brain, Baby, Bone, Activity, Eye, Ear, Smile, Stethoscope } from 'lucide-react';
 
 export const doctors = [
   {
@@ -40,21 +40,31 @@ export const specialties = [
   { name: "Orthopedics", icon: Bone, count: 95 },
   { name: "Dermatology", icon: Activity, count: 150 },
   { name: "Eye Specialist (Ophthalmologist)", icon: Eye, count: 70 },
+  { name: "Dentist", icon: Smile, count: 180 },
+  { name: "General Physician", icon: Stethoscope, count: 320 },
+  { name: "ENT", icon: Ear, count: 55 },
 ];
 
 export const testimonials = [
   {
-    name: "Thomas Miller",
-    role: "Patient",
-    content: "Finding a specialist was so easy. I booked an appointment within 2 minutes, and the care I received was exceptional.",
+    name: "Sarah Jenkins",
+    role: "Verified Patient",
+    content: "I found a specialist just a few kilometers away and booked an appointment in under a minute. The process was smooth and convenient.",
     rating: 5,
-    avatarUrl: "https://i.pravatar.cc/150?u=thomas"
+    avatarUrl: "https://i.pravatar.cc/150?u=sarah"
   },
   {
-    name: "Amanda Smith",
-    role: "Mother of 2",
-    content: "The pediatricians here are amazing. My kids are actually excited for their check-ups now! Highly recommend.",
+    name: "David K.",
+    role: "Verified Patient",
+    content: "Comparing doctor profiles, fees, and clinic locations helped me choose the right healthcare provider.",
     rating: 5,
-    avatarUrl: "https://i.pravatar.cc/150?u=amanda"
+    avatarUrl: "https://i.pravatar.cc/150?u=david"
+  },
+  {
+    name: "Elena R.",
+    role: "Verified Patient",
+    content: "The location-based search saved me a lot of time finding a nearby clinic.",
+    rating: 5,
+    avatarUrl: "https://i.pravatar.cc/150?u=elena"
   }
 ];

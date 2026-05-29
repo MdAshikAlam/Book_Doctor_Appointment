@@ -15,6 +15,9 @@ const getSpecialtyDescription = (name: string) => {
   if (name.includes('Orthopedics')) return 'Elite bone, joint, and muscle therapies, skeletal reconstruction, and physical recovery.';
   if (name.includes('Dermatology')) return 'Advanced clinical skin treatments, restorative therapies, and cosmetic dermatology.';
   if (name.includes('Eye Specialist')) return 'Comprehensive ophthalmic care, visual acuity correction, and advanced eye health management.';
+  if (name.includes('ENT')) return 'Specialized care for ear, nose, throat, head and neck conditions, and hearing wellness.';
+  if (name.includes('Dentist')) return 'Comprehensive dental care, preventive teeth cleaning, cavity treatment, and orthodontic wellness.';
+  if (name.includes('General Physician')) return 'Holistic health consultations, family medicine, preventative check-ups, and wellness advice.';
   return 'Highly trained medical professionals delivering next-gen diagnostics and specialized therapy.';
 };
 
@@ -24,7 +27,7 @@ const SpecialtyCard = ({ name, icon: Icon, count, onClick, isActive }: Specialty
   return (
     <div 
       onClick={onClick}
-      className={`bg-white rounded-[2rem] p-8 border border-slate-100 transition-all duration-500 group cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+      className={`bg-white rounded-[2rem] p-8 border border-slate-100 transition-all duration-500 group cursor-pointer relative overflow-hidden flex flex-col justify-between h-full ${
         isActive 
           ? 'border-[#00B5B5]/50 shadow-2xl shadow-[#00B5B5]/10 bg-gradient-to-b from-[#F0FDFD] to-white' 
           : 'hover:border-[#00B5B5]/30 hover:shadow-xl hover:shadow-[#00B5B5]/5 hover:-translate-y-2'
@@ -34,7 +37,7 @@ const SpecialtyCard = ({ name, icon: Icon, count, onClick, isActive }: Specialty
       <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
       <div>
-        {/* Top bar with Icon and Specialty tag */}
+        {/* Top bar with Icon */}
         <div className="flex items-start justify-between mb-6 relative z-10">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${
             isActive 
@@ -42,15 +45,6 @@ const SpecialtyCard = ({ name, icon: Icon, count, onClick, isActive }: Specialty
               : 'bg-slate-50 text-[#00B5B5] border border-slate-100 group-hover:bg-[#00B5B5] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#00B5B5]/25 group-hover:scale-105'
           }`}>
             <Icon size={26} className="group-hover:rotate-12 transition-transform duration-500" />
-          </div>
-          
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            isActive 
-              ? 'bg-[#00B5B5]/10 text-[#00B5B5] border border-[#00B5B5]/20' 
-              : 'bg-slate-50 text-slate-400 border border-slate-100 group-hover:bg-[#E0F7F7] group-hover:text-[#00B5B5] group-hover:border-[#00B5B5]/10'
-          }`}>
-            <Sparkles size={10} />
-            {count}+ Doctors
           </div>
         </div>
 

@@ -24,8 +24,11 @@ import Button from '@/components/common/Button';
 import Chart from '@/components/dashboard/Chart';
 import Table from '@/components/dashboard/Table';
 import { motion, AnimatePresence } from 'framer-motion';
+import { appointmentsApi } from '@/lib/api';
 
-// Mock report data to populate the premium visual dashboard
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+
+// Mock report data to populate the premium visual dashboard stats
 const appointmentVolumeData = [
   { name: 'Mon', count: 12 },
   { name: 'Tue', count: 19 },
@@ -88,27 +91,138 @@ const performanceMetrics = [
   }
 ];
 
-const clinicalReportsData = [
-  { id: 1, name: 'Q2 Clinical Performance Assessment', type: 'Clinical Operations', branch: 'New York Central Branch', date: 'May 15, 2026', size: '4.2 MB', status: 'Generated' },
-  { id: 2, name: 'Doctor Consultation Summary (April)', type: 'Financial & Auditing', branch: 'All Branches', date: 'May 02, 2026', size: '2.8 MB', status: 'Archived' },
-  { id: 3, name: 'Patient Conversion & Attendance Rate', type: 'Patient Analytics', branch: 'California Bay Area', date: 'April 28, 2026', size: '1.9 MB', status: 'Generated' },
-  { id: 4, name: 'Branch Revenue & Expense Sheet', type: 'Financial & Auditing', branch: 'All Branches', date: 'April 15, 2026', size: '6.4 MB', status: 'Generated' },
-  { id: 5, name: 'Clinic Bed & Resource Occupancy', type: 'Clinical Operations', branch: 'Boston Medical', date: 'April 04, 2026', size: '3.1 MB', status: 'Archived' }
-];
-
 export default function ReportsPage() {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState('all');
   const [loadingReportId, setLoadingReportId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        const res = await appointmentsApi.getMy();
+        setAppointments(res.data.appointments || []);
+      } catch (err) {
+        console.error('Failed to fetch reports/appointments:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
+
+  // Compute dynamic stats from database appointments
+  const totalRevenue = appointments
+    .filter(app => ['completed', 'visited', 'prescription_added', 'discharged'].includes(app.status))
+    .reduce((acc, app) => acc + (app.doctor?.consultationFee || 500), 0);
+
+  const totalConsultations = appointments
+    .filter(app => ['completed', 'visited', 'prescription_added', 'follow_up', 'discharged'].includes(app.status)).length;
+
+  const uniquePatients = new Set(appointments.map(app => app.patient?._id || app.patient || app.phone)).size;
+
+  const completedOrCheckedIn = appointments
+    .filter(app => ['checked_in', 'completed', 'visited', 'prescription_added', 'follow_up', 'discharged'].includes(app.status)).length;
+  const efficiency = appointments.length > 0 ? ((completedOrCheckedIn / appointments.length) * 100).toFixed(1) : '0';
+
+  // Compute dynamic chart data
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const volumeByDay = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+  appointments.forEach(app => {
+    const dayName = daysOfWeek[new Date(app.date).getDay()];
+    volumeByDay[dayName]++;
+  });
+  const appointmentVolumeData = daysOfWeek.map(day => ({
+    name: day,
+    count: volumeByDay[day]
+  }));
+
+  const specialtyRevenue = {};
+  appointments.forEach(app => {
+    const specialty = app.doctor?.specialty || 'General Medicine';
+    const fee = app.doctor?.consultationFee || 500;
+    if (['completed', 'visited', 'prescription_added', 'discharged'].includes(app.status)) {
+      specialtyRevenue[specialty] = (specialtyRevenue[specialty] || 0) + fee;
+    }
+  });
+
+  const clinicRevenueData = Object.keys(specialtyRevenue).map(spec => ({
+    name: spec,
+    count: specialtyRevenue[spec]
+  }));
+
+  // If no specialty revenue records, fallback to specialty appointment counts for visual plotting
+  if (clinicRevenueData.length === 0) {
+    const specialtyCounts = {};
+    appointments.forEach(app => {
+      const specialty = app.doctor?.specialty || 'General Medicine';
+      specialtyCounts[specialty] = (specialtyCounts[specialty] || 0) + 1;
+    });
+    Object.keys(specialtyCounts).forEach(spec => {
+      clinicRevenueData.push({
+        name: spec,
+        count: specialtyCounts[spec] * 500
+      });
+    });
+  }
+
+  const performanceMetrics = [
+    {
+      id: 'total-revenue-card',
+      title: 'Total Revenue Generated',
+      value: `₹${totalRevenue.toLocaleString()}`,
+      change: '+14.2%',
+      isPositive: true,
+      subtitle: 'from completed consultations',
+      color: 'bg-emerald-500/10 text-emerald-600 border-emerald-100',
+      icon: DollarSign
+    },
+    {
+      id: 'total-consultations-card',
+      title: 'Total Consultations',
+      value: `${totalConsultations} Visits`,
+      change: '+8.4%',
+      isPositive: true,
+      subtitle: 'completed & follow-ups',
+      color: 'bg-blue-500/10 text-blue-600 border-blue-100',
+      icon: CalendarCheck
+    },
+    {
+      id: 'new-patients-card',
+      title: 'Active Patients',
+      value: `${uniquePatients} Patients`,
+      change: '+4.2%',
+      isPositive: true,
+      subtitle: 'unique patients served',
+      color: 'bg-indigo-500/10 text-indigo-600 border-indigo-100',
+      icon: Users
+    },
+    {
+      id: 'consultation-efficiency-card',
+      title: 'Consultation Efficiency',
+      value: `${efficiency}%`,
+      change: '+3.6%',
+      isPositive: true,
+      subtitle: 'checked-in ratio',
+      color: 'bg-amber-500/10 text-amber-600 border-amber-100',
+      icon: BarChart3
+    }
+  ];
+
   const handleDownload = (report) => {
     setLoadingReportId(report.id);
-    // Simulate generation of premium dynamic clinical reports
-    setTimeout(() => {
+    if (report.url) {
+      const fullUrl = report.url.startsWith('http') ? report.url : `${BACKEND_URL}${report.url}`;
+      window.open(fullUrl, '_blank');
       setLoadingReportId(null);
-      triggerNotification(`Successfully downloaded "${report.name}"!`);
-    }, 1500);
+      triggerNotification(`Successfully opened "${report.name}"!`);
+    } else {
+      setLoadingReportId(null);
+      triggerNotification('Report file link not available.');
+    }
   };
 
   const handleExportAll = () => {
@@ -124,9 +238,29 @@ export default function ReportsPage() {
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
-  const filteredReports = clinicalReportsData.filter(report => {
+  const reportsList = [];
+  appointments.forEach(app => {
+    if (app.reports && app.reports.length > 0) {
+      app.reports.forEach(rep => {
+        reportsList.push({
+          id: rep._id || rep.id || Math.random().toString(),
+          name: rep.reportName || 'Medical Report',
+          type: rep.reportType || 'Clinical Operations',
+          branch: app.clinic?.clinicName || app.clinic?.name || 'Clinic Branch',
+          date: rep.uploadedAt ? new Date(rep.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown',
+          size: 'N/A',
+          status: 'Generated',
+          url: rep.reportUrl,
+          patientName: app.fullName || app.patient?.name || 'Patient'
+        });
+      });
+    }
+  });
+
+  const filteredReports = reportsList.filter(report => {
     if (reportType === 'all') return true;
-    return report.type.toLowerCase().includes(reportType.toLowerCase());
+    return report.type.toLowerCase().includes(reportType.toLowerCase()) || 
+           report.name.toLowerCase().includes(reportType.toLowerCase());
   });
 
   const columns = [
@@ -140,7 +274,7 @@ export default function ReportsPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{row.name}</p>
-            <p className="text-xs text-slate-400 font-semibold">{row.type}</p>
+            <p className="text-xs text-slate-400 font-semibold">{row.type} • Patient: {row.patientName}</p>
           </div>
         </div>
       )
@@ -342,12 +476,19 @@ export default function ReportsPage() {
         </div>
 
         {/* Dynamic Table component */}
-        <div className="overflow-hidden rounded-3xl border border-slate-100">
-          <Table 
-            columns={columns}
-            data={filteredReports}
-            emptyMessage="No clinical or financial reports found matching your selection."
-          />
+        <div className="overflow-hidden rounded-3xl border border-slate-100 min-h-[200px] flex flex-col justify-center">
+          {loading ? (
+            <div className="py-12 flex flex-col items-center justify-center text-center">
+              <Loader2 size={32} className="animate-spin text-primary mb-2" />
+              <p className="text-slate-400 font-medium text-xs">Loading database records...</p>
+            </div>
+          ) : (
+            <Table 
+              columns={columns}
+              data={filteredReports}
+              emptyMessage="No clinical or financial reports found matching your selection."
+            />
+          )}
         </div>
       </div>
     </div>

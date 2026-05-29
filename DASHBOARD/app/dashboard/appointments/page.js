@@ -14,6 +14,7 @@ import {
   Filter,
   Search,
   ChevronRight,
+  ChevronLeft,
   MoreVertical,
   MessageSquare,
   MapPin,
@@ -55,6 +56,17 @@ export default function AppointmentsPage() {
   const [viewingAppointment, setViewingAppointment] = useState(null);
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
+
+  const tabsRef = React.useRef(null);
+  const scroll = (direction) => {
+    if (tabsRef.current) {
+      const scrollAmount = 200;
+      tabsRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // New Modals State
   const [prescriptionModal, setPrescriptionModal] = useState(null);
@@ -223,15 +235,26 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 border-b border-slate-100 pb-8">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Clinical Operations</h1>
           <p className="text-slate-400 mt-2 font-bold text-sm uppercase tracking-[0.1em]">
             {user?.role === 'doctor' ? 'Medical Consultation Desk' : 'Patient Management Center'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-slate-100/50 p-1.5 rounded-[1.5rem] flex items-center gap-1 overflow-x-auto max-w-full no-scrollbar">
+        <div className="w-full xl:w-auto flex items-center gap-2 overflow-hidden">
+          <button 
+            onClick={() => scroll('left')}
+            className="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+            title="Scroll Left"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <div 
+            ref={tabsRef}
+            className="flex-1 bg-slate-100/50 p-1.5 rounded-[1.5rem] flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
+          >
             {['upcoming', 'today', 'checked_in', 'draft_prepared', 'follow_up', 'completed', 'missed', 'cancelled'].map((f) => (
               <button
                 key={f}
@@ -250,6 +273,14 @@ export default function AppointmentsPage() {
               </button>
             ))}
           </div>
+
+          <button 
+            onClick={() => scroll('right')}
+            className="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+            title="Scroll Right"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 

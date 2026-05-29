@@ -2,7 +2,7 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5000, clinicName } = query;
+  const { lat, lng, radius = 5000, clinicName, name, district, state } = query;
   const filter: any = {};
 
   // Status Filtering
@@ -13,8 +13,22 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
     filter.clinicStatus = 'approved';
   }
 
-  if (clinicName) {
-    filter.clinicName = { $regex: clinicName, $options: 'i' };
+  const targetClinicName = clinicName || name;
+  if (targetClinicName) {
+    filter.clinicName = { $regex: targetClinicName, $options: 'i' };
+  }
+
+  if (district) {
+    filter.$or = filter.$or || [];
+    filter.$or.push({
+      $or: [
+        { district: { $regex: district, $options: 'i' } },
+        { city: { $regex: district, $options: 'i' } }
+      ]
+    });
+  }
+  if (state) {
+    filter.state = { $regex: state, $options: 'i' };
   }
 
   if (lat && lng && !query.isDashboard) {
@@ -55,78 +69,94 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
     console.log('Admin Clinic Filter:', JSON.stringify(filter, null, 2));
   }
 
-
-  // Use Aggregation to get counts
-  const clinics = await Clinic.aggregate([
-    { $match: filter },
-    {
-      $lookup: {
-        from: 'users',
-        let: { clinicId: '$_id' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $or: [
-                  { $eq: ['$branchId', '$$clinicId'] },
-                  { $in: ['$$clinicId', { $ifNull: ['$branchIds', []] }] }
-                ]
+  const buildPipeline = (matchFilter: any): any[] => {
+    return [
+      { $match: matchFilter },
+      {
+        $lookup: {
+          from: 'users',
+          let: { clinicId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$branchId', '$$clinicId'] },
+                    { $in: ['$$clinicId', { $ifNull: ['$branchIds', []] }] }
+                  ]
+                }
               }
             }
-          }
-        ],
-        as: 'staff'
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'owner',
-        foreignField: '_id',
-        as: 'ownerInfo'
-      }
-    },
-    {
-      $addFields: {
-        adminCount: {
-          $size: {
-            $filter: {
-              input: '$staff',
-              as: 's',
-              cond: { $eq: ['$$s.role', 'admin'] }
+          ],
+          as: 'staff'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'owner',
+          foreignField: '_id',
+          as: 'ownerInfo'
+        }
+      },
+      {
+        $addFields: {
+          adminCount: {
+            $size: {
+              $filter: {
+                input: '$staff',
+                as: 's',
+                cond: { $eq: ['$$s.role', 'admin'] }
+              }
             }
-          }
-        },
-        doctorCount: {
-          $size: {
-            $filter: {
-              input: '$staff',
-              as: 's',
-              cond: { $eq: ['$$s.role', 'doctor'] }
+          },
+          doctorCount: {
+            $size: {
+              $filter: {
+                input: '$staff',
+                as: 's',
+                cond: { $eq: ['$$s.role', 'doctor'] }
+              }
             }
-          }
-        },
-        receptionistCount: {
-          $size: {
-            $filter: {
-              input: '$staff',
-              as: 's',
-              cond: { $eq: ['$$s.role', 'receptionist'] }
+          },
+          receptionistCount: {
+            $size: {
+              $filter: {
+                input: '$staff',
+                as: 's',
+                cond: { $eq: ['$$s.role', 'receptionist'] }
+              }
             }
-          }
-        },
-        owner: { $arrayElemAt: ['$ownerInfo', 0] }
+          },
+          owner: { $arrayElemAt: ['$ownerInfo', 0] }
+        }
+      },
+      {
+        $project: {
+          staff: 0,
+          ownerInfo: 0,
+          'owner.password': 0,
+          'owner.refreshToken': 0
+        }
       }
-    },
-    {
-      $project: {
-        staff: 0,
-        ownerInfo: 0,
-        'owner.password': 0,
-        'owner.refreshToken': 0
-      }
+    ];
+  };
+
+  let clinics = await Clinic.aggregate(buildPipeline(filter));
+
+  // Fallback if no clinics match in specified district but exist in same state
+  if (clinics.length === 0 && district && !creatorId) {
+    const fallbackFilter = { ...filter };
+    delete fallbackFilter.district;
+    if (state) {
+      fallbackFilter.state = { $regex: state, $options: 'i' };
     }
-  ]);
+    const fallbackPipeline = buildPipeline(fallbackFilter);
+    fallbackPipeline.push({
+      $addFields: { isFallback: true }
+    });
+    clinics = await Clinic.aggregate(fallbackPipeline);
+  }
 
   return clinics;
 };

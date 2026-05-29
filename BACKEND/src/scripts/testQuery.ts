@@ -1,32 +1,35 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
-import { getAllDoctors } from '../services/doctor.service';
+import Doctor from '../models/Doctor';
+import Clinic from '../models/Clinic';
 import '../models/User';
-import '../models/Clinic';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const run = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/book_doctor_appointment';
-    console.log('Connecting to MongoDB...');
     await mongoose.connect(mongoUri);
-    console.log('Connected.');
 
-    console.log('Running getAllDoctors query...');
-    console.time('getAllDoctorsTime');
-    const doctors = await getAllDoctors({}, undefined, undefined);
-    console.timeEnd('getAllDoctorsTime');
-
-    console.log('Doctors count returned:', doctors.length);
-    if (doctors.length > 0) {
-      console.log('First doctor specialty:', doctors[0].specialty);
-      console.log('First doctor name:', doctors[0].user?.name);
+    const doc: any = await Doctor.findOne({ specialty: /Cardio/i }).populate('user');
+    console.log('Doctor branchId:', doc.branchId, 'Type:', typeof doc.branchId, 'Is ObjectId:', doc.branchId instanceof mongoose.Types.ObjectId);
+    
+    if (doc.branchId) {
+      const clinic = await Clinic.findById(doc.branchId);
+      console.log('Clinic found by branchId:', !!clinic);
+      if (clinic) {
+        console.log('Clinic Details:');
+        console.log('ID:', clinic._id, 'Type:', typeof clinic._id);
+        console.log('Name:', (clinic as any).clinicName);
+        console.log('District:', (clinic as any).district || (clinic as any).city);
+        console.log('State:', (clinic as any).state);
+      }
     }
+
     process.exit(0);
   } catch (err) {
-    console.error('Error running query:', err);
+    console.error(err);
     process.exit(1);
   }
 };

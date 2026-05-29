@@ -93,15 +93,7 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     preMatch.status = 'verified';
   }
 
-  if (specialty && specialty !== 'All') {
-    preMatch.specialty = { $regex: specialty, $options: 'i' };
-  }
-  if (district) {
-    preMatch.district = { $regex: district, $options: 'i' };
-  }
-  if (state) {
-    preMatch.state = { $regex: state, $options: 'i' };
-  }
+  // Doctor-level advanced filters
 
   // Doctor-level advanced filters
   if (maxFee) {
@@ -166,6 +158,12 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     postMatch['user.gender'] = gender;
   }
 
+  const andConditions: any[] = [];
+
+  if (specialty && specialty !== 'All') {
+    andConditions.push({ specialty: { $regex: specialty, $options: 'i' } });
+  }
+
   if (name) {
     const lowercaseName = name.toLowerCase().trim();
     let mappedSpecialty = '';
@@ -176,18 +174,44 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
       }
     }
 
-    const orConditions: any[] = [
+    const nameConditions: any[] = [
       { 'user.name': { $regex: name, $options: 'i' } },
       { specialty: { $regex: name, $options: 'i' } },
-      { 'clinic_info.name': { $regex: name, $options: 'i' } },
-      { 'branch_info.name': { $regex: name, $options: 'i' } }
+      { 'clinic_info.clinicName': { $regex: name, $options: 'i' } },
+      { 'branch_info.clinicName': { $regex: name, $options: 'i' } }
     ];
 
     if (mappedSpecialty) {
-      orConditions.push({ specialty: { $regex: mappedSpecialty, $options: 'i' } });
+      nameConditions.push({ specialty: { $regex: mappedSpecialty, $options: 'i' } });
     }
 
-    postMatch.$or = orConditions;
+    andConditions.push({ $or: nameConditions });
+  }
+
+  if (district) {
+    andConditions.push({
+      $or: [
+        { district: { $regex: district, $options: 'i' } },
+        { 'branch_info.district': { $regex: district, $options: 'i' } },
+        { 'branch_info.city': { $regex: district, $options: 'i' } },
+        { 'clinic_info.district': { $regex: district, $options: 'i' } },
+        { 'clinic_info.city': { $regex: district, $options: 'i' } }
+      ]
+    });
+  }
+
+  if (state) {
+    andConditions.push({
+      $or: [
+        { state: { $regex: state, $options: 'i' } },
+        { 'branch_info.state': { $regex: state, $options: 'i' } },
+        { 'clinic_info.state': { $regex: state, $options: 'i' } }
+      ]
+    });
+  }
+
+  if (andConditions.length > 0) {
+    postMatch.$and = andConditions;
   }
 
   if (Object.keys(postMatch).length > 0) {
@@ -536,3 +560,4 @@ export const updateDoctorStatus = async (id: string, status: 'submitted' | 'veri
   }
   return doctor;
 };
+// Trigger reload to clear query cache

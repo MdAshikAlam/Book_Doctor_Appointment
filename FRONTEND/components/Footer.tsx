@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin } from 'lucide-react';
 
 const FacebookIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -22,9 +22,10 @@ const Footer = () => {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 pt-16 pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+          
           {/* Brand Info */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2">
               <Image 
                 src="/logoAndIcon/logo.png" 
@@ -34,8 +35,8 @@ const Footer = () => {
                 className="h-16 md:h-20 w-auto object-contain"
               />
             </Link>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
-              Providing access to the best healthcare professionals. Making medical appointments simple, fast, and secure for everyone.
+            <p className="text-gray-500 text-sm leading-relaxed max-w-xs font-semibold">
+              India's trusted clinic-based appointment scheduling platform. Discover top verified healthcare professionals near you instantly.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-primary transition-colors">
@@ -53,58 +54,62 @@ const Footer = () => {
             </div>
           </div>
 
-
-          {/* Quick Links */}
+          {/* Column 2: Patients */}
           <div>
-            <h3 className="text-gray-900 font-bold mb-6">Quick Links</h3>
-            <ul className="space-y-4">
-              <li><Link href="/" className="text-gray-500 hover:text-primary text-sm transition-colors">Home</Link></li>
-              <li><Link href="/about" className="text-gray-500 hover:text-primary text-sm transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="text-gray-500 hover:text-primary text-sm transition-colors">Contact</Link></li>
-              <li><Link href="/doctors" className="text-gray-500 hover:text-primary text-sm transition-colors">Find a Doctor</Link></li>
+            <h3 className="text-gray-900 font-black text-sm uppercase tracking-wider mb-6">Patients</h3>
+            <ul className="space-y-4 font-bold text-sm">
+              <li><Link href="/specialties" className="text-gray-500 hover:text-primary transition-colors">Search Doctors</Link></li>
+              <li><Link href="/specialties" className="text-gray-500 hover:text-primary transition-colors">Browse Specialties</Link></li>
+              <li><Link href="/appointments" className="text-gray-500 hover:text-primary transition-colors">My Appointments</Link></li>
+              <li><Link href="/profile" className="text-gray-500 hover:text-primary transition-colors">Patient Profile</Link></li>
             </ul>
           </div>
 
-          {/* Specialties */}
+          {/* Column 3: Doctors & Clinics */}
           <div>
-            <h3 className="text-gray-900 font-bold mb-6">Specialties</h3>
-            <ul className="space-y-4">
-              <li><a href="#" className="text-gray-500 hover:text-primary text-sm transition-colors">Cardiology</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary text-sm transition-colors">Pediatrics</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary text-sm transition-colors">Neurology</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary text-sm transition-colors">General Medicine</a></li>
+            <h3 className="text-gray-900 font-black text-sm uppercase tracking-wider mb-6">Partners</h3>
+            <ul className="space-y-4 font-bold text-sm">
+              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">For Doctors</a></li>
+              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">For Clinics</a></li>
+              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Clinic Registration</a></li>
+              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Software Solutions</a></li>
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Column 4: Support & Contact */}
           <div>
-            <h3 className="text-gray-900 font-bold mb-6">Contact Us</h3>
-            <ul className="space-y-4 text-gray-500 text-sm">
-              <li className="flex items-start">
-                <span className="block">123 Healthcare Way, Medical District, NY 10001</span>
+            <h3 className="text-gray-900 font-black text-sm uppercase tracking-wider mb-6">Support</h3>
+            <ul className="space-y-4 font-bold text-sm">
+              <li><Link href="/contact" className="text-gray-500 hover:text-primary transition-colors">Contact Support</Link></li>
+              <li><Link href="/about" className="text-gray-500 hover:text-primary transition-colors">About BookMyDoctor</Link></li>
+              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Frequently Asked Questions</a></li>
+              <li className="pt-2 border-t border-gray-200/60 flex items-center gap-2 text-gray-500 text-xs font-semibold">
+                <Mail size={14} className="text-gray-400" />
+                <a href="mailto:support@bookmydoctor.in" className="hover:underline">support@bookmydoctor.in</a>
               </li>
-              <li>
-                <span className="block font-semibold text-gray-900">Email:</span>
-                hello@bookmydoctor.com
+              <li className="flex items-center gap-2 text-gray-500 text-xs font-semibold">
+                <Phone size={14} className="text-gray-400" />
+                <span>+91 98765 43210</span>
               </li>
-              <li>
-                <span className="block font-semibold text-gray-900">Phone:</span>
-                +1 (800) DOCTOR-0
+              <li className="flex items-start gap-2 text-gray-500 text-xs font-semibold leading-tight">
+                <MapPin size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                <span>Sector 62, Noida, Uttar Pradesh, 201301</span>
               </li>
             </ul>
           </div>
+
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <p className="text-gray-400 text-xs text-center md:text-left">
-            &copy; {new Date().getFullYear()} BookMyDoctor. Proudly built for healthcare accessibility.
+          <p className="text-gray-400 text-xs text-center md:text-left font-bold">
+            &copy; {new Date().getFullYear()} BookMyDoctor India. Proudly built for digital healthcare accessibility.
           </p>
-          <div className="flex items-center text-xs text-gray-400">
-            Made with <Heart className="w-3 h-3 mx-1 text-red-500 fill-current" /> by the BookMyDoctor team.
+          <div className="flex items-center text-xs text-gray-400 font-bold">
+            Made with <Heart className="w-3 h-3 mx-1 text-red-500 fill-current" /> in India.
           </div>
-          <div className="flex space-x-6">
-            <a href="#" className="text-gray-400 hover:text-gray-600 text-xs">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-gray-600 text-xs">Terms of Service</a>
+          <div className="flex space-x-6 font-bold">
+            <Link href="/privacy" className="text-gray-400 hover:text-gray-600 text-xs">Privacy Policy</Link>
+            <Link href="/terms" className="text-gray-400 hover:text-gray-600 text-xs">Terms & Conditions</Link>
           </div>
         </div>
       </div>
