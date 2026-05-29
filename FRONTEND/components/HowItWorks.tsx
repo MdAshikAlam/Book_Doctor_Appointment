@@ -1,45 +1,36 @@
-import { Search, Calendar, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Search, Calendar, CheckCircle2 } from 'lucide-react';
 
 const steps = [
   {
-    title: "Select Your Specialist",
-    description: "Easily navigate our curated list of world-class medical experts by specialty, experience, or proximity.",
-    icon: Search,
-    color: "from-blue-500/10 to-teal-500/10 text-[#00B5B5]"
+    title: "Search Doctors Near You",
+    description: "Use your location to find verified doctors and clinics nearby.",
+    icon: Search
   },
   {
-    title: "Secure Instant Slot",
-    description: "Book directly without telephone delays. Select a highly convenient hour and secure your slot in seconds.",
-    icon: Calendar,
-    color: "from-teal-500/10 to-emerald-500/10 text-[#00B5B5]"
+    title: "Compare & Select",
+    description: "Review doctor profiles, consultation fees, ratings, experience, and clinic details.",
+    icon: Calendar
   },
   {
-    title: "Receive Quality Care",
-    description: "Consult your doctor at the scheduled hour to receive modern medical solutions, therapies, and follow-ups.",
-    icon: CheckCircle2,
-    color: "from-indigo-500/10 to-purple-500/10 text-[#00B5B5]"
+    title: "Book Appointment",
+    description: "Select an available slot and confirm your appointment instantly.",
+    icon: CheckCircle2
   }
 ];
 
 const HowItWorks = () => {
   return (
-    <section className="py-28 bg-gradient-to-b from-[#F0FDFD]/20 via-[#F9FCFC] to-[#F0FDFD]/20 relative overflow-hidden">
+    <section className="py-16 bg-gradient-to-b from-[#F0FDFD]/20 via-[#F9FCFC] to-[#F0FDFD]/20 relative overflow-hidden">
       {/* Absolute Soothing Ambient Glows */}
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[#00B5B5]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-6 lg:px-12 relative z-10">
         {/* Soothing Header */}
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00B5B5]/10 border border-[#00B5B5]/20 text-[#00B5B5] text-[10px] font-black uppercase tracking-widest mb-4">
-            Patient Guide
-          </div>
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <h3 className="text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1] mb-6">
-            3 simple steps to <span className="bg-gradient-to-r from-[#00B5B5] to-[#008F8F] bg-clip-text text-transparent">better health</span>
+            Book a Doctor in <span className="bg-gradient-to-r from-[#00B5B5] to-[#008F8F] bg-clip-text text-transparent">3 Simple Steps</span>
           </h3>
-          <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
-            We have simplified the clinical intake process, allowing you to bypass administrative friction and focus entirely on your recovery.
-          </p>
         </div>
 
         {/* Dynamic Connected Grid */}
@@ -68,15 +59,9 @@ const HowItWorks = () => {
                   </h4>
 
                   {/* Description */}
-                  <p className="text-slate-400 text-xs font-semibold leading-relaxed relative z-10 mb-6 group-hover:text-slate-500 transition-colors">
+                  <p className="text-slate-400 text-xs font-semibold leading-relaxed relative z-10 group-hover:text-slate-500 transition-colors">
                     {step.description}
                   </p>
-                </div>
-
-                {/* Animated Learn More Hook */}
-                <div className="pt-4 border-t border-slate-50 relative z-10 flex items-center gap-1.5 text-[10px] font-black text-[#00B5B5] uppercase tracking-widest">
-                  Learn Details
-                  <ArrowRight size={12} className="transform group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
 
                 {/* Card Glow Border */}

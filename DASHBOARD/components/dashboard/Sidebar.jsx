@@ -23,7 +23,8 @@ import {
   XCircle,
   History,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -62,8 +63,6 @@ const adminSections = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-      { icon: CheckCircle2, label: 'Completed Visits', href: '/dashboard/appointments?filter=completed' },
-      { icon: XCircle, label: 'Missed Appointments', href: '/dashboard/appointments?filter=missed' },
       { icon: History, label: 'Patient History', href: '/dashboard/patients' },
     ]
   },
@@ -85,8 +84,6 @@ const receptionistSections = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-      { icon: CheckCircle2, label: 'Completed Visits', href: '/dashboard/appointments?filter=completed' },
-      { icon: XCircle, label: 'Missed Appointments', href: '/dashboard/appointments?filter=missed' },
       { icon: History, label: 'Patient History', href: '/dashboard/patients' },
     ]
   },
@@ -123,8 +120,7 @@ const doctorSections = [
 import { useEffect } from 'react';
 import { analyticsApi } from '@/lib/api';
 
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [notifications, setNotifications] = useState({});
   const pathname = usePathname();
   const { user } = useAuth();
@@ -184,7 +180,7 @@ const Sidebar = () => {
         )}
       >
         <Icon size={20} className={cn("shrink-0", isActive ? "text-white" : "group-hover:scale-110 transition-transform")} />
-        {!isCollapsed && (
+        {(!isCollapsed || isMobileOpen) && (
           <div className="flex-1 flex items-center justify-between min-w-0">
             <span className="font-medium text-sm whitespace-nowrap overflow-hidden truncate">
               {item.label}
@@ -196,7 +192,7 @@ const Sidebar = () => {
             )}
           </div>
         )}
-        {isCollapsed && (
+        {(isCollapsed && !isMobileOpen) && (
           <>
             {showBadge && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
@@ -215,21 +211,31 @@ const Sidebar = () => {
     <aside 
       className={cn(
         "fixed left-0 top-0 h-screen bg-sidebar border-r border-border transition-all duration-300 z-40 sidebar-shadow flex flex-col",
-        isCollapsed ? "w-20" : "w-64"
+        // Width on desktop vs mobile
+        isCollapsed ? "md:w-20" : "md:w-64",
+        isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
       )}
     >
       {/* Logo Section */}
-      <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
             <Stethoscope size={20} />
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileOpen) && (
             <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
               BookMyDoc
             </span>
           )}
         </div>
+        {isMobileOpen && (
+          <button 
+            onClick={() => setIsMobileOpen(false)}
+            className="md:hidden p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -300,13 +306,13 @@ const Sidebar = () => {
       {/* Toggle Button */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute bottom-8 -right-3 w-6 h-6 rounded-full bg-white border border-border flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all shadow-sm"
+        className="absolute bottom-8 -right-3 w-6 h-6 rounded-full bg-white border border-border hidden md:flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all shadow-sm"
       >
         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
       {/* User Info (Mobile/Compact) */}
-      {!isCollapsed && (
+      {(!isCollapsed || isMobileOpen) && (
         <div className="absolute bottom-4 left-4 right-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">

@@ -388,7 +388,7 @@ export default function DoctorDiscoverySection() {
     selectedDistrict !== '';
 
   return (
-    <section className="py-20 bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative overflow-hidden" id="doctor-discovery">
+    <section className="py-16 bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative overflow-hidden" id="doctor-discovery">
       
       {/* Decorative Orbs */}
       <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-3xl pointer-events-none" />
@@ -397,16 +397,12 @@ export default function DoctorDiscoverySection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Title Block */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00B5B5]/10 border border-[#00B5B5]/20 text-[#00B5B5] text-xs font-black uppercase tracking-widest mb-4">
-            <Sparkles size={12} className="text-[#00B5B5] animate-pulse" />
-            Top Rated Care Specialists
-          </div>
+        <div className="text-center max-w-3xl mx-auto mb-8">
           <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">
-            Meet Our Highly <span className="text-[#00B5B5]">Experienced</span> Doctors
+            Trusted Doctors Near You
           </h2>
           <p className="text-slate-500 text-sm sm:text-base font-bold">
-            Discover nearby verified clinics, book instant slots, and consult with leading doctors across India.
+            Explore verified doctors available across multiple specialties and healthcare facilities.
           </p>
         </div>
 
@@ -780,20 +776,7 @@ export default function DoctorDiscoverySection() {
                   </div>
 
                   {/* Mode / Feature Toggles */}
-                  <div className="md:col-span-2 lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                    <label className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group">
-                      <input 
-                        type="checkbox" 
-                        checked={videoConsultation} 
-                        onChange={() => setVideoConsultation(!videoConsultation)}
-                        className="rounded text-primary focus:ring-primary w-4.5 h-4.5"
-                      />
-                      <div>
-                        <p className="text-xs font-black text-slate-800">Video Consultation</p>
-                        <p className="text-[10px] text-slate-400 font-bold">Consult online from home</p>
-                      </div>
-                    </label>
-
+                  <div className="md:col-span-2 lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                     <label className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group">
                       <input 
                         type="checkbox" 

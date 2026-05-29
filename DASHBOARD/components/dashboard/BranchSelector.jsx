@@ -23,14 +23,14 @@ const BranchSelector = () => {
 
   return (
     <div className="relative group">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-transparent hover:border-primary/20 hover:bg-white transition-all cursor-pointer">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+      <div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 border border-transparent hover:border-primary/20 hover:bg-white transition-all cursor-pointer">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
           <MapPin size={18} />
         </div>
-        <div className="text-left pr-2">
-          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-1">Clinic</p>
+        <div className="text-left pr-1 sm:pr-2 hidden min-[400px]:block">
+          <p className="text-[9px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-1">Clinic</p>
           <div className="flex items-center gap-1">
-            <p className="text-sm font-bold text-slate-900 leading-none">
+            <p className="text-xs sm:text-sm font-bold text-slate-900 leading-none max-w-[80px] sm:max-w-[120px] truncate">
               {loading ? 'Loading...' : (selectedClinic?.clinicName || selectedClinic?.name || (user.role === 'super_admin' && !selectedClinicId ? 'All Clinics' : 'Select Clinic'))}
             </p>
             <ChevronDown size={14} className="text-slate-400 group-hover:text-primary transition-colors" />

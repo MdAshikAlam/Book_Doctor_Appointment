@@ -12,7 +12,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout } = useAuth();
 
@@ -21,8 +21,16 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-md border-b border-border px-6">
+    <header className="sticky top-0 z-30 h-16 bg-white/80 backdrop-blur-md border-b border-border px-4 md:px-6">
       <div className="h-full flex items-center justify-between">
+        {/* Mobile menu trigger */}
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors mr-2"
+        >
+          <Menu size={24} />
+        </button>
+
         {/* Search Bar */}
         <div className="flex-1 max-w-md hidden md:block">
           <div className="relative group">
@@ -35,12 +43,8 @@ const Navbar = () => {
           </div>
         </div>
 
-        <button className="md:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-600">
-          <Menu size={24} />
-        </button>
-
         {/* Right Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Branch Switcher */}
           <BranchSelector />
 

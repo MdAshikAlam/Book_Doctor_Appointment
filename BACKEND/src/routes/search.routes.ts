@@ -9,11 +9,14 @@ const router = Router();
 router.get('/', optionalProtect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { query } = req;
-    
+
     const [doctors, clinics] = await Promise.all([
       doctorService.getAllDoctors(query),
       clinicService.getAllClinics(query)
     ]);
+
+    console.log('[search route] Query:', query);
+    console.log('[search route] Doctors returned:', doctors.map((d: any) => ({ name: d.user?.name, isFallback: d.isFallback })));
 
     res.status(200).json({
       status: 'success',
@@ -22,6 +25,7 @@ router.get('/', optionalProtect, async (req: Request, res: Response, next: NextF
         clinics: clinics.slice(0, 5)
       }
     });
+
   } catch (error) {
     next(error);
   }

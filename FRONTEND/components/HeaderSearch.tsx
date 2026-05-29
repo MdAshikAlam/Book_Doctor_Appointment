@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5
 interface ClinicSuggestion {
   _id: string;
   slug?: string;
-  name: string;
+  clinicName: string;
   clinicType: string;
   images?: string[];
 }
@@ -259,6 +259,14 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                   <>
                     {(suggestions.doctors.length > 0 || suggestions.clinics.length > 0) ? (
                       <>
+                        {/* Fallback indicator message */}
+                        {(suggestions.doctors.some((d: any) => d.isFallback) || suggestions.clinics.some((c: any) => c.isFallback)) && (
+                          <div className="px-4 py-3 bg-amber-50 text-amber-800 text-xs font-bold rounded-2xl mb-3 mx-1 border border-amber-100 flex flex-col gap-1">
+                            <p className="font-extrabold uppercase text-[10px] tracking-wide text-amber-600">Notice</p>
+                            <p>No clinics or doctors available in {selectedDistrict || 'this district'}. Showing nearby options:</p>
+                          </div>
+                        )}
+
                         {/* Clinics Section */}
                         {suggestions.clinics.length > 0 && (
                           <div className="mb-4">
@@ -282,7 +290,12 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-extrabold text-gray-900 truncate">{clinic.name}</p>
+                                  <p className="text-sm font-extrabold text-gray-900 truncate flex items-center gap-2">
+                                    <span>{clinic.clinicName}</span>
+                                    {(clinic as any).isFallback && (
+                                      <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
+                                    )}
+                                  </p>
                                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{clinic.clinicType}</p>
                                 </div>
                                 <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all">
@@ -292,7 +305,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                             ))}
                           </div>
                         )}
-
+ 
                         {/* Doctors Section */}
                         {suggestions.doctors.length > 0 && (
                           <div>
@@ -323,7 +336,12 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-extrabold text-gray-900 truncate">Dr. {doc.user.name}</p>
+                                  <p className="text-sm font-extrabold text-gray-900 truncate flex items-center gap-2">
+                                    <span>Dr. {doc.user.name}</span>
+                                    {(doc as any).isFallback && (
+                                      <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
+                                    )}
+                                  </p>
                                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
                                 </div>
                                 <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
