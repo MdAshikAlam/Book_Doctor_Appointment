@@ -6,6 +6,11 @@ import { useParams } from "next/navigation";
 import { Loader2, MapPin, Star, BadgeDollarSign, Briefcase, Hospital } from "lucide-react";
 import { getAvatarFallback, resolveImageUrl } from "@/lib/resolveImageUrl";
 
+// Import global UI components
+import Section from "@/components/ui/Section";
+import Container from "@/components/ui/Container";
+import Card from "@/components/ui/Card";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
 type DoctorDetails = {
@@ -89,13 +94,15 @@ export default function DoctorProfilePage() {
 
   if (error || !doctor) {
     return (
-      <div className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">Unable to load doctor profile</h1>
-        <p className="text-gray-500 mb-8">{error || "Doctor not found"}</p>
-        <Link href="/specialties" className="inline-flex bg-primary text-white px-6 py-3 rounded-xl font-bold">
-          Back to specialists
-        </Link>
-      </div>
+      <Section>
+        <Container className="text-center">
+          <h1 className="font-h1 text-slate-900 mb-3">Unable to load doctor profile</h1>
+          <p className="font-body-primary text-slate-500 mx-auto mb-8">{error || "Doctor not found"}</p>
+          <Link href="/specialties" className="btn-primary-custom">
+            Back to specialists
+          </Link>
+        </Container>
+      </Section>
     );
   }
 
@@ -106,105 +113,107 @@ export default function DoctorProfilePage() {
     "Clinic address not provided";
 
   return (
-    <div className="bg-gray-50 min-h-screen pt-24 pb-16">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-10">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <img
-              src={resolveImageUrl(doctor.user?.avatar) || getAvatarFallback(doctor.user?.name)}
-              alt={doctor.user?.name || "Doctor"}
-              onError={(e) => {
-                e.currentTarget.src = getAvatarFallback(doctor.user?.name);
-              }}
-              className="w-36 h-36 rounded-2xl object-cover border border-gray-100"
-            />
+    <Section className="bg-slate-50/50">
+      <Container>
+        {/* Doctor Header card - wraps profile metadata */}
+        <Card className="!flex-col md:!flex-row items-center md:items-start gap-8 bg-white border border-slate-100 shadow-sm p-8 md:p-10 mb-10">
+          <img
+            src={resolveImageUrl(doctor.user?.avatar) || getAvatarFallback(doctor.user?.name)}
+            alt={doctor.user?.name || "Doctor"}
+            onError={(e) => {
+              e.currentTarget.src = getAvatarFallback(doctor.user?.name);
+            }}
+            className="w-36 h-36 rounded-[24px] object-cover border border-slate-100"
+          />
 
-            <div className="flex-1">
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{doctor.user?.name || "Doctor"}</h1>
-              <p className="text-primary font-bold mb-4">{doctor.specialty || "Specialist"}</p>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span className="inline-flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-xl">
-                  <Briefcase className="w-4 h-4" />
-                  {doctor.experience ?? 0}+ years experience
-                </span>
-                <span className="inline-flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-xl">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  {(doctor.rating ?? 0).toFixed(1)} ({doctor.numReviews ?? 0} reviews)
-                </span>
-                <span className="inline-flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-xl">
-                  <BadgeDollarSign className="w-4 h-4" />
-                  Consultation fee: ${doctor.consultationFee ?? 0}
-                </span>
-              </div>
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="font-h1 text-slate-900 mb-2">{doctor.user?.name || "Doctor"}</h1>
+            <p className="text-[#00B5B5] font-bold text-lg mb-4">{doctor.specialty || "Specialist"}</p>
+            
+            <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm">
+              <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded-xl text-slate-600 font-medium">
+                <Briefcase className="w-4 h-4 text-slate-400" />
+                {doctor.experience ?? 0}+ years experience
+              </span>
+              <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded-xl text-slate-600 font-medium">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                {(doctor.rating ?? 0).toFixed(1)} ({doctor.numReviews ?? 0} reviews)
+              </span>
+              <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-2 rounded-xl text-slate-600 font-medium">
+                <BadgeDollarSign className="w-4 h-4 text-slate-400" />
+                Consultation fee: ₹{doctor.consultationFee ?? 0}
+              </span>
             </div>
           </div>
+        </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
-            <section className="bg-gray-50 rounded-2xl p-6">
-              <h2 className="text-lg font-extrabold text-gray-900 mb-4">Doctor details</h2>
-              <p className="text-gray-600 mb-4">{doctor.bio || "No biography available yet."}</p>
-              <div className="space-y-3 text-sm text-gray-700">
-                <p className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-0.5" />
-                  <span>{fullAddress}</span>
-                </p>
-                <p><strong>Email:</strong> {doctor.user?.email || "Not provided"}</p>
-                <p><strong>Phone:</strong> {doctor.user?.phone || "Not provided"}</p>
-                <p><strong>Qualifications:</strong> {doctor.qualifications?.length ? doctor.qualifications.join(", ") : "Not provided"}</p>
-              </div>
-            </section>
+        {/* Doctor & Clinic Detail Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="bg-white border border-slate-100 p-8">
+            <h2 className="font-h2 text-slate-900 mb-4">Doctor details</h2>
+            <p className="font-body-secondary text-slate-600 mb-6">{doctor.bio || "No biography available yet."}</p>
+            
+            <div className="space-y-3 font-body-secondary text-slate-600">
+              <p className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 mt-1 text-slate-400 shrink-0" />
+                <span>{fullAddress}</span>
+              </p>
+              <p className="text-sm"><strong>Email:</strong> {doctor.user?.email || "Not provided"}</p>
+              <p className="text-sm"><strong>Phone:</strong> {doctor.user?.phone || "Not provided"}</p>
+              <p className="text-sm"><strong>Qualifications:</strong> {doctor.qualifications?.length ? doctor.qualifications.join(", ") : "Not provided"}</p>
+            </div>
+          </Card>
 
-            <section className="bg-gray-50 rounded-2xl p-6">
-              <h2 className="text-lg font-extrabold text-gray-900 mb-4">Clinic details</h2>
-              <div className="space-y-3 text-sm text-gray-700">
-                <p className="flex items-start gap-2">
-                  <Hospital className="w-4 h-4 mt-0.5" />
-                  <Link 
-                    href={`/clinics/${doctor.clinic?.slug || doctor.clinic?._id}`}
-                    className="font-black text-primary hover:underline transition-all"
-                  >
-                    {doctor.clinic?.clinicName || "Clinic name not provided"}
-                  </Link>
-                </p>
-                <p className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-0.5" />
-                  <span>{clinicAddress}</span>
-                </p>
-                {doctor.clinic?.phone && (
-                  <p><strong>Phone:</strong> {doctor.clinic.phone}</p>
-                )}
-                {doctor.clinic?.images?.[0] && (
-                  <img
-                    src={resolveImageUrl(doctor.clinic.images[0]) || doctor.clinic.images[0]}
-                    alt={doctor.clinic?.clinicName || "Clinic"}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    className="w-full h-40 object-cover rounded-xl border border-gray-100"
-                  />
-                )}
-              </div>
-            </section>
-          </div>
-
-
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href={`/appointments?doctorId=${doctor.slug || doctor._id}`}
-              className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
-            >
-              Book appointment
-            </Link>
-            <Link
-              href={`/specialties?specialty=${encodeURIComponent(doctor.specialty || "")}`}
-              className="border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:border-primary hover:text-primary transition-colors"
-            >
-              More {doctor.specialty || "specialists"}
-            </Link>
-          </div>
+          <Card className="bg-white border border-slate-100 p-8">
+            <h2 className="font-h2 text-slate-900 mb-4">Clinic details</h2>
+            
+            <div className="space-y-4 font-body-secondary text-slate-600">
+              <p className="flex items-start gap-2.5">
+                <Hospital className="w-4 h-4 mt-1 text-[#00B5B5] shrink-0" />
+                <Link 
+                  href={`/clinics/${doctor.clinic?.slug || doctor.clinic?._id}`}
+                  className="font-black text-[#00B5B5] hover:underline transition-all"
+                >
+                  {doctor.clinic?.clinicName || "Clinic name not provided"}
+                </Link>
+              </p>
+              <p className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 mt-1 text-slate-400 shrink-0" />
+                <span>{clinicAddress}</span>
+              </p>
+              {doctor.clinic?.phone && (
+                <p className="text-sm"><strong>Phone:</strong> {doctor.clinic.phone}</p>
+              )}
+              {doctor.clinic?.images?.[0] && (
+                <img
+                  src={resolveImageUrl(doctor.clinic.images[0]) || doctor.clinic.images[0]}
+                  alt={doctor.clinic?.clinicName || "Clinic"}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  className="w-full h-44 object-cover rounded-2xl border border-slate-100"
+                />
+              )}
+            </div>
+          </Card>
         </div>
-      </div>
-    </div>
+
+        {/* CTAs */}
+        <div className="mt-10 flex flex-wrap gap-4 justify-center lg:justify-start">
+          <Link
+            href={`/appointments?doctorId=${doctor.slug || doctor._id}`}
+            className="btn-primary-custom"
+          >
+            Book appointment
+          </Link>
+          <Link
+            href={`/specialties?specialty=${encodeURIComponent(doctor.specialty || "")}`}
+            className="btn-secondary-custom"
+          >
+            More {doctor.specialty || "specialists"}
+          </Link>
+        </div>
+      </Container>
+    </Section>
   );
 }

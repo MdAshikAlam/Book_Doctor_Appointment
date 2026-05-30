@@ -1,45 +1,234 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Mail, 
-  ShieldAlert, 
-  Globe, 
+  Phone, 
   Clock, 
+  MapPin, 
+  ShieldAlert, 
   CheckCircle2, 
-  MessageSquare,
-  ArrowRight,
-  Send
+  ArrowRight, 
+  Send, 
+  Calendar, 
+  UserCheck, 
+  Building2, 
+  HelpCircle, 
+  Settings, 
+  Users, 
+  ChevronDown
 } from 'lucide-react';
+import Link from 'next/link';
+
+// Import global UI components
+import Section from '@/components/ui/Section';
+import Container from '@/components/ui/Container';
+import SectionHeader from '@/components/ui/SectionHeader';
+import Card from '@/components/ui/Card';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
+    subject: '',
+    category: 'Appointment Support',
     message: ''
   });
-  
+  const [errors, setErrors] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  // Track whether a field has been visited (blurred) to control when to show errors
+  const [touched, setTouched] = useState({
+    fullName: false,
+    email: false,
+    phone: false,
+    subject: false,
+    message: false
+  });
+  // Loading indicator during form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Success modal visibility
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // Router for navigation
+  const router = useRouter();
 
-  const isFormValid = 
-    formData.fullName.trim() && 
-    formData.email.trim() && 
-    formData.phone.trim() && 
+  // Helper to capitalize each word's first letter
+  const capitalizeWords = (str: string) =>
+    str.replace(/\b\w/g, (char) => char.toUpperCase());
+
+  // Validation helpers
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    switch (name) {
+      case 'fullName':
+        if (!value.trim()) error = 'Full name is required';
+        else if (value.trim().length < 2) error = 'Name must be at least 2 characters';
+        else if (value.trim().length > 40) error = 'Name cannot exceed 40 characters';
+        break;
+      case 'email':
+        if (!value.trim()) error = 'Email is required';
+        else if (value.trim().length > 60) error = 'Email cannot exceed 60 characters';
+        else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) error = 'Invalid email format';
+        break;
+      case 'phone':
+        if (!value.trim()) error = 'Phone is required';
+        else if (!/^\+?\d+$/.test(value)) error = 'Phone must contain only digits and optional leading +';
+        break;
+      case 'subject':
+        if (!value.trim()) error = 'Subject is required';
+        else if (value.trim().length < 3) error = 'Subject must be at least 3 characters';
+        else if (value.trim().length > 100) error = 'Subject cannot exceed 100 characters';
+        break;
+      case 'message':
+        if (!value.trim()) error = 'Message is required';
+        else if (value.trim().length < 10) error = 'Message must be at least 10 characters';
+        else if (value.trim().length > 500) error = 'Message cannot exceed 500 characters';
+        break;
+      default:
+        break;
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
+    return error === '';
+  };
+  
+
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const isFormValid =
+    !errors.fullName &&
+    !errors.email &&
+    !errors.phone &&
+    !errors.subject &&
+    !errors.message &&
+    formData.fullName.trim() &&
+    formData.email.trim() &&
+    formData.phone.trim() &&
+    formData.subject.trim() &&
     formData.message.trim();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormValid) {
+    if (!isFormValid) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/v1/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Failed to submit');
+      }
       setIsSubmitted(true);
+    } catch (error) {
+      console.error('Contact submission error:', error);
+      // Optionally display an error to the user
+      alert('There was an error submitting the form. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const faqData = [
+    {
+      q: "How do I book an appointment?",
+      a: "Select your location and browse specialists or clinics based on your needs. Click on a doctor's profile to view their available slots and confirm your appointment instantly."
+    },
+    {
+      q: "How can I cancel or reschedule an appointment?",
+      a: "Navigate to the 'My Appointments' page from your dashboard or profile menu. Find your booking and choose the cancel or reschedule option to select a new slot."
+    },
+    {
+      q: "How can doctors join BookMyDoctor?",
+      a: "Doctors can start onboarding by selecting 'Doctor Registration' in the contact form categories, or directly reaching out to partners@bookmydoctor.in to begin profile verification."
+    },
+    {
+      q: "How can clinics register?",
+      a: "Clinics can register by choosing 'Clinic Registration' in the contact form or sending clinic details to partners@bookmydoctor.in. Our partner team will help set up your facilities."
+    },
+    {
+      q: "How long does support take to respond?",
+      a: "Our support team typically responds to all general, technical, and onboarding inquiries within 24 hours during working hours (Monday to Saturday)."
+    },
+    {
+      q: "How do I report a technical issue?",
+      a: "Use our contact form, select 'Technical Issue' from the category dropdown, describe the issue you are facing in detail, and our technical support team will address it."
+    }
+  ];
+
   return (
     <div className="bg-white min-h-screen relative overflow-hidden">
-      {/* Page Header / Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F0FDFD] via-[#F6FCFC] to-white pt-36 pb-24 border-b border-slate-100">
-        {/* Subtle Background Grid Pattern */}
+
+      {/* SUCCESS MODAL OVERLAY - shown on top of page after submit */}
+      {isSubmitted && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(6px)' }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 relative border border-slate-100" style={{ animation: 'fadeScaleIn 0.25s ease' }}>
+            {/* Close X button */}
+            <button
+              onClick={() => {
+                setIsSubmitted(false);
+                setFormData({ fullName: '', email: '', phone: '', subject: '', category: 'Appointment Support', message: '' });
+                setTouched({ fullName: false, email: false, phone: false, subject: false, message: false });
+              }}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition"
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-center text-center">
+              {/* Animated check icon */}
+              <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+                <CheckCircle2 size={40} className="text-emerald-500" />
+              </div>
+              <h3 className="font-h3 text-slate-900 mb-3">Request Submitted!</h3>
+              <p className="font-body-secondary text-slate-500 mb-8">
+                Thank you for contacting BookMyDoctor. Our support team will review your request and respond within 24 hours.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    setFormData({ fullName: '', email: '', phone: '', subject: '', category: 'Appointment Support', message: '' });
+                    setTouched({ fullName: false, email: false, phone: false, subject: false, message: false });
+                  }}
+                  className="flex-1 py-3 px-4 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-sm hover:bg-slate-100 transition"
+                >
+                  Back to Form
+                </button>
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-[#00B5B5] text-white font-bold text-sm hover:bg-[#009999] transition"
+                >
+                  Go Home
+                </button>
+              </div>
+            </div>
+          </div>
+          <style>{`
+            @keyframes fadeScaleIn {
+              from { opacity: 0; transform: scale(0.92); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* SECTION 1: HERO */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F0FDFD] via-[#F6FCFC] to-white pt-20 pb-20 border-b border-slate-100"> {/* Navbar -> Hero = 80px */}
+        {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
@@ -49,211 +238,398 @@ export default function Contact() {
         <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#00B5B5]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '12s' }} />
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Animated Badge */}
-            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md border border-[#00B5B5]/20 text-[#00B5B5] text-sm font-bold shadow-sm shadow-slate-100/50 mb-8">
-              <Globe className="w-4 h-4 text-[#00B5B5]" />
-              <span className="tracking-wide uppercase text-xs">24/7 Global Assistance</span>
-            </div>
+        <Container className="relative z-10 text-center">
+          {/* Main Title */}
+          <h1 className="font-h1 text-slate-900 mb-6">
+            We&apos;re Here to Help
+          </h1>
 
-            {/* Main Title */}
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-6">
-              Connect With Our <br className="hidden sm:inline" />
-              <span className="relative inline-block px-2 text-[#00B5B5] italic">
-                Global Care Team
-                <span className="absolute bottom-1 left-0 w-full h-[6px] bg-[#00B5B5]/10 -skew-x-12 rounded-full"></span>
-              </span>
-            </h1>
+          {/* Subtitle */}
+          <p className="font-body-primary text-slate-500 mx-auto mb-8">
+            Need assistance with appointments, doctor discovery, clinic registration, or general questions? Our team is ready to help.
+          </p>
 
-            {/* Subtitle */}
-            <p className="text-lg md:text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
-              We&apos;re here to assist you with scheduling questions, portal queries, and custom healthcare alignments. Find options to contact our support desks around the world.
-            </p>
+          {/* Quick Support Tags */}
+          <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl mx-auto">
+            {[
+              { label: "Appointment Support", emoji: "📅" },
+              { label: "Doctor Registration", emoji: "👨‍⚕️" },
+              { label: "Clinic Registration", emoji: "🏥" },
+              { label: "General Enquiries", emoji: "💬" }
+            ].map((tag, i) => (
+              <div key={i} className="px-4 py-2 rounded-full bg-white border border-slate-100 shadow-sm text-xs font-bold text-slate-700 flex items-center gap-2">
+                <span>{tag.emoji}</span>
+                <span>{tag.label}</span>
+              </div>
+            ))}
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* Main Support Grid */}
-      <section className="py-24 bg-white relative z-20 -mt-10">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+      {/* SECTION 2 & 3: FORM AND SUPPORT CHANNELS */}
+      <Section className="bg-white relative z-20 -mt-10">
+        <Container className="max-w-6xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             
-            {/* Left Column: Form Card */}
+            {/* CONTACT FORM */}
             <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
-              {isSubmitted ? (
-                <div className="text-center py-12 animate-in fade-in zoom-in duration-500">
-                  <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
-                    <CheckCircle2 size={36} />
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-3">Message Dispatched</h3>
-                  <p className="text-slate-500 font-medium leading-relaxed max-w-sm mx-auto mb-8 text-sm">
-                    Thank you, {formData.fullName}. Your request has been assigned to our patient relations department. A consultant will review your ticket and respond within 12 hours.
-                  </p>
-                  <button 
-                    onClick={() => {
-                      setIsSubmitted(false);
-                      setFormData({ fullName: '', email: '', phone: '', message: '' });
-                    }}
-                    className="inline-flex items-center gap-2 text-[#00B5B5] font-black hover:underline text-sm uppercase tracking-wider"
-                  >
-                    Send Another Message
-                    <ArrowRight size={14} />
-                  </button>
+              <>
+                <div className="mb-8">
+                  <h3 className="font-h3 text-slate-900 mb-2">Send Us a Message</h3>
+                  <p className="font-body-secondary text-slate-400">Have a question or need assistance? Fill out the form below and our team will get back to you.</p>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-[#00B5B5]/10 rounded-xl flex items-center justify-center text-[#00B5B5]">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-2xl font-extrabold text-slate-900">Send us a Message</h2>
-                  </div>
 
-                  <form className="space-y-6" onSubmit={handleSubmit}>
+                  <form id="contact-form" className="space-y-6" onSubmit={handleSubmit}>
                     <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Full Name</label>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Full Name <span className="text-red-600">*</span></label>
                       <input 
                         type="text" 
                         required
+                        maxLength={40}
                         className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                         placeholder="John Doe"
                         value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const capitalized = capitalizeWords(val);
+                          setFormData({ ...formData, fullName: capitalized });
+                        }}
+                        onBlur={() => {
+                          setTouched((prev) => ({ ...prev, fullName: true }));
+                          validateField('fullName', formData.fullName);
+                        }}
                       />
+                      {touched.fullName && errors.fullName && <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Email Address</label>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Email Address <span className="text-red-600">*</span></label>
                         <input 
                           type="email" 
                           required
+                          maxLength={60}
                           className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                           placeholder="john@example.com"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({ ...formData, email: val });
+                          }}
+                          onBlur={() => {
+                            setTouched((prev) => ({ ...prev, email: true }));
+                            validateField('email', formData.email);
+                          }}
                         />
+                        {touched.email && errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
                       </div>
                       <div>
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Phone Number</label>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Phone Number <span className="text-red-600">*</span></label>
                         <input 
                           type="tel" 
                           required
                           className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
-                          placeholder="+1 (555) 000-0000"
+                          placeholder="+91 98765 43210"
                           value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const cleanVal = (val.startsWith('+') ? '+' : '') + val.replace(/[^0-9 ]/g, '');
+                            setFormData({ ...formData, phone: cleanVal });
+                          }}
+                          onBlur={() => {
+                            setTouched((prev) => ({ ...prev, phone: true }));
+                            validateField('phone', formData.phone);
+                          }}
                         />
+                        {touched.phone && errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone}</p>}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Category</label>
+                        <div className="relative">
+                          <select
+                            className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800 appearance-none"
+                            value={formData.category}
+                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                          >
+                            <option>Appointment Support</option>
+                            <option>Doctor Registration</option>
+                            <option>Clinic Registration</option>
+                            <option>Partnership Enquiry</option>
+                            <option>Technical Issue</option>
+                            <option>General Question</option>
+                          </select>
+                          <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Subject <span className="text-red-600">*</span></label>
+                        <input 
+                          type="text" 
+                          required
+                          maxLength={100}
+                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
+                          placeholder="e.g. Schedule query"
+                          value={formData.subject}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const capitalized = val.charAt(0).toUpperCase() + val.slice(1);
+                            setFormData({ ...formData, subject: capitalized });
+                          }}
+                          onBlur={() => {
+                            setTouched((prev) => ({ ...prev, subject: true }));
+                            validateField('subject', formData.subject);
+                          }}
+                        />
+                        {touched.subject && errors.subject && <p className="text-sm text-red-600 mt-1">{errors.subject}</p>}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Message Description</label>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Message <span className="text-red-600">*</span></label>
                       <textarea 
                         required
-                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-40 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800 resize-none leading-relaxed" 
-                        placeholder="Please describe how we can assist you..."
+                        maxLength={500}
+                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-32 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800 resize-none leading-relaxed" 
+                        placeholder="Please describe your question or issue in detail..."
                         value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const capitalized = val.charAt(0).toUpperCase() + val.slice(1);
+                          setFormData({ ...formData, message: capitalized });
+                        }}
+                        onBlur={() => {
+                          setTouched((prev) => ({ ...prev, message: true }));
+                          validateField('message', formData.message);
+                        }}
                       ></textarea>
+                      {touched.message && errors.message && <p className="text-sm text-red-600 mt-1">{errors.message}</p>}
                     </div>
 
-                    <button 
-                      type="submit"
-                      disabled={!isFormValid}
-                      className="w-full bg-gradient-to-r from-[#00B5B5] to-[#008F8F] hover:from-[#009A9A] hover:to-[#007C7C] text-white font-black py-4 px-6 rounded-2xl transition-all shadow-xl shadow-[#00B5B5]/20 hover:shadow-2xl hover:shadow-[#00B5B5]/25 disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:opacity-75 flex items-center justify-center gap-2"
-                    >
-                      <Send size={16} />
-                      Send Message
-                    </button>
-                  </form>
-                </>
-              )}
+                     <button 
+                       type="submit"
+                       disabled={!isFormValid || isSubmitting}
+                       className="btn-primary-custom w-full disabled:opacity-50 flex items-center justify-center"
+                     >
+                       {isSubmitting ? (
+                         <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                         </svg>
+                       ) : (
+                         <Send size={16} className="mr-2" />
+                       )}
+                       Submit Request
+                     </button>
+                   </form>
+              </>
             </div>
 
-            {/* Right Column: Contact info & Locations */}
+            {/* SUPPORT CHANNELS & OFFICE INFORMATION */}
             <div className="space-y-10">
-              
-              {/* Direct Lines */}
+              {/* SUPPORT CHANNELS */}
               <div className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100">
-                <h3 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2.5">
-                  <Mail className="w-5 h-5 text-[#00B5B5]" />
-                  Direct Channels
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Support Desk</p>
-                    <a href="mailto:hello@bookmydoctor.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">hello@bookmydoctor.com</a>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Sales & Partnerships</p>
-                    <a href="mailto:sales@bookmydoctor.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">sales@bookmydoctor.com</a>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Emergency Helpline</p>
-                    <a href="tel:+18003628670" className="text-sm font-extrabold text-slate-800 hover:text-[#00B5B5]">+1 (800) DOCTOR-0</a>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Average Response Time</p>
-                    <p className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <Clock size={14} className="text-slate-400" />
-                      &lt; 12 Hours
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Global Support Hubs */}
-              <div className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100">
-                <h3 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2.5">
-                  <Globe className="w-5 h-5 text-[#00B5B5]" />
-                  Global Presence
-                </h3>
+                {/* Major section headings must use H2 */}
+                <h2 className="font-h2 text-slate-900 mb-6">Support Channels</h2>
                 <div className="space-y-6">
-                  <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 font-bold text-xs border border-slate-100">US</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="font-extrabold text-slate-850 text-sm">North America Headquarters</h4>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5">123 Healthcare Way, Medical District, New York, NY 10001</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <Mail size={12} /> General Support
+                      </p>
+                      <a href="mailto:support@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">support@bookmydoctor.in</a>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <Mail size={12} /> Appointment Support
+                      </p>
+                      <a href="mailto:appointments@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">appointments@bookmydoctor.in</a>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <Mail size={12} /> Doctor & Clinic Onboarding
+                      </p>
+                      <a href="mailto:partners@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">partners@bookmydoctor.in</a>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <Phone size={12} /> Phone Support
+                      </p>
+                      <span className="text-sm font-extrabold text-slate-800">+91 98765 43210</span>
                     </div>
                   </div>
-                  <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 font-bold text-xs border border-slate-100">EU</div>
-                    <div>
-                      <h4 className="font-extrabold text-slate-850 text-sm">Europe Operations Hub</h4>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5">45 Clinical Court, Finsbury, London, EC2A 1PX</p>
+
+                  <div className="pt-6 border-t border-slate-200/50 flex gap-4 items-center">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0">
+                      <Clock size={18} />
                     </div>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 font-bold text-xs border border-slate-100">AS</div>
                     <div>
-                      <h4 className="font-extrabold text-slate-850 text-sm">Asia-Pacific Center</h4>
-                      <p className="text-xs text-slate-400 font-semibold mt-0.5">88 Biopolis Drive, Synapse Building, Singapore 138648</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Support Hours</p>
+                      <p className="text-sm font-extrabold text-slate-800">Monday - Saturday — 9:00 AM – 6:00 PM IST</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Emergency Advisory */}
-              <div className="bg-red-50/50 p-8 rounded-[2.5rem] border border-red-100/50 flex gap-4 items-start relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-100/20 rounded-full blur-2xl pointer-events-none" />
-                <div className="w-10 h-10 rounded-xl bg-red-100/40 text-red-650 flex items-center justify-center shrink-0">
-                  <ShieldAlert size={22} className="text-red-500" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-red-700 uppercase tracking-wider mb-1">Emergency Warning</h4>
-                  <p className="text-xs text-red-600/80 font-semibold leading-relaxed">
-                    If you are experiencing a life-threatening medical situation or extreme health emergency, please immediately contact 911 (or your local emergency response line) or proceed to the closest hospital emergency department.
-                  </p>
+              {/* OFFICE INFORMATION */}
+              <div className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100">
+                {/* Major section headings must use H2 */}
+                <h2 className="font-h2 text-slate-900 mb-2">Office Information</h2>
+                <p className="font-body-secondary text-slate-400 mb-6">For business enquiries and administrative communication.</p>
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-start">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                      <MapPin size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-sm">Address</h4>
+                      <p className="text-xs text-slate-500 font-semibold mt-0.5">BookMyDoctor, Sector 62, Noida, Uttar Pradesh, India</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                      <Mail size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-sm">Email</h4>
+                      <a href="mailto:support@bookmydoctor.in" className="text-xs text-[#00B5B5] font-semibold mt-0.5 hover:underline">support@bookmydoctor.in</a>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                      <Phone size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-sm">Phone</h4>
+                      <p className="text-xs text-slate-500 font-semibold mt-0.5">+91 98765 43210</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-
             </div>
 
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
+
+      {/* SECTION 4: COMMON REQUESTS */}
+      <Section className="bg-slate-50/50 border-y border-slate-100">
+        <Container className="max-w-6xl">
+          <SectionHeader 
+            title="Healthcare Services"
+            description="We offer quick support routes for clinical onboarding, client assistance, and booking inquiries."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Appointment Booking",
+                desc: "Need help booking or managing an appointment?",
+                icon: Calendar
+              },
+              {
+                title: "Doctor Registration",
+                desc: "Want to join BookMyDoctor as a healthcare professional?",
+                icon: UserCheck
+              },
+              {
+                title: "Clinic Registration",
+                desc: "Register your clinic and connect with more patients.",
+                icon: Building2
+              },
+              {
+                title: "Technical Support",
+                desc: "Experiencing a website or account issue?",
+                icon: Settings
+              },
+              {
+                title: "Partnership Enquiries",
+                desc: "Interested in working with BookMyDoctor?",
+                icon: Users
+              },
+              {
+                title: "General Questions",
+                desc: "Need information about our services?",
+                icon: HelpCircle
+              }
+            ].map((request, i) => {
+              const Icon = request.icon;
+              return (
+                <Card key={i} className="flex-row gap-5 items-start hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    {/* Card Title must use H3 */}
+                    <h3 className="font-h3 text-slate-900 mb-2">{request.title}</h3>
+                    {/* Card Descriptions must use body text */}
+                    <p className="font-body-secondary text-slate-400">{request.desc}</p>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </Container>
+      </Section>
+
+      {/* SECTION 5: IMPORTANT NOTICE */}
+      <Section className="bg-white">
+        <Container className="max-w-4xl">
+          <div className="bg-rose-50/50 p-8 rounded-[2.5rem] border border-rose-100/50 flex gap-4 items-start relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-100/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="w-10 h-10 rounded-xl bg-rose-100/40 text-rose-550 flex items-center justify-center shrink-0">
+              <ShieldAlert size={22} className="text-rose-500" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-rose-700 uppercase tracking-wider mb-2">Medical Emergency Notice</h4>
+              <div className="text-xs text-rose-600/90 font-semibold leading-relaxed space-y-2">
+                <p>BookMyDoctor does not provide emergency medical services.</p>
+                <p>If you are experiencing a medical emergency, immediately contact your local emergency services or visit the nearest hospital.</p>
+                <p>Do not use this platform for urgent or life-threatening medical situations.</p>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      {/* SECTION 6: FAQ */}
+      <Section className="bg-slate-50/50 border-t border-slate-100">
+        <Container className="max-w-3xl">
+          <SectionHeader 
+            title="Frequently Asked Questions"
+          />
+
+          <div className="space-y-4">
+            {faqData.map((faq, index) => (
+              <div 
+                key={index} 
+                className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              >
+                <button
+                  className="w-full p-6 text-left flex justify-between items-center font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
+                  onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                >
+                  {/* FAQ Questions must use H3 */}
+                  <h3 className="font-h3 text-slate-900 m-0 p-0 flex-grow text-left">{faq.q}</h3>
+                  <ChevronDown 
+                    size={18} 
+                    className={`text-slate-400 transform transition-transform duration-200 ${openFaqIndex === index ? 'rotate-180 text-[#00B5B5]' : ''}`} 
+                  />
+                </button>
+                {openFaqIndex === index && (
+                  <div className="px-6 pb-6 text-sm text-slate-500 font-semibold leading-relaxed border-t border-slate-50 pt-4">
+                    {/* Answer must use body text */}
+                    <p className="font-body-secondary text-slate-500">{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Container>
+      </Section>
     </div>
   );
 }

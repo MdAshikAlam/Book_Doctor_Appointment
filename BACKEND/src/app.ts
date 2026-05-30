@@ -11,6 +11,7 @@ import logger from './utils/logger';
 import { branchHandler } from './middlewares/branchHandler';
 
 import authRoutes from './routes/auth.routes';
+import contactRoutes from './routes/contact.routes';
 import doctorRoutes from './routes/doctor.routes';
 import clinicRoutes from './routes/clinic.routes';
 import appointmentRoutes from './routes/appointment.routes';
@@ -55,6 +56,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/doctors', doctorRoutes);
 app.use('/api/v1/clinics', clinicRoutes);
 app.use('/api/v1/appointments', appointmentRoutes);

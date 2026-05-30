@@ -1,29 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #0f172a;
+  --primary-color: #00B5B5;
+  --primary-hover: #009A9A;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Outfit', sans-serif !important;
 }
 
-/* Bootstrap Overrides (if any) */
+/* Typography Scale classes to ensure exact consistency */
+h1,
+.font-h1 {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 1024px) {
+
+  h1,
+  .font-h1 {
+    font-size: 56px;
+  }
+}
+
+h2,
+.font-h2 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 1024px) {
+
+  h2,
+  .font-h2 {
+    font-size: 40px;
+  }
+}
+
+h3,
+.font-h3 {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 130%;
+}
+
+@media (min-width: 1024px) {
+
+  h3,
+  .font-h3 {
+    font-size: 28px;
+  }
+}
+
+.font-body-primary {
+  font-size: 18px;
+  line-height: 170%;
+  font-weight: 400;
+  max-width: 700px;
+}
+
+.font-body-secondary {
+  font-size: 16px;
+  line-height: 160%;
+}
+
+.font-metadata {
+  font-size: 14px;
+  line-height: 150%;
+}
+
+/* Section Spacing System */
+.global-section {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+@media (min-width: 1024px) {
+  .global-section {
+    padding-top: 96px;
+    padding-bottom: 96px;
+  }
+}
+
+/* Container Width System */
+.global-container {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Card Spacing System */
+.global-card {
+  padding: 24px;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Buttons System */
+.btn-primary-custom {
+  height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 24px;
+  padding-right: 24px;
+  transition: all 0.2s ease-in-out;
+  border: none;
+}
+
+.btn-primary-custom:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary-custom:active {
+  transform: translateY(0);
+}
+
+.btn-secondary-custom {
+  height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 2px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 24px;
+  padding-right: 24px;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-secondary-custom:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.btn-secondary-custom:active {
+  transform: translateY(0);
+}
+
+/* Bootstrap Overrides */
 .btn-primary {
-  background-color: #0d6efd !important;
-  border-color: #0d6efd !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
 }
 
 .bg-healthcare-blue {

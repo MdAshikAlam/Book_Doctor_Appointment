@@ -43,7 +43,7 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
   return (
     <div className={`w-full max-w-md ${isModal ? '' : 'mx-auto my-12 p-6 md:p-8 bg-white rounded-[2.5rem] shadow-2xl border border-gray-100'}`}>
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Sign In</h2>
+        <h2 className="font-h2 text-slate-900 tracking-tight">Sign In</h2>
         <p className="text-gray-500 mt-2 font-medium">Please Login To Continue</p>
       </div>
 

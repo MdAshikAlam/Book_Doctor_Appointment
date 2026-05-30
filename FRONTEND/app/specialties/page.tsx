@@ -45,6 +45,10 @@ import Link from 'next/link';
 import { useLocation } from '@/context/LocationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAvatarFallback, resolveImageUrl } from '@/lib/resolveImageUrl';
+import Section from '@/components/ui/Section';
+import Container from '@/components/ui/Container';
+import SectionHeader from '@/components/ui/SectionHeader';
+import Card from '@/components/ui/Card';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
@@ -548,23 +552,21 @@ function SpecialtiesList() {
     <div className="min-h-screen bg-slate-50/50">
 
       {/* SECTION 1: HERO SECTION */}
-      <section className="relative overflow-hidden bg-[#F0FDFD] pt-32 pb-16 border-b border-[#00B5B5]/10">
+      <section className="relative overflow-hidden bg-[#F0FDFD] pt-20 pb-20 border-b border-[#00B5B5]/10">
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
         }} />
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-
-
+        <Container className="relative z-10 text-center">
+          <div className="max-w-4xl mx-auto">
             {/* Main Title */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
+            <h1 className="font-h1 text-slate-900 mb-6">
               Find Specialists <span className="text-[#00B5B5]">Near You</span>
             </h1>
 
             {/* Sub Heading */}
-            <p className="text-md sm:text-lg text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed font-medium">
+            <p className="font-body-primary text-slate-500 mx-auto mb-8">
               Explore verified doctors across multiple specialties, compare experience, consultation fees, and available appointment slots, then book instantly.
             </p>
 
@@ -720,23 +722,23 @@ function SpecialtiesList() {
             </div>
 
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* SECTION 2: POPULAR SPECIALTIES */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Browse Medical Specialties</h2>
-            <p className="text-slate-500 font-medium">Choose a specialty to discover experienced doctors near your location.</p>
-          </div>
+      <Section className="bg-white">
+        <Container>
+          <SectionHeader 
+            title="Popular Specialties"
+            description="Choose a specialty to discover experienced doctors near your location."
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {specialtiesList.map((specialty, index) => {
               const Icon = specialty.icon;
               const isActive = selectedSpecialty === specialty.name;
               return (
-                <div
+                <Card
                   key={index}
                   onClick={() => {
                     setSelectedSpecialty(specialty.name);
@@ -791,16 +793,16 @@ function SpecialtiesList() {
                   {/* Glowing Bottom Border Accent */}
                   <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00B5B5]/60 to-transparent transition-transform duration-500 scale-x-0 ${isActive ? 'scale-x-100' : 'group-hover:scale-x-100'
                     }`} />
-                </div>
+                </Card>
               );
             })}
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
 
       {/* MAIN BROWSER GRID: SECTION 3 (OVERVIEW), 4 (FILTERS) & 5 (DOCTORS) */}
-      <section id="doctor-listings" className="py-16 border-t border-slate-200/50 scroll-mt-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <Section id="doctor-listings" className="border-t border-slate-200/50 scroll-mt-20">
+        <Container>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
@@ -975,7 +977,7 @@ function SpecialtiesList() {
 
               {/* SECTION 3: SPECIALTY OVERVIEW */}
               <div className="bg-[#F6FCFC] border border-[#00B5B5]/15 rounded-[2.5rem] p-8">
-                <h2 className="text-2xl font-black text-slate-900 mb-2">
+                <h2 className="font-h2 text-slate-900 mb-2">
                   {selectedSpecialty} Specialists Near You
                 </h2>
                 <p className="text-slate-500 font-medium mb-6 leading-relaxed">
@@ -1192,19 +1194,18 @@ function SpecialtiesList() {
                   </button>
                 </div>
               )}
-
             </div>
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
 
       {/* SECTION 7: WHY CHOOSE OUR SPECIALISTS */}
-      <section className="py-16 bg-white border-t border-slate-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Why Patients Trust BookMyDoctor</h2>
-            <p className="text-slate-500 font-medium">Providing accessible, transparent, and direct in-clinic appointment scheduling.</p>
-          </div>
+      <Section className="bg-white border-t border-slate-100">
+        <Container>
+          <SectionHeader 
+            title="Why Choose BookMyDoctor"
+            description="Providing accessible, transparent, and direct in-clinic appointment scheduling."
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {[
@@ -1214,29 +1215,27 @@ function SpecialtiesList() {
               { title: 'Easy Booking', desc: 'Book appointments within minutes.', icon: <Calendar className="w-6 h-6 text-[#00B5B5]" /> },
               { title: 'Nearby Access', desc: 'Find doctors closest to your location.', icon: <MapPin className="w-6 h-6 text-[#00B5B5]" /> }
             ].map((card, i) => (
-              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col justify-between">
+              <Card key={i} className="flex flex-col justify-between">
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm mb-4">
                     {card.icon}
                   </div>
-                  <h4 className="text-sm font-black text-slate-900 mb-2">{card.title}</h4>
-                  <p className="text-slate-500 text-xs font-medium leading-relaxed">{card.desc}</p>
+                  <h3 className="font-h3 text-slate-900 mb-2">{card.title}</h3>
+                  <p className="font-body-secondary text-slate-500">{card.desc}</p>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
 
       {/* SECTION 8: HEALTH CONDITIONS SECTION */}
-      <section className="py-16 bg-[#F6FCFC] border-t border-slate-200/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">
-              Common Conditions Treated by {selectedSpecialty || 'ENT'} Specialists
-            </h2>
-            <p className="text-slate-500 font-medium">Find expert diagnosis and customized treatments for standard health issues.</p>
-          </div>
+      <Section className="bg-[#F6FCFC] border-t border-slate-200/30">
+        <Container>
+          <SectionHeader 
+            title={`Healthcare Services`}
+            description={`Find expert diagnosis and customized treatments for standard health issues.`}
+          />
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {getConditionsBySpecialty(selectedSpecialty).map((condition, index) => (
@@ -1245,50 +1244,45 @@ function SpecialtiesList() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
 
       {/* SECTION 9: FAQ SECTION */}
-      <section className="py-16 bg-white border-t border-slate-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Frequently Asked Questions</h2>
-            <p className="text-slate-500 font-medium">Find answers to common questions about specialists and scheduling.</p>
-          </div>
+      <Section className="bg-white border-t border-slate-100">
+        <Container className="max-w-3xl">
+          <SectionHeader 
+            title="Frequently Asked Questions"
+          />
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+                className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                  className="w-full flex justify-between items-center p-5 text-left font-black text-slate-900 text-sm bg-slate-50/50 hover:bg-slate-50 transition-all outline-none"
+                  className="w-full flex justify-between items-center p-6 text-left font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
                 >
-                  {idx === 1 ? (
-                    <h3 className="text-sm font-black text-slate-900 m-0 p-0 flex-grow text-left">{faq.q}</h3>
-                  ) : (
-                    <span>{faq.q}</span>
-                  )}
+                  <h3 className="font-h3 text-slate-900 m-0 p-0 flex-grow text-left">{faq.q}</h3>
                   {expandedFaq === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
                 {expandedFaq === idx && (
-                  <div className="p-5 bg-white border-t border-slate-100 text-slate-500 text-xs font-semibold leading-relaxed">
-                    {faq.a}
+                  <div className="px-6 pb-6 text-sm text-slate-500 font-semibold leading-relaxed border-t border-slate-50 pt-4">
+                    <p className="font-body-secondary text-slate-500">{faq.a}</p>
                   </div>
                 )}
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Container>
+      </Section>
 
       {/* SECTION 10: CTA SECTION */}
-      <section className="py-16 bg-[#F0FDFD] border-t border-[#00B5B5]/10 text-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Ready to Book Your Appointment?</h2>
-          <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+      <Section className="bg-[#F0FDFD] border-t border-[#00B5B5]/10 text-center">
+        <Container className="max-w-2xl">
+          <h2 className="font-h2 text-slate-900 mb-4">Ready to Book Your Appointment?</h2>
+          <p className="font-body-primary text-slate-500 mx-auto mb-8">
             Compare specialists, view available slots, and secure your appointment in minutes.
           </p>
 
@@ -1300,20 +1294,19 @@ function SpecialtiesList() {
                   resultsSection.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="w-full sm:w-auto h-12 px-8 rounded-xl bg-[#00B5B5] text-white font-black hover:bg-[#009A9A] transition-all shadow-md shadow-[#00B5B5]/15"
+              className="btn-primary-custom w-full sm:w-auto"
             >
               Book Appointment
             </button>
             <button
               onClick={() => setSelectedSpecialty('')}
-              className="w-full sm:w-auto h-12 px-8 rounded-xl bg-white border border-slate-200 text-slate-950 font-black hover:bg-slate-50 transition-all"
+              className="btn-secondary-custom w-full sm:w-auto"
             >
               Browse All Specialties
             </button>
           </div>
-        </div>
-      </section>
-
+        </Container>
+      </Section>
     </div>
   );
 }

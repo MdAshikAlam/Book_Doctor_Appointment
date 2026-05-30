@@ -1,4 +1,7 @@
+import React from 'react';
 import { ArrowRight, Info } from 'lucide-react';
+import Section from './ui/Section';
+import Container from './ui/Container';
 
 interface CTAProps {
   title?: string;
@@ -14,11 +17,11 @@ const CTA = ({
   secondaryButtonText = "Browse Specialties"
 }: CTAProps) => {
   return (
-    <section className="py-16 bg-white relative overflow-hidden">
+    <Section className="bg-white relative overflow-hidden">
       {/* Soothing background decorative glows */}
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="container mx-auto px-6 lg:px-12 relative z-10">
+      <Container className="relative z-10">
         <div className="bg-gradient-to-tr from-[#00A5A5] to-[#008F8F] rounded-[3rem] p-8 md:p-20 relative overflow-hidden shadow-2xl shadow-[#00B5B5]/25 border border-white/10">
           
           {/* Calm Ambient Lighting inside Card */}
@@ -28,26 +31,26 @@ const CTA = ({
           <div className="relative z-10 max-w-4xl mx-auto text-center">
             {/* Left Content Column */}
             <div className="text-center">
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight tracking-tight">
+              <h2 className="font-h2 text-white mb-6">
                 {title}
               </h2>
-              <p className="text-white/80 text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
+              <p className="text-white/80 font-body-primary mb-10 max-w-2xl mx-auto">
                 {subtitle}
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                 <button 
                   onClick={() => window.location.href = '/specialties'}
-                  className="w-full sm:w-auto bg-white text-[#00A5A5] hover:bg-[#F0FDFD] px-10 h-14 rounded-2xl font-black text-sm flex items-center justify-center transition-all duration-300 shadow-lg shadow-black/10 group"
+                  className="btn-primary-custom w-full sm:w-auto !bg-white !text-[#00A5A5] hover:!bg-[#F0FDFD]"
                 >
                   {primaryButtonText} 
                   <ArrowRight size={16} className="ml-2 transform group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button 
                   onClick={() => window.location.href = '/specialties'}
-                  className="w-full sm:w-auto bg-white/10 backdrop-blur-md border border-white/20 hover:border-white text-white px-8 h-14 rounded-2xl font-black text-sm flex items-center justify-center transition-all duration-300 gap-2"
+                  className="btn-secondary-custom w-full sm:w-auto !bg-white/10 !border-white/20 hover:!border-white !text-white backdrop-blur-md"
                 >
-                  <Info size={16} /> 
+                  <Info size={16} className="mr-2" /> 
                   {secondaryButtonText}
                 </button>
               </div>
@@ -59,8 +62,8 @@ const CTA = ({
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 };
 
