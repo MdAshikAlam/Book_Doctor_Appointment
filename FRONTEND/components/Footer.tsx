@@ -3,19 +3,19 @@ import Image from 'next/image';
 import { Heart, Mail, Phone, MapPin } from 'lucide-react';
 
 const FacebookIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
 );
 
 const TwitterIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" /></svg>
 );
 
 const InstagramIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
 );
 
 const LinkedinIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></svg>
 );
 
 const Footer = () => {
@@ -23,20 +23,21 @@ const Footer = () => {
     <footer className="bg-gray-50 border-t border-gray-200 pt-16 pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
-          
+
           {/* Brand Info */}
           <div className="space-y-6 lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2">
-              <Image 
-                src="/logoAndIcon/logo.png" 
-                alt="BookMyDoctor" 
-                width={350} 
-                height={100} 
+              <Image
+                src="/logoAndIcon/logo.png"
+                alt="BookMyDoctor"
+                width={350}
+                height={100}
                 className="h-16 md:h-20 w-auto object-contain"
               />
             </Link>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-xs font-semibold">
-              India's trusted clinic-based appointment scheduling platform. Discover top verified healthcare professionals near you instantly.
+            <p className="text-gray-500 text-sm leading-relaxed max-w-sm font-semibold">
+              BookMyDoctor helps patients discover trusted doctors and clinics nearby while making healthcare access simpler, faster, and more transparent.
+              We connect patients with healthcare providers through an easy-to-use appointment booking platform.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-primary transition-colors">
@@ -69,10 +70,10 @@ const Footer = () => {
           <div>
             <h3 className="text-gray-900 font-black text-sm uppercase tracking-wider mb-6">Partners</h3>
             <ul className="space-y-4 font-bold text-sm">
-              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">For Doctors</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">For Clinics</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Clinic Registration</a></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Software Solutions</a></li>
+              <li><a href="/contact" className="text-gray-500 hover:text-primary transition-colors">For Doctors</a></li>
+              <li><a href="/contact" className="text-gray-500 hover:text-primary transition-colors">For Clinics</a></li>
+              <li><a href="/contact" className="text-gray-500 hover:text-primary transition-colors">Clinic Registration</a></li>
+              <li><a href="/contact" className="text-gray-500 hover:text-primary transition-colors">Software Solutions</a></li>
             </ul>
           </div>
 
@@ -82,7 +83,6 @@ const Footer = () => {
             <ul className="space-y-4 font-bold text-sm">
               <li><Link href="/contact" className="text-gray-500 hover:text-primary transition-colors">Contact Support</Link></li>
               <li><Link href="/about" className="text-gray-500 hover:text-primary transition-colors">About BookMyDoctor</Link></li>
-              <li><a href="#" className="text-gray-500 hover:text-primary transition-colors">Frequently Asked Questions</a></li>
               <li className="pt-2 border-t border-gray-200/60 flex items-center gap-2 text-gray-500 text-xs font-semibold">
                 <Mail size={14} className="text-gray-400" />
                 <a href="mailto:support@bookmydoctor.in" className="hover:underline">support@bookmydoctor.in</a>

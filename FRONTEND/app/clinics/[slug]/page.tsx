@@ -179,7 +179,7 @@ export default function ClinicDetailsPage() {
         <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
           <Hospital size={40} />
         </div>
-        <h1 className="text-3xl font-black text-gray-900 mb-4">Clinic Not Found</h1>
+        <h1 className="font-h1 text-slate-900 mb-4">Clinic Not Found</h1>
         <p className="text-gray-500 mb-8 max-w-md mx-auto">{error || "We couldn't find the medical facility you're looking for."}</p>
         <Link href="/" className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/25 hover:scale-105 transition-all">
           Return Home
@@ -220,7 +220,7 @@ export default function ClinicDetailsPage() {
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl md:text-5xl font-black mb-2">{clinic.clinicName}</h1>
+              <h1 className="font-h1 text-slate-900 mb-2">{clinic.clinicName}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 font-bold">
                 <p className="flex items-center gap-2">
                   <MapPin size={18} className="text-emerald-400" />
@@ -260,20 +260,20 @@ export default function ClinicDetailsPage() {
             {/* Left Column: About & Services */}
             <div className="lg:col-span-2 p-8 md:p-12 border-r border-gray-50 space-y-12">
               <section>
-                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <h2 className="font-h2 text-gray-900 mb-6 flex items-center gap-3">
                   <div className="w-2 h-8 bg-primary rounded-full"></div>
                   About the Facility
-                </h3>
+                </h2>
                 <p className="text-gray-600 leading-loose text-lg font-medium">
                   {clinic.description || `Welcome to ${clinic.name}, a premier ${clinic.clinicType} located in ${clinic.district}. Our facility is dedicated to providing high-quality medical services with a patient-centric approach.`}
                 </p>
               </section>
 
               <section>
-                <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                <h2 className="font-h2 text-gray-900 mb-8 flex items-center gap-3">
                   <div className="w-2 h-8 bg-emerald-500 rounded-full"></div>
                   Available Services
-                </h3>
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {clinic.services?.map((service, index) => (
                     <div key={index} className="flex items-center gap-4 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group">
@@ -287,10 +287,10 @@ export default function ClinicDetailsPage() {
               </section>
 
               <section>
-                <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                <h2 className="font-h2 text-gray-900 mb-8 flex items-center gap-3">
                   <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
                   Medical Staff
-                </h3>
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {clinic.doctors?.map((doc) => (
                       <Link href={`/doctors/${doc.slug || doc._id}`} key={doc._id} className="flex items-center gap-4 p-4 border border-gray-100 rounded-3xl hover:border-primary hover:shadow-lg transition-all group">
@@ -393,10 +393,10 @@ export default function ClinicDetailsPage() {
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 md:p-12">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
               <div>
-                <h3 className="text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
+                <h2 className="font-h2 text-gray-900 mb-2 flex items-center gap-3">
                   <div className="w-2 h-8 bg-yellow-400 rounded-full"></div>
                   Patient Reviews
-                </h3>
+                </h2>
                 <p className="text-gray-500 font-medium">Read what our patients have to say about our medical services.</p>
               </div>
 

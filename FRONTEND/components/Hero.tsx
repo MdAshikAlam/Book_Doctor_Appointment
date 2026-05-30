@@ -13,18 +13,18 @@ const Hero = () => {
       <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#00B5B5]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
 
       <div className="container mx-auto px-6 lg:px-12 relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-16">
           {/* Left Content */}
           <div className="max-w-2xl text-center lg:text-left">
             {/* Heading */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6 tracking-tight">
+            <h1 className="font-h1 text-slate-900 mb-6">
               Find Trusted <br />
               <span className="text-[#00B5B5]">Doctors & Clinics</span> <br />
               Near You
             </h1>
 
             {/* Sub Heading */}
-            <p className="text-md sm:text-lg text-slate-500 mb-8 max-w-xl leading-relaxed font-medium">
+            <p className="font-body-primary text-slate-500 mb-8 max-w-xl">
               Search verified doctors, specialists, and healthcare clinics in your area. Compare experience, consultation fees, patient ratings, and available appointment slots before booking.
             </p>
 
@@ -51,21 +51,21 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-12">
               <button 
                 onClick={() => window.location.href = '/specialties'}
-                className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#00B5B5] text-white font-black hover:bg-[#009A9A] transition-all shadow-xl shadow-[#00B5B5]/20 flex items-center justify-center gap-2"
+                className="btn-primary-custom w-full sm:w-auto"
               >
                 <span>Find Doctors Near Me</span>
-                <ArrowRight size={18} />
+                <ArrowRight size={18} className="ml-2" />
               </button>
               <button 
                 onClick={() => window.location.href = '/specialties'}
-                className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-white text-slate-900 font-black border-2 border-slate-100 hover:border-[#00B5B5]/30 hover:bg-slate-50 transition-all flex items-center justify-center"
+                className="btn-secondary-custom w-full sm:w-auto"
               >
                 <span>Browse Specialties</span>
               </button>
             </div>
 
             {/* Trust Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-slate-200/50 max-w-xl mx-auto lg:mx-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-slate-200/50 max-w-xl mx-auto lg:mx-0">
               {[
                 { value: '2,000+', label: 'Verified Doctors' },
                 { value: '500+', label: 'Clinics' },
@@ -84,7 +84,7 @@ const Hero = () => {
           </div>
 
           {/* Right Content - Visuals */}
-          <div className="relative w-full lg:w-1/2">
+          <div className="relative w-full lg:w-1/2 lg:pt-4">
             <div className="relative z-10 w-full max-w-[500px] mx-auto lg:ml-auto">
               {/* Main Doctor Image Container */}
               <div className="relative rounded-[3rem] overflow-hidden shadow-2xl bg-white p-2">

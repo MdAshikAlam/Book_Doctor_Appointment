@@ -55,7 +55,7 @@ export default function RegisterForm({ isModal = false, onClose }: { isModal?: b
   return (
     <div className={`w-full max-w-lg ${isModal ? '' : 'mx-auto p-6 md:p-8 bg-white rounded-[2.5rem] shadow-2xl border border-gray-100'}`}>
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sign Up</h2>
+        <h2 className="font-h2 text-slate-900 tracking-tight">Sign Up</h2>
         <p className="text-gray-500 mt-2 font-medium">Please Sign Up To Continue</p>
       </div>
 

@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
+  Mail, 
   Users, 
   UserRound, 
   CalendarCheck, 
@@ -53,6 +54,7 @@ const superAdminSections = [
       { icon: Flag, label: 'Revenue Reports', href: '/dashboard/reports' },
       { icon: History, label: 'Activity Logs', href: '/dashboard/logs' },
       { icon: Settings, label: 'System Settings', href: '/dashboard/settings' },
+      { icon: Mail, label: 'Contact Submissions', href: '/dashboard/contacts', category: 'contact' },
     ]
   }
 ];
@@ -237,7 +239,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
           </button>
         )}
       </div>
-
       {/* Navigation Links */}
       <nav className={cn("flex-1 overflow-y-auto p-4 custom-scrollbar", isCollapsed && "pt-6")}>
         {user?.role === 'super_admin' ? (

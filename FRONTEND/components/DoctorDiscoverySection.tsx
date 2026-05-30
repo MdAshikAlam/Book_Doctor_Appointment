@@ -28,6 +28,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/context/LocationContext';
 import DoctorCard from './DoctorCard';
+import Section from './ui/Section';
+import Container from './ui/Container';
+import SectionHeader from './ui/SectionHeader';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
@@ -388,23 +391,19 @@ export default function DoctorDiscoverySection() {
     selectedDistrict !== '';
 
   return (
-    <section className="py-16 bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative overflow-hidden" id="doctor-discovery">
+    <Section className="bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative overflow-hidden" id="doctor-discovery">
       
       {/* Decorative Orbs */}
       <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <Container>
         
         {/* Title Block */}
-        <div className="text-center max-w-3xl mx-auto mb-8">
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">
-            Trusted Doctors Near You
-          </h2>
-          <p className="text-slate-500 text-sm sm:text-base font-bold">
-            Explore verified doctors available across multiple specialties and healthcare facilities.
-          </p>
-        </div>
+        <SectionHeader 
+          title="Trusted Doctors Near You"
+          description="Explore verified doctors available across multiple specialties and healthcare facilities."
+        />
 
         {/* Search, Location, Radius Bar */}
         <div className="bg-white rounded-3xl border border-slate-100 p-4 md:p-6 shadow-xl shadow-slate-100/70 mb-8 relative z-50">
@@ -934,7 +933,7 @@ export default function DoctorDiscoverySection() {
           </div>
         )}
 
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 }

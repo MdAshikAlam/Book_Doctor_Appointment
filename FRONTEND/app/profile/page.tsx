@@ -13,7 +13,7 @@ export default function Profile() {
   return (
     <div className="container mx-auto px-4 py-20">
       <div className="max-w-3xl mx-auto bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-xl">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Edit Profile</h1>
+        <h1 className="font-h1 text-slate-900 mb-8">Edit Profile</h1>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div>
