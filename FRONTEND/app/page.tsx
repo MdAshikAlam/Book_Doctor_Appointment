@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react';
+import Link from 'next/link';
 import { 
   ArrowRight, 
   MapPin, 
@@ -106,13 +107,13 @@ export default function Home() {
               </p>
             </div>
             
-            <button 
-              onClick={() => window.location.href = '/specialties'}
+            <Link 
+              href="/specialties"
               className="btn-secondary-custom shrink-0 group flex items-center gap-3"
             >
               View All Specialties
               <ArrowRight size={18} className="transform group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

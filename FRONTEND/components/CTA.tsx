@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Info } from 'lucide-react';
+import Link from 'next/link';
 import Section from './ui/Section';
 import Container from './ui/Container';
 
@@ -23,7 +24,7 @@ const CTA = ({
 
       <Container className="relative z-10">
         <div className="bg-gradient-to-tr from-[#00A5A5] to-[#008F8F] rounded-[3rem] p-8 md:p-20 relative overflow-hidden shadow-2xl shadow-[#00B5B5]/25 border border-white/10">
-          
+
           {/* Calm Ambient Lighting inside Card */}
           <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[450px] h-[450px] bg-white/15 rounded-full blur-3xl animate-pulse duration-[6000ms]" />
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-black/5 rounded-full blur-2xl" />
@@ -37,22 +38,22 @@ const CTA = ({
               <p className="text-white/80 font-body-primary mb-10 max-w-2xl mx-auto">
                 {subtitle}
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <button 
-                  onClick={() => window.location.href = '/specialties'}
-                  className="btn-primary-custom w-full sm:w-auto !bg-white !text-[#00A5A5] hover:!bg-[#F0FDFD]"
+                <Link
+                  href="/specialties#doctor-listings"
+                  className="btn-primary-custom w-full sm:w-auto"
                 >
-                  {primaryButtonText} 
+                  {primaryButtonText}
                   <ArrowRight size={16} className="ml-2 transform group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button 
-                  onClick={() => window.location.href = '/specialties'}
-                  className="btn-secondary-custom w-full sm:w-auto !bg-white/10 !border-white/20 hover:!border-white !text-white backdrop-blur-md"
+                </Link>
+                <Link
+                  href="/specialties"
+                  className="btn-secondary-custom w-full sm:w-auto"
                 >
-                  <Info size={16} className="mr-2" /> 
+                  <Info size={16} className="mr-2" />
                   {secondaryButtonText}
-                </button>
+                </Link>
               </div>
 
               {/* Trust Message */}

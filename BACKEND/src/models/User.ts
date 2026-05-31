@@ -11,6 +11,7 @@ export enum UserRole {
 
 export interface IUser extends Document {
   name: string;
+  fullName?: string;
   email: string;
   password?: string;
   role: UserRole;
@@ -19,6 +20,12 @@ export interface IUser extends Document {
   dob?: Date;
   avatar?: string;
   isEmailVerified: boolean;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  passwordSet?: boolean;
+  authProvider?: 'local' | 'google';
+  googleId?: string;
+  profilePicture?: string;
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
@@ -53,6 +60,7 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
+    fullName: { type: String, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, select: false },
     role: { 
@@ -65,6 +73,12 @@ const userSchema = new Schema<IUser>(
     dob: { type: Date },
     avatar: { type: String },
     isEmailVerified: { type: Boolean, default: false },
+    emailVerified: { type: Boolean, default: false },
+    phoneVerified: { type: Boolean, default: false },
+    passwordSet: { type: Boolean, default: true },
+    authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+    googleId: { type: String },
+    profilePicture: { type: String },
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },

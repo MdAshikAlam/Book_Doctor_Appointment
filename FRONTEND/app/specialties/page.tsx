@@ -704,23 +704,6 @@ function SpecialtiesList() {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-slate-200/50 max-w-3xl mx-auto text-left">
-              {[
-                { value: '2,000+', label: 'Verified Doctors', icon: '👨‍⚕️' },
-                { value: '500+', label: 'Clinics', icon: '🏥' },
-                { value: '50,000+', label: 'Appointments Booked', icon: '📅' },
-                { value: '4.8', label: 'Average Patient Rating', icon: '⭐' }
-              ].map((stat, i) => (
-                <div key={i} className="bg-white/80 backdrop-blur p-4 rounded-xl border border-slate-100">
-                  <div className="text-xl mb-1">{stat.icon}</div>
-                  <p className="text-lg font-black text-slate-900 leading-tight mb-0.5">{stat.value}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
           </div>
         </Container>
       </section>
@@ -1153,13 +1136,13 @@ function SpecialtiesList() {
                         <div className="flex gap-2.5 w-full sm:w-auto">
                           <Link
                             href={`/doctors/${doctor.slug || doctor._id}`}
-                            className="flex-1 sm:flex-initial text-center border border-slate-200 hover:border-slate-400 text-slate-700 hover:bg-slate-50 h-10 px-4 flex items-center justify-center rounded-xl font-bold text-xs transition-all"
+                            className="btn-secondary-custom flex-1 sm:flex-initial !h-10 px-4 text-center font-bold text-xs"
                           >
                             View Profile
                           </Link>
                           <Link
-                            href={`/bookings?doctorId=${doctor._id}`}
-                            className="flex-[1.5] sm:flex-initial text-center bg-[#00B5B5] hover:bg-[#009A9A] text-white h-10 px-5 flex items-center justify-center rounded-xl font-black text-xs transition-all shadow-md shadow-[#00B5B5]/15"
+                            href={`/appointments?doctorId=${doctor._id}`}
+                            className="btn-primary-custom flex-[1.5] sm:flex-initial !h-10 px-5 text-center font-black text-xs"
                           >
                             Book Appointment
                           </Link>

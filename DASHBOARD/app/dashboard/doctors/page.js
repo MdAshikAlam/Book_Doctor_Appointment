@@ -31,7 +31,7 @@ import {
   PauseCircle,
   PlayCircle
 } from 'lucide-react';
-import { usersApi, doctorsApi, utilityApi, clinicsApi } from '@/lib/api';
+import { usersApi, doctorsApi, utilityApi, clinicsApi, authApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/BranchContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
@@ -112,6 +112,108 @@ export default function DoctorsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
+  // OTP Verification States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState(Array(6).fill(''));
+  const [otpError, setOtpError] = useState(null);
+  const [otpSuccess, setOtpSuccess] = useState(null);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [otpTimer, setOtpTimer] = useState(300);
+
+  const otpRefs = React.useRef([]);
+
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  useEffect(() => {
+    let timer;
+    if (otpSent && otpTimer > 0 && !emailVerified) {
+      timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpSent, otpTimer, emailVerified]);
+
+  const handleSendOTP = async () => {
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      setOtpSending(true);
+      setOtpError(null);
+
+      const res = await authApi.sendOtp(formData.email);
+
+      if (res.status === 'success') {
+        setOtpSent(true);
+        setCooldown(30);
+        setOtpTimer(300);
+        setOtpSuccess('Verification code sent to email!');
+        setTimeout(() => setOtpSuccess(null), 4000);
+      } else {
+        setOtpError(res.message || 'Failed to send verification code.');
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Failed to connect to authentication server.');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    const fullOtp = otpCode.join('');
+    if (fullOtp.length < 6) {
+      setOtpError('Please enter all 6 digits of the OTP.');
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      setOtpError(null);
+      setOtpSuccess(null);
+
+      const res = await authApi.verifyOtp(formData.email, fullOtp, formData.name);
+
+      if (res.status === 'success') {
+        setEmailVerified(true);
+        setOtpSent(false);
+        setOtpSuccess('Email verified successfully!');
+      } else {
+        setOtpError(res.message || 'Verification failed. Incorrect OTP.');
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Verification failed. Connection error.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleOtpChange = (value, idx) => {
+    if (isNaN(Number(value))) return;
+    const newOtp = [...otpCode];
+    newOtp[idx] = value;
+    setOtpCode(newOtp);
+
+    // Auto-focus next input
+    if (value !== '' && idx < 5) {
+      otpRefs.current[idx + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, idx) => {
+    if (e.key === 'Backspace' && otpCode[idx] === '' && idx > 0) {
+      otpRefs.current[idx - 1]?.focus();
+    }
+  };
 
   const [isFetchingStates, setIsFetchingStates] = useState(false);
   const [isFetchingDistricts, setIsFetchingDistricts] = useState(false);
@@ -275,6 +377,8 @@ export default function DoctorsPage() {
     }
     setSelectedFile(null);
     setPreviewUrl('');
+    setEmailVerified(false);
+    setOtpSent(false);
     setIsModalOpen(true);
   };
 
@@ -345,6 +449,7 @@ export default function DoctorsPage() {
     });
     setSelectedFile(null);
     setPreviewUrl(doctor.user?.avatar || '');
+    setEmailVerified(true);
     setIsModalOpen(true);
   };
 
@@ -364,6 +469,10 @@ export default function DoctorsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!emailVerified) {
+      alert('Please verify the email address before proceeding.');
+      return;
+    }
     try {
       let currentAvatarUrl = formData.avatar;
       let currentLicenseUrl = formData.licenseDocument;
@@ -763,16 +872,106 @@ export default function DoctorsPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                disabled={emailVerified}
               />
-              <Input
-                label="Email Address"
-                type="email"
-                placeholder="julian@hospital.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
+              <div className="space-y-1.5 w-full">
+                <label className="text-sm font-medium text-slate-700 ml-1">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group flex items-center">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+                    <Mail size={18} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    disabled={emailVerified}
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="julian@hospital.com"
+                    className="flex h-10 w-full rounded-xl border border-border bg-white pl-10 pr-24 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  {!emailVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={otpSending || cooldown > 0 || !formData.email}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
+                    >
+                      {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
+                    </button>
+                  )}
+                </div>
+                {emailVerified && (
+                  <p className="text-[10px] font-black text-emerald-600 ml-1 flex items-center gap-1">
+                    <CheckCircle size={10} /> Email Verified
+                  </p>
+                )}
+              </div>
             </div>
+
+            {/* OTP Verification Block */}
+            {otpSent && !emailVerified && (() => {
+              const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+              };
+
+              return (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 animate-in fade-in duration-200 space-y-4 max-w-md mx-auto">
+                  <div className="text-center">
+                    <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Verify Email OTP</h4>
+                    <p className="text-[10px] text-slate-400 mt-1 font-bold">
+                      Enter 6-digit OTP code sent to doctor's email. {otpTimer > 0 ? `(Expires in ${formatTime(otpTimer)})` : <span className="text-rose-500 font-bold">(Expired)</span>}
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-center gap-1.5">
+                    {otpCode.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => { otpRefs.current[idx] = el; }}
+                        type="text"
+                        maxLength={1}
+                        disabled={otpTimer === 0}
+                        className="w-8 h-10 bg-white border border-slate-200 focus:border-blue-600 rounded-lg text-center font-black text-base outline-none transition-all shadow-sm disabled:opacity-50"
+                        value={digit}
+                        onChange={(e) => handleOtpChange(e.target.value, idx)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                      />
+                    ))}
+                  </div>
+
+                  {otpError && (
+                    <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
+                      <AlertCircle size={12} /> {otpError}
+                    </p>
+                  )}
+                  {otpSuccess && (
+                    <p className="text-[10px] font-black text-emerald-600 text-center flex items-center justify-center gap-1">
+                      <CheckCircle size={12} /> {otpSuccess}
+                    </p>
+                  )}
+                  {otpTimer === 0 && (
+                    <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
+                      <AlertCircle size={12} /> OTP code has expired. Please click "Resend" to get a new code.
+                    </p>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleVerifyOTP}
+                      disabled={verifyingOtp || otpTimer === 0}
+                      className="flex-1 h-9 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
+                    >
+                      {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label={editingDoctor ? "Password (leave blank to keep current)" : "Password"}
@@ -1014,8 +1213,8 @@ export default function DoctorsPage() {
           <div className="flex gap-4 pt-4">
             <Button
               type="submit"
-              disabled={isUploading}
-              className="w-full h-14 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-70"
+              disabled={isUploading || !emailVerified}
+              className="w-full h-14 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-70 disabled:bg-slate-400 disabled:shadow-none"
             >
               {isUploading ? 'Uploading...' : (editingDoctor ? 'Save Core Profile Details' : 'Confirm & Add Doctor')}
             </Button>

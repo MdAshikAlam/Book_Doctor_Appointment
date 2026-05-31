@@ -113,57 +113,135 @@ h3,
   gap: 16px;
 }
 
-/* Buttons System */
-.btn-primary-custom {
+/* ═══════════════════════════════════════
+   Buttons System — Two-Color Capsule Pill
+   ═══════════════════════════════════════ */
+
+/* ─── Primary Button ─────────────────── */
+.btn-primary-custom, .btn-primary {
   height: 52px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  background-color: var(--primary-color);
-  color: #ffffff;
+  min-width: 180px;
+  border: 3px solid var(--primary-color) !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  color: #fff !important;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding-left: 24px;
-  padding-right: 24px;
-  transition: all 0.2s ease-in-out;
-  border: none;
-}
-
-.btn-primary-custom:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-.btn-primary-custom:active {
-  transform: translateY(0);
-}
-
-.btn-secondary-custom {
-  height: 52px;
-  border-radius: 12px;
-  font-size: 16px;
+  gap: 8px;
+  padding: 0 24px;
+  position: relative;
+  overflow: hidden;
+  font-size: 15px;
   font-weight: 600;
-  background-color: #ffffff;
-  color: #0f172a;
-  border: 2px solid #e2e8f0;
+  letter-spacing: 0.3px;
+  z-index: 1;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+.btn-primary-custom::before, .btn-primary::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: var(--primary-color) !important;
+  z-index: -1;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary-custom::after, .btn-primary::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background-color: #6366F1 !important; /* Indigo */
+  z-index: -1;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary-custom:hover::before, .btn-primary:hover::before {
+  width: 50%;
+}
+
+.btn-primary-custom:hover::after, .btn-primary:hover::after {
+  width: 50%;
+}
+
+.btn-primary-custom:hover, .btn-primary:hover {
+  box-shadow: 0 10px 28px rgba(0, 181, 181, 0.25) !important;
+  color: #fff !important;
+}
+
+
+/* ─── Secondary Button ───────────────── */
+.btn-secondary-custom, .btn-secondary {
+  height: 52px;
+  min-width: 180px;
+  border: 3px solid #e2e8f0 !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  color: #fff !important;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding-left: 24px;
-  padding-right: 24px;
-  transition: all 0.2s ease-in-out;
+  gap: 8px;
+  padding: 0 24px;
+  position: relative;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  z-index: 1;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
 }
 
-.btn-secondary-custom:hover {
-  background-color: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
+.btn-secondary-custom::before, .btn-secondary::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #1e293b !important; /* Dark Slate */
+  z-index: -1;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-secondary-custom:active {
-  transform: translateY(0);
+.btn-secondary-custom::after, .btn-secondary::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background-color: #475569 !important; /* Slate */
+  z-index: -1;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.btn-secondary-custom:hover::before, .btn-secondary:hover::before {
+  width: 50%;
+}
+
+.btn-secondary-custom:hover::after, .btn-secondary:hover::after {
+  width: 50%;
+}
+
+.btn-secondary-custom:hover, .btn-secondary:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+  color: #fff !important;
+}
+
+
+
+
 
 /* Bootstrap Overrides */
 .btn-primary {

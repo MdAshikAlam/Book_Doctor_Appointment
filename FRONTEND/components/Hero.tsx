@@ -1,4 +1,5 @@
 import { ArrowRight, Check, Star } from 'lucide-react';
+import Link from 'next/link';
 
 const Hero = () => {
   return (
@@ -29,7 +30,7 @@ const Hero = () => {
             </p>
 
             {/* Benefits list */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 max-w-lg mx-auto lg:mx-0 text-left">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 max-w-2xl mx-auto">
               {[
                 'Verified Doctors',
                 'Verified Clinics',
@@ -38,7 +39,7 @@ const Hero = () => {
                 'Secure Patient Experience',
                 'Real-Time Slot Availability'
               ].map((benefit, i) => (
-                <div key={i} className="flex items-center gap-2.5">
+                <div key={i} className="flex items-center gap-2.5 justify-center">
                   <div className="w-5 h-5 rounded-full bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
                     <Check size={12} strokeWidth={3} />
                   </div>
@@ -48,43 +49,40 @@ const Hero = () => {
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-12">
-              <button 
-                onClick={() => window.location.href = '/specialties'}
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center mb-4">
+              <Link 
+                href="/specialties#doctor-listings"
                 className="btn-primary-custom w-full sm:w-auto"
               >
-                <span>Find Doctors Near Me</span>
-                <ArrowRight size={18} className="ml-2" />
-              </button>
-              <button 
-                onClick={() => window.location.href = '/specialties'}
+                Find Doctors Near Me <ArrowRight size={16} />
+              </Link>
+              <Link 
+                href="/specialties"
                 className="btn-secondary-custom w-full sm:w-auto"
               >
-                <span>Browse Specialties</span>
-              </button>
+                Browse Specialties
+              </Link>
             </div>
 
-            {/* Trust Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-slate-200/50 max-w-xl mx-auto lg:mx-0">
-              {[
-                { value: '2,000+', label: 'Verified Doctors' },
-                { value: '500+', label: 'Clinics' },
-                { value: '50,000+', label: 'Appointments Booked' },
-                { value: '4.8', label: 'Patient Rating', isRating: true }
-              ].map((stat, i) => (
-                <div key={i} className="text-left">
-                  <p className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-1 leading-none mb-1.5">
-                    <span>{stat.value}</span>
-                    {stat.isRating && <Star size={14} className="fill-[#00B5B5] text-[#00B5B5]" />}
-                  </p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">{stat.label}</p>
-                </div>
-              ))}
+            {/* Clinic Partner Network Prompt */}
+            <div className="flex items-center gap-2 justify-center mt-2 mb-12 text-xs font-bold text-slate-500">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00B5B5]/60 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00B5B5]" />
+              </span>
+              <span>Are you a clinic or healthcare provider?</span>
+              <Link 
+                href="/contact" 
+                className="text-[#00B5B5] hover:underline font-black flex items-center gap-0.5 group"
+              >
+                Join our network
+                <ArrowRight size={12} className="transform group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
           </div>
 
           {/* Right Content - Visuals */}
-          <div className="relative w-full lg:w-1/2 lg:pt-4">
+          <div className="relative w-full lg:w-1/2 lg:pt-2">
             <div className="relative z-10 w-full max-w-[500px] mx-auto lg:ml-auto">
               {/* Main Doctor Image Container */}
               <div className="relative rounded-[3rem] overflow-hidden shadow-2xl bg-white p-2">
