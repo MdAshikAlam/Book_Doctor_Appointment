@@ -20,11 +20,25 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
+
+  // Handle Multer errors
+  if (err.name === 'MulterError') {
+    statusCode = 400;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      message = 'File too large. Maximum size allowed is 25MB.';
+    } else {
+      message = `Upload error: ${err.message}`;
+    }
+  } else if (err.message && err.message.includes('Only images and PDFs are allowed!')) {
+    statusCode = 400;
+  }
+
   const status = statusCode >= 400 && statusCode < 500 ? 'fail' : 'error';
 
   logger.error({
-    message: err.message,
+    message: message,
     stack: err.stack,
     path: req.path,
     method: req.method,
@@ -32,7 +46,7 @@ export const errorHandler = (
 
   res.status(statusCode).json({
     status,
-    message: err.message || 'Internal Server Error',
+    message: message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

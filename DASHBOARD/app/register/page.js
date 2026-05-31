@@ -16,7 +16,8 @@ import {
   ArrowRight, 
   Loader2, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authApi, doctorsApi } from '@/lib/api';
@@ -41,6 +42,110 @@ export default function RegisterPage() {
     state: ''
   });
 
+  // OTP Verification States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState(Array(6).fill(''));
+  const [otpError, setOtpError] = useState(null);
+  const [otpSuccess, setOtpSuccess] = useState(null);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [otpTimer, setOtpTimer] = useState(300);
+
+  const otpRefs = React.useRef([]);
+
+  React.useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  React.useEffect(() => {
+    let timer;
+    if (otpSent && otpTimer > 0 && !emailVerified) {
+      timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpSent, otpTimer, emailVerified]);
+
+  const handleSendOTP = async () => {
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      setOtpSending(true);
+      setOtpError(null);
+      setError(null);
+
+      const res = await authApi.sendOtp(formData.email);
+
+      if (res.status === 'success') {
+        setOtpSent(true);
+        setCooldown(30);
+        setOtpTimer(300);
+        setOtpSuccess('Verification code sent to your email!');
+        setTimeout(() => setOtpSuccess(null), 4000);
+      } else {
+        setOtpError(res.message || 'Failed to send verification code.');
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Failed to connect to authentication server.');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    const fullOtp = otpCode.join('');
+    if (fullOtp.length < 6) {
+      setOtpError('Please enter all 6 digits of the OTP.');
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      setOtpError(null);
+      setOtpSuccess(null);
+
+      const res = await authApi.verifyOtp(formData.email, fullOtp, formData.fullName);
+
+      if (res.status === 'success') {
+        setEmailVerified(true);
+        setOtpSent(false);
+        setOtpSuccess('Email verified successfully!');
+      } else {
+        setOtpError(res.message || 'Verification failed. Incorrect OTP.');
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Verification failed. Connection error.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleOtpChange = (value, idx) => {
+    if (isNaN(Number(value))) return;
+    const newOtp = [...otpCode];
+    newOtp[idx] = value;
+    setOtpCode(newOtp);
+
+    // Auto-focus next input
+    if (value !== '' && idx < 5) {
+      otpRefs.current[idx + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, idx) => {
+    if (e.key === 'Backspace' && otpCode[idx] === '' && idx > 0) {
+      otpRefs.current[idx - 1]?.focus();
+    }
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -60,6 +165,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!emailVerified) {
+      setError('Please verify your email address before submitting.');
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
 
@@ -149,42 +258,124 @@ export default function RegisterPage() {
                 <div>
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Basic Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-1 md:col-span-2">
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Full Name</label>
                       <div className="relative group">
                         <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input 
                           type="text" required
+                          disabled={emailVerified}
                           value={formData.fullName}
                           onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                           placeholder="John Doe"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-70 disabled:bg-slate-100"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-1 md:col-span-2">
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Email Address</label>
-                      <div className="relative group">
+                      <div className="relative group flex items-center">
                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input 
                           type="email" required
+                          disabled={emailVerified}
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                           placeholder="john@example.com"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                          className="w-full h-12 pl-12 pr-28 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-70 disabled:bg-slate-100"
                         />
+                        {!emailVerified && (
+                          <button
+                            type="button"
+                            onClick={handleSendOTP}
+                            disabled={otpSending || cooldown > 0 || !formData.email}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
+                          >
+                            {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
+                          </button>
+                        )}
                       </div>
+                      {emailVerified && (
+                        <p className="text-[10px] font-black text-emerald-600 ml-1 flex items-center gap-1">
+                          <CheckCircle2 size={12} /> Email Verified
+                        </p>
+                      )}
                     </div>
+
+                    {/* OTP Verification Block (Visible when OTP is sent and not verified yet) */}
+                    {otpSent && !emailVerified && (() => {
+                      const formatTime = (seconds) => {
+                        const mins = Math.floor(seconds / 60);
+                        const secs = seconds % 60;
+                        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                      };
+
+                      return (
+                        <div className="col-span-1 md:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-200/60 animate-in fade-in duration-250 space-y-4">
+                          <div className="text-center">
+                            <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Verify Email OTP</h4>
+                            <p className="text-[10px] text-slate-400 mt-1 font-bold">
+                              Enter 6-digit OTP code sent to your email. {otpTimer > 0 ? `(Expires in ${formatTime(otpTimer)})` : <span className="text-rose-500 font-bold">(Expired)</span>}
+                            </p>
+                          </div>
+                          
+                          <div className="flex justify-center gap-2">
+                            {otpCode.map((digit, idx) => (
+                              <input
+                                key={idx}
+                                ref={(el) => { otpRefs.current[idx] = el; }}
+                                type="text"
+                                maxLength={1}
+                                disabled={otpTimer === 0}
+                                className="w-10 h-12 bg-white border border-slate-200 focus:border-blue-600 rounded-xl text-center font-black text-lg outline-none transition-all shadow-sm disabled:opacity-50"
+                                value={digit}
+                                onChange={(e) => handleOtpChange(e.target.value, idx)}
+                                onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                              />
+                            ))}
+                          </div>
+
+                          {otpError && (
+                            <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
+                              <AlertCircle size={12} /> {otpError}
+                            </p>
+                          )}
+                          {otpSuccess && (
+                            <p className="text-[10px] font-black text-emerald-600 text-center flex items-center justify-center gap-1">
+                              <CheckCircle2 size={12} /> {otpSuccess}
+                            </p>
+                          )}
+                          {otpTimer === 0 && (
+                            <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
+                              <AlertCircle size={12} /> OTP code has expired. Please click "Resend" to get a new code.
+                            </p>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={handleVerifyOTP}
+                              disabled={verifyingOtp || otpTimer === 0}
+                              className="flex-1 h-10 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
+                            >
+                              {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Password</label>
                       <div className="relative group">
                         <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input 
                           type="password" required
+                          disabled={!emailVerified}
                           value={formData.password}
                           onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          placeholder="••••••••"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                          placeholder={emailVerified ? "••••••••" : "Verify email to unlock"}
+                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -194,10 +385,11 @@ export default function RegisterPage() {
                         <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input 
                           type="tel" required
+                          disabled={!emailVerified}
                           value={formData.phoneNumber}
                           onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                          placeholder="+91 98765 43210"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                          placeholder={emailVerified ? "+91 98765 43210" : "Verify email to unlock"}
+                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -211,9 +403,10 @@ export default function RegisterPage() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">ID Type</label>
                       <select 
+                        disabled={!emailVerified}
                         value={formData.governmentIdType}
                         onChange={(e) => setFormData({...formData, governmentIdType: e.target.value})}
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold"
+                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="Aadhar">Aadhar Card</option>
                         <option value="PAN">PAN Card</option>
@@ -224,10 +417,11 @@ export default function RegisterPage() {
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">ID Number</label>
                       <input 
                         type="text" required
+                        disabled={!emailVerified}
                         value={formData.governmentIdNumber}
                         onChange={(e) => setFormData({...formData, governmentIdNumber: e.target.value})}
-                        placeholder="Enter ID Number"
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                        placeholder={emailVerified ? "Enter ID Number" : "Verify email to unlock"}
+                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -235,6 +429,7 @@ export default function RegisterPage() {
                       <div className="relative">
                         <input 
                           type="file" 
+                          disabled={!emailVerified}
                           onChange={handleFileUpload}
                           className="hidden" 
                           id="id-upload"
@@ -242,7 +437,7 @@ export default function RegisterPage() {
                         />
                         <label 
                           htmlFor="id-upload"
-                          className={`flex items-center justify-center gap-3 w-full h-24 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${formData.idProofDocument ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-blue-300'}`}
+                          className={`flex items-center justify-center gap-3 w-full h-24 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${!emailVerified ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-50' : formData.idProofDocument ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-blue-300'}`}
                         >
                           {isUploading ? (
                             <Loader2 size={24} className="animate-spin" />
@@ -254,7 +449,7 @@ export default function RegisterPage() {
                           ) : (
                             <>
                               <Upload size={24} />
-                              <span className="font-bold text-sm">Click to upload your ID document</span>
+                              <span className="font-bold text-sm">{emailVerified ? "Click to upload your ID document" : "Verify email to unlock file upload"}</span>
                             </>
                           )}
                         </label>
@@ -273,10 +468,11 @@ export default function RegisterPage() {
                         <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input 
                           type="text" required
+                          disabled={!emailVerified}
                           value={formData.clinicName}
                           onChange={(e) => setFormData({...formData, clinicName: e.target.value})}
-                          placeholder="e.g. City Health Care"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                          placeholder={emailVerified ? "e.g. City Health Care" : "Verify email to unlock"}
+                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -284,20 +480,22 @@ export default function RegisterPage() {
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">City</label>
                       <input 
                         type="text" required
+                        disabled={!emailVerified}
                         value={formData.city}
                         onChange={(e) => setFormData({...formData, city: e.target.value})}
-                        placeholder="Noida"
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                        placeholder={emailVerified ? "Noida" : "Verify email to unlock"}
+                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-xs font-bold text-slate-700 ml-1 uppercase">State</label>
                       <input 
                         type="text" required
+                        disabled={!emailVerified}
                         value={formData.state}
                         onChange={(e) => setFormData({...formData, state: e.target.value})}
-                        placeholder="Uttar Pradesh"
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium"
+                        placeholder={emailVerified ? "Uttar Pradesh" : "Verify email to unlock"}
+                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>

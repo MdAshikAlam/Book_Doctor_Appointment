@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (userData: any) => Promise<{ success: boolean; message?: string }>;
+  googleLogin: (email: string, fullName: string, googleId: string, profilePicture?: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -68,10 +69,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(data.data.user);
         return { success: true };
       } else {
-        return { success: false, message: data.message || 'Login failed' };
+        return { success: false, status: response.status, message: data.message || 'Login failed' };
       }
     } catch (error) {
       console.error('Login error:', error);
+      return { success: false, message: 'Connection error' };
+    }
+  };
+
+  const googleLogin = async (email: string, fullName: string, googleId: string, profilePicture?: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, fullName, googleId, profilePicture }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        setUser(data.data.user);
+        return { success: true };
+      } else {
+        return { success: false, message: data.message || 'Google Login failed' };
+      }
+    } catch (error) {
+      console.error('Google Login error:', error);
       return { success: false, message: 'Connection error' };
     }
   };
@@ -83,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
            name: userData.fullName,
+           fullName: userData.fullName,
            email: userData.email,
            password: userData.password,
            phone: userData.phone,
@@ -127,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         login,
         register,
+        googleLogin,
         logout,
         isAuthenticated: !!user,
       }}

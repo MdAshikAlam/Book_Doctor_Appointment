@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  Sparkles, 
-  ArrowRight, 
-  MapPin, 
-  Search, 
-  FileText, 
-  Calendar, 
-  Check, 
-  UserCheck, 
-  Clock, 
-  Building2, 
+import {
+  Sparkles,
+  ArrowRight,
+  MapPin,
+  Search,
+  FileText,
+  Calendar,
+  Check,
+  UserCheck,
+  Clock,
+  Building2,
   AlertCircle,
   ShieldCheck
 } from 'lucide-react';
@@ -53,15 +53,15 @@ export default function About() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
-            <Link 
-              href="/specialties" 
+            <Link
+              href="/specialties"
               className="btn-primary-custom w-full sm:w-auto"
             >
               <span>Find Doctors Near You</span>
               <ArrowRight size={18} className="ml-2" />
             </Link>
-            <Link 
-              href="/specialties" 
+            <Link
+              href="/specialties"
               className="btn-secondary-custom w-full sm:w-auto"
             >
               <span>Browse Specialties</span>
@@ -98,10 +98,10 @@ export default function About() {
               {/* Decorative Frame */}
               <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl bg-white p-3 border border-slate-100/50 max-w-[480px] mx-auto lg:ml-auto">
                 <div className="rounded-[2rem] overflow-hidden aspect-[4/3] relative bg-[#F0FDFD]">
-                  <img 
-                    src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop" 
-                    alt="Healthcare professional consulting with patient" 
-                    className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700" 
+                  <img
+                    src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop"
+                    alt="Healthcare professional consulting with patient"
+                    className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#00B5B5]/10 to-transparent" />
                 </div>
@@ -114,7 +114,7 @@ export default function About() {
       {/* SECTION 3: THE PROBLEM WE SOLVE */}
       <Section className="bg-slate-50/50 border-b border-slate-100">
         <Container className="max-w-6xl">
-          <SectionHeader 
+          <SectionHeader
             title="Why Choose BookMyDoctor"
             description="We solve core accessibility challenges to connect patients directly with verified clinical care."
           />
@@ -172,7 +172,7 @@ export default function About() {
       {/* SECTION 4: HOW BOOKMYDOCTOR WORKS */}
       <Section className="bg-white border-b border-slate-100">
         <Container className="max-w-6xl">
-          <SectionHeader 
+          <SectionHeader
             title="How It Works"
           />
 
@@ -227,7 +227,7 @@ export default function About() {
       {/* SECTION 5: WHY PATIENTS TRUST US */}
       <Section className="bg-slate-50/50 border-b border-slate-100">
         <Container className="max-w-6xl">
-          <SectionHeader 
+          <SectionHeader
             title="Why Choose BookMyDoctor"
             description="Dedicated to simplifying access to medical professionals."
           />
@@ -289,10 +289,10 @@ export default function About() {
             <div className="relative order-last lg:order-first">
               <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl bg-white p-3 border border-slate-100/50 max-w-[480px] mx-auto lg:mr-auto">
                 <div className="rounded-[2rem] overflow-hidden aspect-[4/3] relative bg-slate-50">
-                  <img 
-                    src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop" 
-                    alt="Doctors team working in clinic" 
-                    className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700" 
+                  <img
+                    src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop"
+                    alt="Doctors team working in clinic"
+                    className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#00B5B5]/10 to-transparent" />
                 </div>
@@ -354,7 +354,7 @@ export default function About() {
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
               backgroundSize: '40px 40px'
             }} />
-            
+
             <div className="relative z-10 max-w-2xl mx-auto">
               <h2 className="font-h2 text-white mb-4">Ready to Find the Right Doctor?</h2>
               <p className="text-white/80 font-body-primary mb-8 mx-auto">

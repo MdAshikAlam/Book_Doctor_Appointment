@@ -59,10 +59,6 @@ export interface IClinic extends Document {
   services: string[]; // ['OPD', 'Emergency', ...]
   facilities: string[]; // ['ICU', 'Ambulance', ...]
 
-  // Fees
-  registrationFee?: number;
-  averageConsultationFee?: number;
-
   // Verification
   registrationNumber: string;
   registrationProof: string;
@@ -133,10 +129,6 @@ const clinicSchema = new Schema<IClinic>(
     // Facilities & Services
     services: { type: [String] },
     facilities: { type: [String] },
-
-    // Fees
-    registrationFee: { type: Number },
-    averageConsultationFee: { type: Number },
 
     // Verification
     registrationNumber: { type: String, required: true, unique: true },

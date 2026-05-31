@@ -126,7 +126,6 @@ export default function ClinicsPage() {
     doctors: [],
     services: [],
     facilities: [],
-    registrationFee: '',
     registrationNumber: '',
     registrationProof: '',
     addressProof: ''
@@ -243,7 +242,6 @@ export default function ClinicsPage() {
       doctors: clinic.doctors?.map(d => typeof d === 'object' ? d._id : d) || [],
       services: clinic.services || [],
       facilities: clinic.facilities || [],
-      registrationFee: clinic.registrationFee || '',
       registrationNumber: clinic.registrationNumber || '',
       registrationProof: clinic.registrationProof || '',
       addressProof: clinic.addressProof || ''
@@ -280,7 +278,6 @@ export default function ClinicsPage() {
       doctors: [],
       services: [],
       facilities: [],
-      registrationFee: '',
       registrationNumber: '',
       registrationProof: '',
       addressProof: ''
@@ -386,7 +383,7 @@ export default function ClinicsPage() {
       const res = await doctorsApi.upload(uploadData);
       
       if (field === 'images') {
-        setFormData(prev => ({ ...prev, images: [res.data.url] }));
+        setFormData(prev => ({ ...prev, images: [...(prev.images || []), res.data.url] }));
       } else {
         setFormData(prev => ({ ...prev, [field]: res.data.url }));
       }
@@ -396,6 +393,13 @@ export default function ClinicsPage() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleRemoveImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index)
+    }));
   };
 
   const handleSlotSubmit = async (e) => {
@@ -437,7 +441,6 @@ export default function ClinicsPage() {
     try {
       const payload = {
         ...formData,
-        registrationFee: formData.registrationFee ? Number(formData.registrationFee) : undefined,
       };
       
       if (editingClinicId) {
@@ -667,7 +670,7 @@ export default function ClinicsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div className="p-4 rounded-2xl bg-blue-50/50 flex items-center gap-3 border border-blue-100/50">
                        <ShieldCheck size={18} className="text-blue-600" />
                        <div>
@@ -687,13 +690,6 @@ export default function ClinicsPage() {
                        <div>
                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Reception</p>
                          <p className="text-sm font-bold text-slate-900">{clinic.receptionistCount || 0}</p>
-                       </div>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-slate-50 flex items-center gap-3">
-                       <CreditCard size={18} className="text-slate-500" />
-                       <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Reg. Fee</p>
-                         <p className="text-sm font-bold text-slate-900">₹{clinic.registrationFee || '0'}</p>
                        </div>
                     </div>
                   </div>
@@ -747,18 +743,6 @@ export default function ClinicsPage() {
                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                               <Stethoscope size={14} /> Doctors in this Clinic
                             </h4>
-                            {clinicDoctors.length > 0 && clinic.clinicStatus === 'approved' && (
-                              <button 
-                                onClick={() => {
-                                  setSelectedClinic(clinic);
-                                  setSlotFormData(prev => ({...prev, doctorId: clinicDoctors[0]._id}));
-                                  setIsSlotModalOpen(true);
-                                }}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 uppercase tracking-wider"
-                              >
-                                <Clock size={12} /> Set Time Slots
-                              </button>
-                            )}
                           </div>
                           <div className="space-y-3">
                             {clinicDoctors.length > 0 ? clinicDoctors.map((doc) => (
@@ -890,24 +874,26 @@ export default function ClinicsPage() {
                       </div>
                       <div className="md:col-span-2 space-y-2">
                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Logo / Image</label>
-                         <div className="flex items-center gap-4">
-                            {formData.images?.[0] && (
-                               <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
-                                  <img src={getFullImageUrl(formData.images[0])} alt="Logo" className="w-full h-full object-cover" />
+                         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                            {formData.images && formData.images.map((imgUrl, index) => (
+                               <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
+                                  <img src={getFullImageUrl(imgUrl)} alt={`Clinic Image ${index + 1}`} className="w-full h-full object-cover" />
+                                  <button
+                                     type="button"
+                                     onClick={() => handleRemoveImage(index)}
+                                     className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                                     title="Remove Image"
+                                  >
+                                     <X size={12} />
+                                  </button>
                                </div>
-                            )}
-                            <label className="flex-1">
-                               <div className={`w-full h-12 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                 fieldErrors.images 
-                                   ? 'border-red-500 bg-red-50/50 text-red-600 hover:border-red-600' 
-                                   : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-500 hover:text-blue-600'
-                               }`}>
-                                  {isUploading ? (
-                                     <><Loader2 size={18} className="animate-spin" /> Uploading...</>
-                                   ) : (
-                                     <><Upload size={18} /> {formData.images?.[0] ? 'Change Image' : 'Upload Image'}</>
-                                   )}
-                               </div>
+                            ))}
+                            <label className="aspect-square rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600">
+                               {isUploading ? (
+                                  <><Loader2 size={16} className="animate-spin" /> Uploading...</>
+                               ) : (
+                                  <><Upload size={16} /> Upload Image</>
+                               )}
                                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'images')} />
                             </label>
                          </div>
@@ -1107,16 +1093,7 @@ export default function ClinicsPage() {
                     </div>
                   </section>
 
-                  {/* 8. Fee Settings */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      8. Fee Settings
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6">
-                       <Input label="Registration Fee" name="registrationFee" type="number" value={formData.registrationFee} onChange={handleInputChange} error={fieldErrors.registrationFee} icon={CreditCard} />
-                    </div>
-                  </section>
+
 
                   {/* 8.5 Operations Settings */}
                   <section className="space-y-6">
@@ -1264,154 +1241,7 @@ export default function ClinicsPage() {
         )}
       </AnimatePresence>
 
-      {/* Set Doctor Time Slots Modal */}
-      <AnimatePresence>
-        {isSlotModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSlotModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
-            >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">👉 Set Doctor Time Slots</h2>
-                  <p className="text-sm text-slate-500 font-medium">Generate availability slots for the selected doctor.</p>
-                </div>
-                <button 
-                  onClick={() => setIsSlotModalOpen(false)}
-                  className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
-                >
-                  <X size={20} />
-                </button>
-              </div>
 
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <form onSubmit={handleSlotSubmit} className="space-y-6">
-                  {/* Doctor Name */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Doctor Name</label>
-                    <select
-                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
-                      value={slotFormData.doctorId}
-                      onChange={(e) => setSlotFormData({...slotFormData, doctorId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select Doctor</option>
-                      {doctors.filter(d => selectedClinic && (d.clinic?._id === selectedClinic._id || (Array.isArray(d.clinics) && d.clinics.includes(selectedClinic._id)))).map(doc => (
-                        <option key={doc._id} value={doc._id}>Dr. {doc.user?.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Available Days */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Available Days</label>
-                    <div className="flex flex-wrap gap-2">
-                      {WORKING_DAYS.map(day => (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => {
-                            setSlotFormData(prev => ({
-                              ...prev,
-                              days: prev.days.includes(day) ? prev.days.filter(d => d !== day) : [...prev.days, day]
-                            }))
-                          }}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            slotFormData.days.includes(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Start Time & End Time */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="Start Time" name="startTime" type="time" required value={slotFormData.startTime} onChange={e => setSlotFormData({...slotFormData, startTime: e.target.value})} />
-                    <Input label="End Time" name="endTime" type="time" required value={slotFormData.endTime} onChange={e => setSlotFormData({...slotFormData, endTime: e.target.value})} />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Slot Duration (minutes)</label>
-                    <input 
-                      type="number" 
-                      min="5" max="120"
-                      required
-                      value={slotFormData.duration}
-                      onChange={e => setSlotFormData({...slotFormData, duration: Number(e.target.value)})}
-                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
-                      placeholder="Custom duration..."
-                    />
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {[10, 15, 20, 30, 45, 60].map(mins => (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => setSlotFormData({...slotFormData, duration: mins})}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            slotFormData.duration === mins 
-                              ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          {mins} mins
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Optional Breaks */}
-                  <div className="pt-4 border-t border-slate-100">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">⚙️ Optional Settings</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input label="Break Start Time" name="breakStart" type="time" value={slotFormData.breakStart} onChange={e => setSlotFormData({...slotFormData, breakStart: e.target.value})} />
-                      <Input label="Break End Time" name="breakEnd" type="time" value={slotFormData.breakEnd} onChange={e => setSlotFormData({...slotFormData, breakEnd: e.target.value})} />
-                    </div>
-                  </div>
-
-                  {slotFormError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-bold flex items-center gap-3">
-                       <AlertCircle size={20} /> {slotFormError}
-                    </div>
-                  )}
-                  {slotSuccessMsg && (
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm font-bold flex items-center gap-3">
-                       <CheckCircle2 size={20} /> {slotSuccessMsg}
-                    </div>
-                  )}
-                </form>
-              </div>
-
-              <div className="p-6 border-t border-slate-100 bg-white flex gap-4 sticky bottom-0 z-10">
-                <Button 
-                  onClick={() => setIsSlotModalOpen(false)}
-                  className="flex-1 h-14 rounded-2xl border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSlotSubmit}
-                  disabled={isGeneratingSlots || slotFormData.days.length === 0}
-                  className="flex-[2] h-14 bg-blue-600 text-white font-extrabold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isGeneratingSlots ? <Loader2 size={24} className="animate-spin" /> : '🔥 Generate & Save Slots'}
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
 

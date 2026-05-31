@@ -78,6 +78,14 @@ router.post('/logout', authController.logout);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password/:token', authController.resetPassword);
 
+// OTP & Google Auth Routes
+router.post('/send-otp', authController.sendOTP);
+router.post('/verify-otp', authController.verifyOTP);
+router.post('/google-login', authController.googleLogin);
+router.post('/forgot-password-otp', authController.forgotPasswordOtp);
+router.post('/reset-password-otp', authController.resetPasswordOtp);
+router.post('/set-password', authController.setPassword);
+
 import { protect } from '../middlewares/auth';
 router.get('/me', protect, authController.getMe);
 

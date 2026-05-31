@@ -126,8 +126,6 @@ const clinicSchema = z.object({
   services: z.array(z.string()).optional(),
   facilities: z.array(z.string()).optional(),
 
-  // Fees
-  registrationFee: z.number().optional(),
 
   // Verification
   registrationNumber: z.string().min(1, { message: "Registration number is required" }),

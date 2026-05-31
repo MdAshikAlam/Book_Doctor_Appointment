@@ -230,13 +230,13 @@ const DoctorCard = ({
       <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-100/60 relative z-10">
         <Link
           href={`/doctors/${slug || id}`}
-          className="flex-1 text-center border border-slate-200 hover:border-slate-400 text-slate-700 hover:bg-slate-50 h-11 flex items-center justify-center rounded-xl font-bold text-xs transition-all duration-300"
+          className="btn-secondary-custom flex-1 !h-11 !min-w-0 !px-0 text-center font-bold text-xs"
         >
           View Profile
         </Link>
         <Link
-          href={`/bookings?doctorId=${id}`}
-          className="flex-[1.5] text-center bg-primary hover:bg-[#009A9A] text-white h-11 flex items-center justify-center rounded-xl font-black text-xs transition-all duration-300 shadow-md shadow-[#00B5B5]/15 hover:shadow-lg hover:shadow-[#00B5B5]/25"
+          href={`/appointments?doctorId=${id}`}
+          className="btn-primary-custom flex-[1.5] !h-11 !min-w-0 !px-0 text-center font-black text-xs"
         >
           Book Appointment
         </Link>

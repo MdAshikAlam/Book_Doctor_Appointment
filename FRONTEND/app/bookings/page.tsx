@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Loader2, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  AlertCircle, 
-  CheckCircle2, 
-  User, 
-  Hospital, 
+import {
+  Loader2,
+  Calendar,
+  Clock,
+  MapPin,
+  AlertCircle,
+  CheckCircle2,
+  User,
+  Hospital,
   Lock,
   Search,
   BookOpen,
@@ -59,7 +59,7 @@ export default function MyAppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState<string | null>(null);
-  
+
   // Modal state
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -87,7 +87,7 @@ export default function MyAppointmentsPage() {
       const data = await res.json();
 
       if (data.status === "success") {
-        const sorted = data.data.appointments.sort((a: Appointment, b: Appointment) => 
+        const sorted = data.data.appointments.sort((a: Appointment, b: Appointment) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setAppointments(sorted);
@@ -123,7 +123,7 @@ export default function MyAppointmentsPage() {
       const data = await res.json();
 
       if (data.status === "success") {
-        setAppointments(prev => prev.map(apt => 
+        setAppointments(prev => prev.map(apt =>
           apt._id === id ? { ...apt, status: "cancelled" } : apt
         ));
         if (selectedAppointment?._id === id) {
@@ -160,16 +160,16 @@ export default function MyAppointmentsPage() {
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
               backgroundSize: '45px 45px'
             }} />
-            
+
             <div className="w-20 h-20 bg-[#00B5B5]/10 text-[#00B5B5] rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
               <Lock size={36} />
             </div>
-            
+
             <h1 className="font-h1 text-slate-900 mb-3">Access Restricted</h1>
             <p className="font-body-secondary text-slate-500 mb-8 max-w-sm mx-auto">
               Please sign in to access your appointment bookings panel, view consultation documents, or manage schedules.
             </p>
-            
+
             <Link href="/login?redirect=/bookings" className="btn-primary-custom w-full">
               Sign In to Continue
               <CheckCircle2 size={18} className="ml-2" />
@@ -184,17 +184,17 @@ export default function MyAppointmentsPage() {
   today.setHours(0, 0, 0, 0);
 
   // Group appointments
-  const upcomingAppointments = appointments.filter(apt => 
-    new Date(apt.date) >= today && 
-    apt.status !== 'cancelled' && 
-    apt.status !== 'completed' && 
+  const upcomingAppointments = appointments.filter(apt =>
+    new Date(apt.date) >= today &&
+    apt.status !== 'cancelled' &&
+    apt.status !== 'completed' &&
     apt.status !== 'visited'
   );
-  
-  const pastAppointments = appointments.filter(apt => 
-    new Date(apt.date) < today || 
-    apt.status === 'cancelled' || 
-    apt.status === 'completed' || 
+
+  const pastAppointments = appointments.filter(apt =>
+    new Date(apt.date) < today ||
+    apt.status === 'cancelled' ||
+    apt.status === 'completed' ||
     apt.status === 'visited'
   );
 
@@ -260,7 +260,7 @@ export default function MyAppointmentsPage() {
       }} />
 
       <Container className="max-w-5xl relative z-10">
-        
+
         {/* SECTION 1: PAGE HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
@@ -288,7 +288,7 @@ export default function MyAppointmentsPage() {
           </div>
         ) : (
           <div className="space-y-12">
-            
+
             {/* SECTION 2: APPOINTMENT SUMMARY - metric cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
@@ -319,7 +319,7 @@ export default function MyAppointmentsPage() {
                 <div className="w-2.5 h-6 bg-[#00B5B5] rounded-full"></div>
                 Upcoming Appointments
               </h2>
-              
+
               {upcomingAppointments.length > 0 ? (
                 <div className="space-y-6">
                   {upcomingAppointments.map((apt) => {
@@ -376,13 +376,13 @@ export default function MyAppointmentsPage() {
                             {renderStatusBadge(apt.status)}
                           </div>
                           <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                            <button 
+                            <button
                               onClick={() => handleOpenDetails(apt)}
                               className="w-full sm:w-auto text-center px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors text-xs"
                             >
                               View Details
                             </button>
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedAppointment(apt);
                                 setRescheduleMessage(`To reschedule your appointment with Dr. ${apt.doctor?.user?.name || ''}, please contact ${apt.clinic?.name || 'the clinic'} support at partners@bookmydoctor.in or call support.`);
@@ -391,7 +391,7 @@ export default function MyAppointmentsPage() {
                             >
                               Reschedule
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleCancel(apt._id)}
                               disabled={cancelLoading === apt._id}
                               className="w-full sm:w-auto text-center px-5 py-2.5 rounded-xl border-2 border-red-50 text-red-650 font-bold hover:bg-red-50 hover:border-red-100 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-1.5"
@@ -471,7 +471,7 @@ export default function MyAppointmentsPage() {
 
                         {/* HISTORY CARD ACTIONS */}
                         <div className="mt-2 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                          <button 
+                          <button
                             onClick={() => handleOpenDetails(apt)}
                             className="text-xs font-bold text-[#00B5B5] hover:underline"
                           >
@@ -479,15 +479,15 @@ export default function MyAppointmentsPage() {
                           </button>
                           <div className="flex items-center gap-3">
                             {apt.doctor && (
-                              <Link 
-                                href={`/doctors/${apt.doctor._id}`} 
+                              <Link
+                                href={`/doctors/${apt.doctor._id}`}
                                 className="text-xs font-bold text-slate-500 hover:text-slate-800 border border-slate-200 px-3.5 py-2 rounded-xl bg-slate-50"
                               >
                                 Doctor Profile
                               </Link>
                             )}
-                            <Link 
-                              href="/specialties" 
+                            <Link
+                              href="/specialties"
                               className="text-xs font-bold text-white bg-[#00B5B5] px-4 py-2 rounded-xl shadow-md hover:bg-[#009A9A]"
                             >
                               Book Again
@@ -591,7 +591,7 @@ export default function MyAppointmentsPage() {
       {showModal && selectedAppointment && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-2xl relative animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
-            <button 
+            <button
               onClick={() => {
                 setShowModal(false);
                 setRescheduleMessage(null);
@@ -703,7 +703,7 @@ export default function MyAppointmentsPage() {
       {rescheduleMessage && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl p-8 border border-slate-100 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button 
+            <button
               onClick={() => setRescheduleMessage(null)}
               className="absolute top-5 right-5 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors"
             >
@@ -716,7 +716,7 @@ export default function MyAppointmentsPage() {
               {rescheduleMessage}
             </p>
             <div className="flex justify-end">
-              <button 
+              <button
                 onClick={() => setRescheduleMessage(null)}
                 className="btn-primary-custom !h-10 !text-xs"
               >

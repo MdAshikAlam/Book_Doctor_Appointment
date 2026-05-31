@@ -86,19 +86,26 @@ function AppointmentsForm() {
               }
             }
 
+            const queryDate = searchParams.get("date") || "";
+            const querySlot = searchParams.get("slot") || "";
+
             setFormData(prev => ({ 
               ...prev, 
               doctor: doc._id,
               department: doc.specialty || prev.department,
               city: detectedCity || prev.city,
               country: detectedCountry || prev.country,
-              address: doc.address || prev.address
+              address: doc.address || prev.address,
+              appointmentDate: queryDate || prev.appointmentDate,
+              appointmentTime: querySlot || prev.appointmentTime
             }));
 
             // Auto-update URL to use slug
             if (doc.slug && doctorId !== doc.slug) {
               const url = new URL(window.location.href);
               url.searchParams.set("doctorId", doc.slug);
+              if (queryDate) url.searchParams.set("date", queryDate);
+              if (querySlot) url.searchParams.set("slot", querySlot);
               window.history.replaceState(null, '', url.toString());
             }
           }
