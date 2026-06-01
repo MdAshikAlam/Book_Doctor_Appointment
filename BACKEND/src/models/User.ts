@@ -44,8 +44,9 @@ export interface IUser extends Document {
   clinicName?: string;
   city?: string;
   state?: string;
-  status?: 'pending' | 'approved' | 'rejected' | 'active' | 'inactive' | 'suspended' | 'deleted';
+  status?: 'pending' | 'approved' | 'rejected' | 'active' | 'inactive' | 'suspended' | 'deleted' | 'info_requested';
   rejectionReason?: string;
+  infoRequestedMessage?: string;
   lastLogoutAt?: Date;
   shift?: string;
   lastViewedNotifications?: {
@@ -108,10 +109,11 @@ const userSchema = new Schema<IUser>(
     state: { type: String },
     status: { 
       type: String, 
-      enum: ['pending', 'approved', 'rejected', 'active', 'inactive', 'suspended', 'deleted'],
+      enum: ['pending', 'approved', 'rejected', 'active', 'inactive', 'suspended', 'deleted', 'info_requested'],
       default: 'active' 
     },
     rejectionReason: { type: String },
+    infoRequestedMessage: { type: String },
     lastLogoutAt: { type: Date },
     lastViewedNotifications: {
       adminRequests: { type: Date, default: Date.now },

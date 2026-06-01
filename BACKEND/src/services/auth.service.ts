@@ -22,13 +22,39 @@ export const registerUser = async (userData: Partial<IUser>) => {
 
       if (userData.name) existingUser.name = userData.name;
       if (userData.fullName) existingUser.fullName = userData.fullName;
-      if (userData.password) existingUser.password = userData.password;
       if (userData.phone) existingUser.phone = userData.phone;
-      existingUser.passwordSet = true;
+      if (userData.clinicName) existingUser.clinicName = userData.clinicName;
+      if (userData.city) existingUser.city = userData.city;
+      if (userData.state) existingUser.state = userData.state;
+      
+      if (userData.role === 'admin') {
+        if (userData.password) existingUser.password = userData.password;
+        existingUser.passwordSet = true;
+        existingUser.status = 'approved';
+        existingUser.role = 'admin' as any;
+      } else {
+        if (userData.password) existingUser.password = userData.password;
+        existingUser.passwordSet = true;
+        existingUser.status = userData.role === 'doctor' ? 'pending' : 'active';
+      }
+      
       existingUser.emailVerified = true;
       existingUser.isEmailVerified = true;
-      existingUser.status = 'active';
       await existingUser.save();
+
+      // Log Registration Activity manually (since user is not logged in)
+      try {
+        const ActivityLog = (await import('../models/ActivityLog')).default;
+        await ActivityLog.create({
+          user: existingUser._id,
+          action: 'REGISTER_CLINIC',
+          entityType: 'User',
+          entityId: existingUser._id,
+          details: `Clinic Admin registration submitted for clinic ${existingUser.clinicName}`
+        } as any);
+      } catch (err) {
+        console.error('Failed to log registration activity:', err);
+      }
 
       if (userData.authProvider !== 'google') {
         await OTP.deleteMany({ email: emailVal });
@@ -62,15 +88,30 @@ export const registerUser = async (userData: Partial<IUser>) => {
     if (!verifiedOTP) {
       throw new AppError('Email verification is mandatory. Please verify your email first.', 400);
     }
-    // Set emailVerified to true on the user
-    userData.emailVerified = true;
-    userData.isEmailVerified = true; // backward compatibility
-  } else {
-    userData.emailVerified = true;
-    userData.isEmailVerified = true;
+  }
+  userData.emailVerified = true;
+  userData.isEmailVerified = true; // backward compatibility
+
+  if (userData.role === 'admin') {
+    userData.passwordSet = true;
+    userData.status = 'approved';
   }
 
   const user = await User.create(userData);
+
+  // Log Registration Activity manually (since user is not logged in)
+  try {
+    const ActivityLog = (await import('../models/ActivityLog')).default;
+    await ActivityLog.create({
+      user: user._id,
+      action: 'REGISTER_ADMIN',
+      entityType: 'User',
+      entityId: user._id,
+      details: `Clinic Admin registration completed for ${user.email}`
+    } as any);
+  } catch (err) {
+    console.error('Failed to log registration activity:', err);
+  }
 
   // Clean up verified OTP record after registration
   if (userData.authProvider !== 'google') {
@@ -106,8 +147,8 @@ export const loginUser = async (emailOrPhone: string, password?: string, isDashb
     throw new AppError('Account not found.', 404);
   }
 
-  // Check if email is verified
-  if (!user.emailVerified) {
+  // Check if email is verified (Super Admin is seeded verified)
+  if (user.role !== 'super_admin' && !user.emailVerified) {
     throw new AppError('Please verify your email address.', 401);
   }
 
@@ -261,6 +302,7 @@ export const googleAuth = async (data: {
   fullName: string;
   googleId: string;
   profilePicture?: string;
+  isDashboard?: boolean;
 }) => {
   const emailVal = data.email.toLowerCase().trim();
   let user = await User.findOne({ email: emailVal });
@@ -274,8 +316,8 @@ export const googleAuth = async (data: {
       authProvider: 'google',
       isEmailVerified: true,
       emailVerified: true,
-      role: UserRole.PATIENT,
-      status: 'active'
+      role: data.isDashboard ? UserRole.ADMIN : UserRole.PATIENT,
+      status: data.isDashboard ? 'approved' : 'active'
     };
     if (data.profilePicture) {
       createData.profilePicture = data.profilePicture;

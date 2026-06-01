@@ -492,13 +492,28 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     }
   }
 
+  let initialUserStatus = 'pending';
+  let initialDoctorStatus = 'submitted';
+
+  if (creatorId) {
+    const creator = await User.findById(creatorId);
+    if (creator && creator.role === 'super_admin') {
+      initialUserStatus = 'active';
+      initialDoctorStatus = 'verified';
+    }
+  } else {
+    initialUserStatus = 'active';
+    initialDoctorStatus = 'verified';
+  }
+
   const user = await User.create({
     ...userData,
     role: 'doctor',
     createdBy: creatorId,
     parentAdmin,
     parentReceptionist,
-    branchId: branchId || undefined
+    branchId: branchId || undefined,
+    status: initialUserStatus
   } as any);
 
   let slugBase = userData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
@@ -516,7 +531,8 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     createdBy: creatorId,
     parentAdmin,
     parentReceptionist,
-    branchId: branchId || undefined
+    branchId: branchId || undefined,
+    status: initialDoctorStatus
   } as any);
 
   if (branchId) {

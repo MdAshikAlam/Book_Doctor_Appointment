@@ -120,7 +120,10 @@ export const appointmentsApi = {
 };
 
 export const usersApi = {
-  getStaff: () => apiCall('/users/staff'),
+  getStaff: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiCall(`/users/staff?${query}`);
+  },
   getHierarchy: () => apiCall('/users/hierarchy'),
   createStaff: (data) => apiCall('/users/staff', {
     method: 'POST',

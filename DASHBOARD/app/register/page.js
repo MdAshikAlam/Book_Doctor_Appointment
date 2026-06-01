@@ -1,46 +1,29 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Stethoscope, 
-  Mail, 
-  Lock, 
-  User, 
-  Phone, 
-  Building2, 
-  MapPin, 
-  ShieldCheck, 
-  Upload, 
-  ArrowRight, 
-  Loader2, 
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw
-} from 'lucide-react';
+import { Stethoscope, Mail, User, Lock, AlertCircle, ArrowRight, Loader2, ShieldCheck, CheckCircle2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authApi, doctorsApi } from '@/lib/api';
+import { authApi } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import Modal from '@/components/common/Modal';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const { googleLogin, user, loading } = useAuth();
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
-    phoneNumber: '',
-    governmentIdType: 'Aadhar',
-    governmentIdNumber: '',
-    idProofDocument: '',
-    clinicName: '',
-    city: '',
-    state: ''
+    confirmPassword: ''
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   // OTP Verification States
   const [otpSent, setOtpSent] = useState(false);
@@ -53,9 +36,16 @@ export default function RegisterPage() {
   const [cooldown, setCooldown] = useState(0);
   const [otpTimer, setOtpTimer] = useState(300);
 
-  const otpRefs = React.useRef([]);
+  const otpRefs = useRef([]);
 
-  React.useEffect(() => {
+  // Google OAuth states
+  const [showGoogleMock, setShowGoogleMock] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
+  const [googleError, setGoogleError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
     let timer;
     if (cooldown > 0) {
       timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
@@ -63,13 +53,19 @@ export default function RegisterPage() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let timer;
     if (otpSent && otpTimer > 0 && !emailVerified) {
       timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
     }
     return () => clearTimeout(timer);
   }, [otpSent, otpTimer, emailVerified]);
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleSendOTP = async () => {
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -117,7 +113,8 @@ export default function RegisterPage() {
       if (res.status === 'success') {
         setEmailVerified(true);
         setOtpSent(false);
-        setOtpSuccess('Email verified successfully!');
+        setOtpSuccess('OTP Verified Successfully!');
+        setTimeout(() => setOtpSuccess(null), 3000);
       } else {
         setOtpError(res.message || 'Verification failed. Incorrect OTP.');
       }
@@ -146,38 +143,64 @@ export default function RegisterPage() {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleGoogleSubmit = async (e) => {
+    e.preventDefault();
+    if (!googleEmail || !googleName) {
+      setGoogleError('Please fill out all fields.');
+      return;
+    }
     try {
-      setIsUploading(true);
-      const data = new FormData();
-      data.append('image', file);
-      const res = await doctorsApi.upload(data);
-      setFormData({ ...formData, idProofDocument: res.data.url });
+      setGoogleLoading(true);
+      setGoogleError('');
+      const googleId = `google_oauth_${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const result = await googleLogin(googleEmail, googleName, googleId, `https://ui-avatars.com/api/?name=${encodeURIComponent(googleName)}&background=0284c7&color=fff`);
+      if (result.success) {
+        setShowGoogleMock(false);
+        router.push('/dashboard');
+      } else {
+        setGoogleError(result.error || 'Google Login failed.');
+      }
     } catch (err) {
-      setError('File upload failed. Please try again.');
+      setGoogleError(err.message || 'An error occurred during Google sign-in.');
     } finally {
-      setIsUploading(false);
+      setGoogleLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
     if (!emailVerified) {
-      setError('Please verify your email address before submitting.');
+      setError('Please verify your email address first.');
       return;
     }
-    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await authApi.registerAdmin(formData);
-      setIsSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 5000);
+      const payload = {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password
+      };
+      
+      const res = await authApi.registerAdmin(payload);
+      if (res.status === 'success') {
+        window.location.href = '/dashboard';
+      } else {
+        setError(res.message || 'Registration failed.');
+      }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -185,357 +208,292 @@ export default function RegisterPage() {
     }
   };
 
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-12 text-center"
-        >
-          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-8">
-            <CheckCircle2 size={48} />
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative overflow-hidden">
+      {/* Decorative Gradients */}
+      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none" />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 25, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative backdrop-blur-md">
+          {/* Top colored line indicator */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
+          
+          <div className="p-8 sm:p-10">
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
+                <Stethoscope size={28} />
+              </div>
+            </div>
+
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Create Account</h1>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Get started as Clinic Admin</p>
+            </div>
+
+            {/* Google Signup Option */}
+            <button
+              type="button"
+              onClick={() => setShowGoogleMock(true)}
+              className="w-full h-12 rounded-2xl border border-slate-200 hover:border-slate-800 hover:bg-slate-50 font-black text-[11px] uppercase tracking-widest text-slate-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.62 14.98 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.96 3.07C6.4 7.69 8.97 5.04 12 5.04z" />
+                <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.2 3.54-8.71z" />
+                <path fill="#FBBC05" d="M5.46 10.57c-.24-.73-.38-1.5-.38-2.31s.14-1.58.38-2.31L1.5 2.88C.54 4.8 0 6.97 0 9.27s.54 4.47 1.5 6.39l3.96-3.09z" />
+                <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.73-2.48 1.17-4.05 1.17-3.03 0-5.6-2.65-6.54-5.53L1.5 15.82C3.4 19.67 7.35 23 12 23z" />
+              </svg>
+              Continue with Google
+            </button>
+
+            <div className="flex items-center my-6">
+              <div className="flex-1 border-t border-slate-100"></div>
+              <span className="mx-3 text-[9px] font-black text-slate-350 uppercase tracking-[0.2em]">OR</span>
+              <div className="flex-1 border-t border-slate-100"></div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1 uppercase tracking-wider">Full Name</label>
+                <div className="relative group">
+                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                  <input 
+                    type="text" 
+                    required
+                    disabled={emailVerified}
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                    placeholder="John Doe"
+                    className="w-full h-11 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold text-sm disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1 uppercase tracking-wider">Email Address</label>
+                <div className="relative group flex items-center">
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                  <input 
+                    type="email" 
+                    required
+                    disabled={emailVerified}
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="john@example.com"
+                    className="w-full h-11 pl-12 pr-24 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold text-sm disabled:opacity-60"
+                  />
+                  {!emailVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={otpSending || cooldown > 0 || !formData.email}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-450 active:scale-[0.98]"
+                    >
+                      {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
+                    </button>
+                  )}
+                </div>
+                {emailVerified && (
+                  <p className="text-[10px] font-black text-emerald-600 ml-1 flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Email Verified Successfully!
+                  </p>
+                )}
+              </div>
+
+              {/* OTP Code Input box */}
+              {otpSent && !emailVerified && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                  <div className="text-center">
+                    <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Verify Email OTP</h4>
+                    <p className="text-[10px] text-slate-400 mt-1 font-bold">
+                      Enter the code. {otpTimer > 0 ? `(Expires in ${Math.floor(otpTimer / 60)}:${otpTimer % 60 < 10 ? '0' : ''}${otpTimer % 60})` : <span className="text-rose-500 font-bold">(Expired)</span>}
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-center gap-2">
+                    {otpCode.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => { otpRefs.current[idx] = el; }}
+                        type="text"
+                        maxLength={1}
+                        disabled={otpTimer === 0}
+                        className="w-10 h-11 bg-white border border-slate-200 focus:border-blue-600 rounded-xl text-center font-black text-lg outline-none transition-all shadow-sm"
+                        value={digit}
+                        onChange={(e) => handleOtpChange(e.target.value, idx)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                      />
+                    ))}
+                  </div>
+
+                  {otpError && (
+                    <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
+                      <AlertCircle size={12} /> {otpError}
+                    </p>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={handleVerifyOTP}
+                    disabled={verifyingOtp || otpTimer === 0}
+                    className="w-full h-10 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                  >
+                    {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                  </button>
+                </div>
+              )}
+
+              {/* Password Fields - Only visible after email verified */}
+              {emailVerified && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 ml-1 uppercase tracking-wider">Password</label>
+                    <div className="relative group">
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        placeholder="••••••••"
+                        className="w-full h-11 pl-12 pr-10 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold text-sm"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 ml-1 uppercase tracking-wider">Confirm Password</label>
+                    <div className="relative group">
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                        placeholder="••••••••"
+                        className="w-full h-11 pl-12 pr-10 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold text-sm"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Status / Success Messages */}
+              {otpSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 size={16} /> {otpSuccess}
+                </div>
+              )}
+
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3 text-rose-600 text-xs font-bold animate-in fade-in"
+                >
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+
+              {/* Submit Button */}
+              <button 
+                type="submit"
+                disabled={isSubmitting || !emailVerified}
+                className="w-full h-12 bg-slate-900 hover:bg-slate-950 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 mt-6 shadow-lg shadow-slate-900/10"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 mb-4">Registration Successful!</h1>
-          <p className="text-slate-500 text-lg leading-relaxed mb-8">
-            Your application to become a Clinic Administrator has been received. 
-            <span className="block font-bold text-slate-900 mt-2">Status: PENDING APPROVAL</span>
-          </p>
-          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-left mb-8">
-            <p className="text-sm text-slate-600 italic">
-              "Our team will review your identity verification documents and clinic details. 
-              You will be able to log in once your account is approved."
+
+          <div className="bg-slate-50 p-6 border-t border-slate-100 text-center">
+            <p className="text-slate-500 text-xs font-bold">
+              Already have an account? <Link href="/" className="text-blue-600 font-black hover:underline ml-1">Login</Link>
             </p>
           </div>
-          <p className="text-sm text-slate-400">Redirecting to login page in 5 seconds...</p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 py-12 px-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-      <div className="max-w-4xl mx-auto">
-        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors font-bold text-sm mb-8 group">
-          <ArrowRight className="rotate-180 group-hover:-translate-x-1 transition-transform" size={18} />
-          Back to Login
-        </Link>
-
-        <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-3">
-            {/* Sidebar Info */}
-            <div className="bg-blue-600 p-8 lg:p-12 text-white flex flex-col justify-between">
-              <div>
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-8">
-                  <Stethoscope size={32} />
-                </div>
-                <h2 className="text-3xl font-black mb-6 leading-tight">Join as a Clinic Administrator</h2>
-                <p className="text-blue-100 leading-relaxed font-medium">
-                  Register your branch and manage doctors, receptionists, and appointments with ease.
-                </p>
-              </div>
-
-              <div className="space-y-6 mt-12">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <ShieldCheck size={20} />
-                  </div>
-                  <p className="text-sm font-bold">Secure Verification</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Building2 size={20} />
-                  </div>
-                  <p className="text-sm font-bold">Multi-Branch Support</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Registration Form */}
-            <div className="lg:col-span-2 p-8 lg:p-12">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Section 1: Basic Information */}
-                <div>
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Basic Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Full Name</label>
-                      <div className="relative group">
-                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input 
-                          type="text" required
-                          disabled={emailVerified}
-                          value={formData.fullName}
-                          onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                          placeholder="John Doe"
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-70 disabled:bg-slate-100"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Email Address</label>
-                      <div className="relative group flex items-center">
-                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input 
-                          type="email" required
-                          disabled={emailVerified}
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="john@example.com"
-                          className="w-full h-12 pl-12 pr-28 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-70 disabled:bg-slate-100"
-                        />
-                        {!emailVerified && (
-                          <button
-                            type="button"
-                            onClick={handleSendOTP}
-                            disabled={otpSending || cooldown > 0 || !formData.email}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
-                          >
-                            {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
-                          </button>
-                        )}
-                      </div>
-                      {emailVerified && (
-                        <p className="text-[10px] font-black text-emerald-600 ml-1 flex items-center gap-1">
-                          <CheckCircle2 size={12} /> Email Verified
-                        </p>
-                      )}
-                    </div>
-
-                    {/* OTP Verification Block (Visible when OTP is sent and not verified yet) */}
-                    {otpSent && !emailVerified && (() => {
-                      const formatTime = (seconds) => {
-                        const mins = Math.floor(seconds / 60);
-                        const secs = seconds % 60;
-                        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                      };
-
-                      return (
-                        <div className="col-span-1 md:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-200/60 animate-in fade-in duration-250 space-y-4">
-                          <div className="text-center">
-                            <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Verify Email OTP</h4>
-                            <p className="text-[10px] text-slate-400 mt-1 font-bold">
-                              Enter 6-digit OTP code sent to your email. {otpTimer > 0 ? `(Expires in ${formatTime(otpTimer)})` : <span className="text-rose-500 font-bold">(Expired)</span>}
-                            </p>
-                          </div>
-                          
-                          <div className="flex justify-center gap-2">
-                            {otpCode.map((digit, idx) => (
-                              <input
-                                key={idx}
-                                ref={(el) => { otpRefs.current[idx] = el; }}
-                                type="text"
-                                maxLength={1}
-                                disabled={otpTimer === 0}
-                                className="w-10 h-12 bg-white border border-slate-200 focus:border-blue-600 rounded-xl text-center font-black text-lg outline-none transition-all shadow-sm disabled:opacity-50"
-                                value={digit}
-                                onChange={(e) => handleOtpChange(e.target.value, idx)}
-                                onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-                              />
-                            ))}
-                          </div>
-
-                          {otpError && (
-                            <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
-                              <AlertCircle size={12} /> {otpError}
-                            </p>
-                          )}
-                          {otpSuccess && (
-                            <p className="text-[10px] font-black text-emerald-600 text-center flex items-center justify-center gap-1">
-                              <CheckCircle2 size={12} /> {otpSuccess}
-                            </p>
-                          )}
-                          {otpTimer === 0 && (
-                            <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
-                              <AlertCircle size={12} /> OTP code has expired. Please click "Resend" to get a new code.
-                            </p>
-                          )}
-
-                          <div className="flex gap-3">
-                            <button
-                              type="button"
-                              onClick={handleVerifyOTP}
-                              disabled={verifyingOtp || otpTimer === 0}
-                              className="flex-1 h-10 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
-                            >
-                              {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Password</label>
-                      <div className="relative group">
-                        <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input 
-                          type="password" required
-                          disabled={!emailVerified}
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          placeholder={emailVerified ? "••••••••" : "Verify email to unlock"}
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Phone Number</label>
-                      <div className="relative group">
-                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input 
-                          type="tel" required
-                          disabled={!emailVerified}
-                          value={formData.phoneNumber}
-                          onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                          placeholder={emailVerified ? "+91 98765 43210" : "Verify email to unlock"}
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 2: Identity Verification */}
-                <div>
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Identity Verification</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">ID Type</label>
-                      <select 
-                        disabled={!emailVerified}
-                        value={formData.governmentIdType}
-                        onChange={(e) => setFormData({...formData, governmentIdType: e.target.value})}
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="Aadhar">Aadhar Card</option>
-                        <option value="PAN">PAN Card</option>
-                        <option value="Passport">Passport</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">ID Number</label>
-                      <input 
-                        type="text" required
-                        disabled={!emailVerified}
-                        value={formData.governmentIdNumber}
-                        onChange={(e) => setFormData({...formData, governmentIdNumber: e.target.value})}
-                        placeholder={emailVerified ? "Enter ID Number" : "Verify email to unlock"}
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase mb-2 block">Upload ID Proof (PDF/Image)</label>
-                      <div className="relative">
-                        <input 
-                          type="file" 
-                          disabled={!emailVerified}
-                          onChange={handleFileUpload}
-                          className="hidden" 
-                          id="id-upload"
-                          accept=".pdf,image/*"
-                        />
-                        <label 
-                          htmlFor="id-upload"
-                          className={`flex items-center justify-center gap-3 w-full h-24 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${!emailVerified ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-50' : formData.idProofDocument ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-blue-300'}`}
-                        >
-                          {isUploading ? (
-                            <Loader2 size={24} className="animate-spin" />
-                          ) : formData.idProofDocument ? (
-                            <>
-                              <CheckCircle2 size={24} />
-                              <span className="font-bold">Document Uploaded Successfully</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload size={24} />
-                              <span className="font-bold text-sm">{emailVerified ? "Click to upload your ID document" : "Verify email to unlock file upload"}</span>
-                            </>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Clinic Intent */}
-                <div>
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Clinic Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-3 space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">Proposed Clinic Name</label>
-                      <div className="relative group">
-                        <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input 
-                          type="text" required
-                          disabled={!emailVerified}
-                          value={formData.clinicName}
-                          onChange={(e) => setFormData({...formData, clinicName: e.target.value})}
-                          placeholder={emailVerified ? "e.g. City Health Care" : "Verify email to unlock"}
-                          className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">City</label>
-                      <input 
-                        type="text" required
-                        disabled={!emailVerified}
-                        value={formData.city}
-                        onChange={(e) => setFormData({...formData, city: e.target.value})}
-                        placeholder={emailVerified ? "Noida" : "Verify email to unlock"}
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="text-xs font-bold text-slate-700 ml-1 uppercase">State</label>
-                      <input 
-                        type="text" required
-                        disabled={!emailVerified}
-                        value={formData.state}
-                        onChange={(e) => setFormData({...formData, state: e.target.value})}
-                        placeholder={emailVerified ? "Uttar Pradesh" : "Verify email to unlock"}
-                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none text-slate-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3 text-red-600 text-sm font-medium"
-                  >
-                    <AlertCircle size={18} />
-                    {error}
-                  </motion.div>
-                )}
-
-                <button 
-                  type="submit"
-                  disabled={isSubmitting || isUploading}
-                  className="w-full h-14 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:pointer-events-none"
-                >
-                  {isSubmitting ? (
-                    <Loader2 size={24} className="animate-spin" />
-                  ) : (
-                    <>
-                      Submit Application
-                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-slate-400 font-medium leading-relaxed">
-                  By submitting this application, you agree to our Terms of Service and Privacy Policy. 
-                  Your data will be used solely for identity verification and clinic registration purposes.
-                </p>
-              </form>
-            </div>
-          </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Google Sign-in Mock Modal */}
+      <Modal
+        isOpen={showGoogleMock}
+        onClose={() => setShowGoogleMock(false)}
+        title="Sign up with Google"
+        size="md"
+      >
+        <div className="space-y-5 py-2">
+          <p className="text-xs text-slate-500 font-medium">Link your Google Identity to register instantly as a Clinic Admin.</p>
+          
+          <form onSubmit={handleGoogleSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+              <input 
+                type="text"
+                placeholder="Google User Name"
+                required
+                value={googleName}
+                onChange={(e) => setGoogleName(e.target.value)}
+                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-800 transition-all outline-none font-bold text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+              <input 
+                type="email"
+                placeholder="user@gmail.com"
+                required
+                value={googleEmail}
+                onChange={(e) => setGoogleEmail(e.target.value)}
+                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-800 transition-all outline-none font-bold text-sm"
+              />
+            </div>
+
+            {googleError && (
+              <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5 ml-1">
+                <AlertCircle size={14} /> {googleError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={googleLoading}
+              className="w-full h-11 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              {googleLoading ? <Loader2 className="animate-spin" /> : 'Confirm Google Sign-Up'}
+            </button>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 }
