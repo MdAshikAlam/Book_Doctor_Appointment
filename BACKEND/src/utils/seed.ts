@@ -15,7 +15,8 @@ export const seedSystemUsers = async () => {
         email: config.SUPER_ADMIN_EMAIL,
         password: config.SUPER_ADMIN_PASSWORD,
         role: UserRole.SUPER_ADMIN,
-        isEmailVerified: true
+        isEmailVerified: true,
+        emailVerified: true
       });
 
       logger.info(`✅ Super Admin provisioned successfully: ${config.SUPER_ADMIN_EMAIL}`);

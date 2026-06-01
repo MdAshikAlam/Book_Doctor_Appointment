@@ -38,7 +38,7 @@ import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
@@ -56,6 +56,7 @@ const FACILITIES = ['ICU', 'Ambulance', 'Parking', 'Wheelchair Access'];
 
 export default function ClinicsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [clinics, setClinics] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -67,6 +68,7 @@ export default function ClinicsPage() {
   // Registration Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClinicId, setEditingClinicId] = useState(null);
+  const [wizardStep, setWizardStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -287,6 +289,14 @@ export default function ClinicsPage() {
   useEffect(() => {
     fetchData();
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      resetForm();
+      setWizardStep(1);
+      setIsModalOpen(true);
+    }
+  }, [searchParams]);
 
   const fetchData = async () => {
     try {
@@ -795,446 +805,308 @@ export default function ClinicsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
+              className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900">{editingClinicId ? 'Edit Clinic' : 'Register New Clinic'}</h2>
-                  <p className="text-sm text-slate-500 font-medium">Fill in the clinical and administrative details below.</p>
+              {/* Modal Header & Progress Indicator */}
+              <div className="p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900">{editingClinicId ? 'Edit Clinic Workspace' : 'Add New Clinic Workspace'}</h2>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Separate from user account registration</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
-                >
-                  <X size={20} />
-                </button>
+
+                {/* Wizard Steps Tracker */}
+                {!editingClinicId && (
+                  <div className="flex items-center justify-between relative max-w-xl mx-auto pt-2 pb-1">
+                    <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-150 -translate-y-1/2 z-0" />
+                    <div 
+                      className="absolute left-0 top-1/2 h-0.5 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-300"
+                      style={{ width: `${((wizardStep - 1) / 3) * 100}%` }}
+                    />
+                    {[
+                      { num: 1, label: 'Basic Info' },
+                      { num: 2, label: 'Location' },
+                      { num: 3, label: 'Verification' },
+                      { num: 4, label: 'Review' }
+                    ].map((stepObj) => (
+                      <div key={stepObj.num} className="relative z-10 flex flex-col items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-350 ${
+                          wizardStep > stepObj.num 
+                            ? 'bg-emerald-500 text-white' 
+                            : wizardStep === stepObj.num 
+                              ? 'bg-blue-600 text-white ring-4 ring-blue-100' 
+                              : 'bg-slate-200 text-slate-500'
+                        }`}>
+                          {wizardStep > stepObj.num ? <CheckCircle2 size={14} /> : stepObj.num}
+                        </div>
+                        <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 mt-1.5">{stepObj.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
+              {/* Wizard Form Sections */}
               <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <form onSubmit={handleSubmit} className="space-y-12">
-                                   {/* 1. Basic Info */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      1. Basic Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Input 
-                        label="Clinic Display Name" 
-                        name="clinicName" 
-                        placeholder="e.g. Apollo Healthcare" 
-                        value={formData.clinicName} 
-                        onChange={handleInputChange} 
-                        error={fieldErrors.clinicName}
-                        required 
-                      />
-                      <Input 
-                        label="Legal Registered Name" 
-                        name="legalName" 
-                        placeholder="e.g. Apollo Hospitals Enterprise Ltd" 
-                        value={formData.legalName} 
-                        onChange={handleInputChange} 
-                        error={fieldErrors.legalName}
-                        required 
-                      />
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Clinic Type</label>
-                        <select 
-                          name="clinicType"
-                          value={formData.clinicType}
-                          onChange={handleInputChange}
-                          className={`w-full h-11 px-4 rounded-xl bg-slate-50 border-2 transition-all outline-none font-bold text-sm ${
-                            fieldErrors.clinicType 
-                              ? 'border-red-500 focus:bg-white focus:border-red-500' 
-                              : 'border-transparent focus:bg-white focus:border-blue-600'
-                          }`}
-                        >
-                          {CLINIC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        {fieldErrors.clinicType && (
-                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.clinicType}</p>
-                        )}
-                      </div>
-                      <div className="md:col-span-2 space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Description (About Clinic)</label>
-                        <textarea 
-                          name="description"
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          className={`w-full p-4 rounded-xl bg-slate-50 border-2 transition-all outline-none font-bold text-sm min-h-[100px] ${
-                            fieldErrors.description 
-                              ? 'border-red-500 focus:bg-white focus:border-red-500' 
-                              : 'border-transparent focus:bg-white focus:border-blue-600'
-                          }`}
-                          placeholder="Briefly describe the clinic and its history..."
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                  
+                  {/* STEP 1: Basic Information */}
+                  {(editingClinicId || wizardStep === 1) && (
+                    <motion.div 
+                      initial={editingClinicId ? {} : { opacity: 0, x: 20 }}
+                      animate={editingClinicId ? {} : { opacity: 1, x: 0 }}
+                      className="space-y-6"
+                    >
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Step 1. Basic Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input 
+                          label="Clinic Display Name" 
+                          name="clinicName" 
+                          placeholder="e.g. Metro Healthcare Centre" 
+                          value={formData.clinicName} 
+                          onChange={(e) => {
+                            handleInputChange(e);
+                            // Auto fill legalName if empty
+                            if (!formData.legalName) {
+                              setFormData(prev => ({ ...prev, legalName: e.target.value }));
+                            }
+                          }} 
+                          error={fieldErrors.clinicName}
+                          required 
                         />
-                        {fieldErrors.description && (
-                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.description}</p>
-                        )}
-                      </div>
-                      <div className="md:col-span-2 space-y-2">
-                         <label className="text-sm font-bold text-slate-700 ml-1">Clinic Logo / Image</label>
-                         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                            {formData.images && formData.images.map((imgUrl, index) => (
-                               <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
-                                  <img src={getFullImageUrl(imgUrl)} alt={`Clinic Image ${index + 1}`} className="w-full h-full object-cover" />
-                                  <button
-                                     type="button"
-                                     onClick={() => handleRemoveImage(index)}
-                                     className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
-                                     title="Remove Image"
-                                  >
-                                     <X size={12} />
-                                  </button>
-                               </div>
-                            ))}
-                            <label className="aspect-square rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600">
-                               {isUploading ? (
-                                  <><Loader2 size={16} className="animate-spin" /> Uploading...</>
-                               ) : (
-                                  <><Upload size={16} /> Upload Image</>
-                               )}
-                               <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'images')} />
-                            </label>
-                         </div>
-                         {fieldErrors.images && (
-                           <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.images}</p>
-                         )}
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* 2. Location */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      2. Location Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <Input label="Detailed Address" name="address" value={formData.address} onChange={handleInputChange} error={fieldErrors.address} required />
-                      </div>
-                      <Input label="Building/Floor (Optional)" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} error={fieldErrors.addressLine2} />
-                      <Input label="City" name="city" value={formData.city} onChange={handleInputChange} error={fieldErrors.city} required />
-                      <Input label="State" name="state" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} required />
-                      <Input label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} error={fieldErrors.pincode} required />
-                      <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} error={fieldErrors.country} required />
-                    </div>
-                  </section>
-
-
-                  {/* 4. Contact Details */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      4. Clinic Contact
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Public Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} error={fieldErrors.phone} icon={Phone} required />
-                       <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleInputChange} error={fieldErrors.alternatePhone} icon={Phone} />
-                       <Input label="Public Email Address" name="email" value={formData.email} onChange={handleInputChange} error={fieldErrors.email} icon={Mail} required />
-                    </div>
-                  </section>
-
-                  {/* 5. Timing */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      5. Working Hours
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Opening Time" name="openingTime" type="time" value={formData.openingTime} onChange={handleInputChange} error={fieldErrors.openingTime} icon={Clock} required />
-                       <Input label="Closing Time" name="closingTime" type="time" value={formData.closingTime} onChange={handleInputChange} error={fieldErrors.closingTime} icon={Clock} required />
-                       <div className="md:col-span-2 space-y-3">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Working Days</label>
-                          <div className="flex flex-wrap gap-2">
-                             {WORKING_DAYS.map(day => (
-                               <button
-                                 key={day}
-                                 type="button"
-                                 onClick={() => {
-                                    handleArrayToggle('workingDays', day);
-                                    if (fieldErrors.workingDays) {
-                                      setFieldErrors(prev => {
-                                        const next = { ...prev };
-                                        delete next.workingDays;
-                                        return next;
-                                      });
-                                    }
-                                 }}
-                                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                                   formData.workingDays.includes(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                 }`}
-                               >
-                                 {day}
-                               </button>
-                             ))}
-                          </div>
-                          {fieldErrors.workingDays && (
-                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.workingDays}</p>
-                          )}
-                       </div>
-                       <div className="md:col-span-2 flex items-center gap-3 p-4 bg-red-50 rounded-2xl border border-red-100">
-                          <input 
-                            type="checkbox" 
-                            name="emergencyAvailable" 
-                            checked={formData.emergencyAvailable}
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Type</label>
+                          <select 
+                            name="clinicType"
+                            value={formData.clinicType}
                             onChange={handleInputChange}
-                            className="w-5 h-5 rounded-lg text-red-600"
-                          />
-                          <label className="text-sm font-bold text-red-900">Emergency Available (24/7 Support)</label>
-                       </div>
-                    </div>
-                  </section>
-
-                  {/* 6. Doctors Mapping */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      6. Doctors Mapping
-                    </h3>
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Select Available Doctors</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                           {doctors.map(doc => (
-                              <button
-                                key={doc._id}
-                                type="button"
-                                onClick={() => {
-                                  handleArrayToggle('doctors', doc._id);
-                                  if (fieldErrors.doctors) {
-                                    setFieldErrors(prev => {
-                                      const next = { ...prev };
-                                      delete next.doctors;
-                                      return next;
-                                    });
-                                  }
-                                }}
-                                className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-                                  formData.doctors.includes(doc._id) ? 'border-blue-600 bg-blue-50 shadow-inner' : 'border-slate-100 hover:border-blue-200'
-                                }`}
-                              >
-                                 <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-600 font-bold text-xs border border-slate-200">
-                                    {doc.user?.name?.charAt(0)}
-                                 </div>
-                                 <span className="text-xs font-bold text-slate-700">Dr. {doc.user?.name}</span>
-                              </button>
-                           ))}
+                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm"
+                          >
+                            {CLINIC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
                         </div>
-                        {fieldErrors.doctors && (
-                          <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.doctors}</p>
-                        )}
-                    </div>
-                  </section>
-
-                  {/* 7. Facilities & Services */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      7. Facilities & Services
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-3">
-                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Available Services</label>
-                          <div className="flex flex-wrap gap-2">
-                             {SERVICES.map(s => (
-                               <button
-                                 key={s} type="button"
-                                 onClick={() => {
-                                   handleArrayToggle('services', s);
-                                   if (fieldErrors.services) {
-                                     setFieldErrors(prev => {
-                                       const next = { ...prev };
-                                       delete next.services;
-                                       return next;
-                                     });
-                                   }
-                                 }}
-                                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                                   formData.services.includes(s) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-                                 }`}
-                               >
-                                 {s}
-                               </button>
-                             ))}
-                          </div>
-                          {fieldErrors.services && (
-                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.services}</p>
-                          )}
-                       </div>
-                       <div className="space-y-3">
-                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Common Facilities</label>
-                          <div className="flex flex-wrap gap-2">
-                             {FACILITIES.map(f => (
-                               <button
-                                 key={f} type="button"
-                                 onClick={() => {
-                                   handleArrayToggle('facilities', f);
-                                   if (fieldErrors.facilities) {
-                                     setFieldErrors(prev => {
-                                       const next = { ...prev };
-                                       delete next.facilities;
-                                       return next;
-                                     });
-                                   }
-                                 }}
-                                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                                   formData.facilities.includes(f) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-                                 }`}
-                               >
-                                 {f}
-                               </button>
-                             ))}
-                          </div>
-                          {fieldErrors.facilities && (
-                            <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.facilities}</p>
-                          )}
-                       </div>
-                    </div>
-                  </section>
-
-
-
-                  {/* 8.5 Operations Settings */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      8.5 Operations Settings
-                    </h3>
-                    <div className="grid grid-cols-1 gap-6">
-                       <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                          <input 
-                            type="checkbox" 
-                            name="receptionAssistantMode" 
-                            checked={formData.receptionAssistantMode || false}
-                            onChange={(e) => {
-                              setFormData(prev => ({
-                                ...prev,
-                                receptionAssistantMode: e.target.checked
-                              }));
-                            }}
-                            className="w-5 h-5 rounded-lg text-blue-600"
+                        <div className="md:col-span-2 space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Description (About Clinic)</label>
+                          <textarea 
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            placeholder="Describe clinic specialization, hours, or context..."
+                            className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm min-h-[100px]"
                           />
-                          <div>
-                            <label className="text-sm font-black text-slate-800">Enable Reception Assistant Mode</label>
-                            <p className="text-xs text-slate-500 font-bold mt-1">When enabled, receptionists can help doctors prepare patient consults by drafting clinical records (status Draft Prepared).</p>
-                          </div>
-                       </div>
-                    </div>
-                  </section>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
-                  {/* 9. Verification Details */}
-                  <section className="space-y-6">
-                    <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                      <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                      9. Verification Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Input label="Registration Number (GST/License)" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} error={fieldErrors.registrationNumber} required />
-                       <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Registration Proof (Mandatory)</label>
-                           <div className="flex items-center gap-4">
-                             {formData.registrationProof && formData.registrationProof.match(/\.(jpg|jpeg|png|webp|gif)$|image/i) && (
-                                <div className="w-11 h-11 rounded-lg overflow-hidden border border-emerald-200 shadow-sm flex-shrink-0">
-                                   <img src={getFullImageUrl(formData.registrationProof)} alt="Proof" className="w-full h-full object-cover" />
-                                </div>
-                             )}
-                             <label className="flex-1 block">
-                                <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                  fieldErrors.registrationProof 
-                                    ? 'bg-red-50 border-red-200 text-red-600 hover:border-red-600' 
-                                    : formData.registrationProof 
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
-                                }`}>
-                                   {isUploading ? (
-                                      <><Loader2 size={18} className="animate-spin" /> Uploading...</>
-                                   ) : formData.registrationProof ? (
-                                      <><CheckCircle2 size={18} /> Proof Attached</>
-                                   ) : (
-                                      <><Upload size={18} /> Upload Proof (PDF/IMG)</>
-                                   )}
-                                </div>
-                                <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'registrationProof')} />
-                             </label>
-                           </div>
-                           {fieldErrors.registrationProof && (
-                             <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.registrationProof}</p>
-                           )}
-                       </div>
-                       <div className="md:col-span-2 space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Address Proof (Optional)</label>
-                           <div className="flex items-center gap-4">
-                             {formData.addressProof && formData.addressProof.match(/\.(jpg|jpeg|png|webp|gif)$|image/i) && (
-                                <div className="w-11 h-11 rounded-lg overflow-hidden border border-blue-200 shadow-sm flex-shrink-0">
-                                   <img src={getFullImageUrl(formData.addressProof)} alt="Address Proof" className="w-full h-full object-cover" />
-                                </div>
-                             )}
-                             <label className="flex-1 block">
-                                <div className={`w-full h-11 px-4 rounded-xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold ${
-                                  fieldErrors.addressProof 
-                                    ? 'bg-red-50 border-red-200 text-red-600 hover:border-red-600' 
-                                    : formData.addressProof 
-                                      ? 'bg-blue-50 border-blue-200 text-blue-600' 
-                                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600'
-                                }`}>
-                                   {isUploading ? (
-                                      <><Loader2 size={18} className="animate-spin" /> Uploading...</>
-                                   ) : formData.addressProof ? (
-                                      <><CheckCircle2 size={18} /> Address Proof Attached</>
-                                   ) : (
-                                      <><Upload size={18} /> Upload Address Proof</>
-                                   )}
-                                </div>
-                                <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'addressProof')} />
-                             </label>
-                           </div>
-                           {fieldErrors.addressProof && (
-                             <p className="text-xs font-medium text-red-500 ml-1">{fieldErrors.addressProof}</p>
-                           )}
-                       </div>
-                    </div>
-                  </section>
+                  {/* STEP 2: Location Details */}
+                  {(editingClinicId || wizardStep === 2) && (
+                    <motion.div 
+                      initial={editingClinicId ? {} : { opacity: 0, x: 20 }}
+                      animate={editingClinicId ? {} : { opacity: 1, x: 0 }}
+                      className="space-y-6"
+                    >
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Step 2. Location Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                          <Input label="Detailed Address" name="address" placeholder="e.g. 123 Health Ave, Suite 4" value={formData.address} onChange={handleInputChange} error={fieldErrors.address} required />
+                        </div>
+                        <Input label="City" name="city" placeholder="e.g. New Delhi" value={formData.city} onChange={handleInputChange} error={fieldErrors.city} required />
+                        <Input label="State" name="state" placeholder="e.g. Delhi" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} required />
+                        <Input label="Pincode" name="pincode" placeholder="e.g. 110001" value={formData.pincode} onChange={handleInputChange} error={fieldErrors.pincode} required />
+                        <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} error={fieldErrors.country} required />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 3: Verification */}
+                  {(editingClinicId || wizardStep === 3) && (
+                    <motion.div 
+                      initial={editingClinicId ? {} : { opacity: 0, x: 20 }}
+                      animate={editingClinicId ? {} : { opacity: 1, x: 0 }}
+                      className="space-y-6"
+                    >
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Step 3. Verification Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input label="Clinic Registration Number" name="registrationNumber" placeholder="e.g. REG-783921" value={formData.registrationNumber} onChange={handleInputChange} error={fieldErrors.registrationNumber} required />
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Logo</label>
+                          <div className="flex items-center gap-4">
+                            {formData.images?.[0] && (
+                              <div className="w-11 h-11 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
+                                <img src={getFullImageUrl(formData.images[0])} alt="Logo" className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            <label className="flex-1 block">
+                              <div className="w-full h-11 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-slate-500">
+                                {isUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading...</> : <><Upload size={16} /> Choose Logo Image</>}
+                              </div>
+                              <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'images')} />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2 space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Supporting / Registration Document (GST / License Proof)</label>
+                          <div className="flex items-center gap-4">
+                            {formData.registrationProof && (
+                              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <ShieldCheck size={20} />
+                              </div>
+                            )}
+                            <label className="flex-1 block">
+                              <div className="w-full h-11 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-slate-500">
+                                {isUploading ? <><Loader2 size={16} className="animate-spin" /> Uploading...</> : formData.registrationProof ? 'Proof Attached. Replace?' : <><Upload size={16} /> Upload Document (PDF/IMG)</>}
+                              </div>
+                              <input type="file" className="hidden" accept="image/*,application/pdf" disabled={isUploading} onChange={(e) => handleFileUpload(e, 'registrationProof')} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 4: Review Details */}
+                  {!editingClinicId && wizardStep === 4 && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="space-y-6"
+                    >
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Step 4. Review & Submit
+                      </h3>
+                      
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clinic Name</span>
+                          <span className="text-xs font-black text-slate-800">{formData.clinicName}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clinic Type</span>
+                          <span className="text-xs font-black text-slate-800">{formData.clinicType}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</span>
+                          <span className="text-xs font-black text-slate-800 truncate max-w-sm">{formData.address}, {formData.city}, {formData.state} - {formData.pincode}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reg Number</span>
+                          <span className="text-xs font-black text-slate-800">{formData.registrationNumber}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Supporting File</span>
+                          <span className="text-xs font-black text-emerald-600">{formData.registrationProof ? 'Uploaded successfully' : 'Not uploaded'}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3 text-blue-700">
+                        <AlertCircle className="shrink-0" size={20} />
+                        <p className="text-xs font-medium leading-relaxed">
+                          Your clinic request will enter <strong>Pending Verification</strong> status. It will not be publicly visible or bookable until Super Admin review and approval.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {formError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-bold flex flex-col gap-2">
-                       <div className="flex items-center gap-3">
-                          <AlertCircle size={20} className="shrink-0" />
-                          <span>Please correct the following errors:</span>
-                       </div>
-                       <ul className="list-disc pl-8 space-y-1 font-medium text-xs">
-                          {Array.isArray(formError) ? (
-                            formError.map((err, idx) => <li key={idx}>{err}</li>)
-                          ) : (
-                            <li>{formError}</li>
-                          )}
-                       </ul>
+                    <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold flex flex-col gap-1.5 animate-in fade-in">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        <span>Form errors found:</span>
+                      </div>
+                      <ul className="list-disc pl-5 space-y-0.5 font-medium">
+                        {Array.isArray(formError) ? formError.map((err, idx) => <li key={idx}>{err}</li>) : <li>{formError}</li>}
+                      </ul>
                     </div>
                   )}
 
                   {successMsg && (
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm font-bold flex items-center gap-3">
-                       <CheckCircle2 size={20} /> {successMsg}
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm font-bold flex items-center gap-3 animate-in fade-in">
+                      <CheckCircle2 size={20} /> {successMsg}
                     </div>
                   )}
 
                 </form>
               </div>
 
+              {/* Modal Actions */}
               <div className="p-6 border-t border-slate-100 bg-white flex gap-4 sticky bottom-0 z-10">
-                <Button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-14 rounded-2xl border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={isSaving}
-                  className="flex-[2] h-14 bg-blue-600 text-white font-extrabold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
-                >
-                  {isSaving ? <Loader2 size={24} className="animate-spin" /> : editingClinicId ? 'Save Changes' : 'Register Clinic'}
-                </Button>
+                {editingClinicId ? (
+                  <>
+                    <Button 
+                      onClick={() => setIsModalOpen(false)}
+                      variant="outline"
+                      className="flex-1 h-12 rounded-xl"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleSubmit}
+                      disabled={isSaving}
+                      className="flex-[2] h-12 bg-blue-600 text-white font-extrabold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"
+                    >
+                      {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Save Changes'}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {wizardStep > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setWizardStep(prev => prev - 1)}
+                        className="px-6 h-12 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl"
+                      >
+                        Back
+                      </button>
+                    )}
+                    
+                    {wizardStep < 4 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError(null);
+                          // Validate local step before proceeding
+                          if (wizardStep === 1 && !formData.clinicName) {
+                            setFormError('Clinic Display Name is required.');
+                            return;
+                          }
+                          if (wizardStep === 2 && (!formData.address || !formData.city || !formData.state || !formData.pincode)) {
+                            setFormError('All location fields are required.');
+                            return;
+                          }
+                          setFormError(null);
+                          setWizardStep(prev => prev + 1);
+                        }}
+                        className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
+                      >
+                        Continue
+                        <ArrowRight size={16} />
+                      </button>
+                    ) : (
+                      <Button 
+                        onClick={handleSubmit}
+                        disabled={isSaving || !formData.registrationProof}
+                        className="flex-1 h-12 bg-emerald-500 text-white font-extrabold rounded-xl hover:bg-emerald-600 shadow-md shadow-emerald-100 flex items-center justify-center gap-2"
+                      >
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Submit Application'}
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
             </motion.div>
           </div>

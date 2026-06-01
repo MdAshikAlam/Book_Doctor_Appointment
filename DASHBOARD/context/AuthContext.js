@@ -66,6 +66,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (email, fullName, googleId, profilePicture) => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      const response = await apiCall('/auth/google-login', {
+        method: 'POST',
+        body: JSON.stringify({ email, fullName, googleId, profilePicture, isDashboard: true })
+      });
+      const { user } = response.data;
+      
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      router.push('/dashboard');
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await apiCall('/auth/logout', { method: 'POST' });
@@ -81,7 +105,7 @@ export const AuthProvider = ({ children }) => {
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

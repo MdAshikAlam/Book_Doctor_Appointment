@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   Users, 
   Stethoscope, 
@@ -12,7 +13,8 @@ import {
   ArrowRight,
   IndianRupee,
   TrendingUp,
-  Star
+  Star,
+  Building2
 } from 'lucide-react';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import Chart from '@/components/dashboard/Chart';
@@ -190,6 +192,26 @@ export default function DashboardPage() {
       case 'super_admin':
         return <SuperAdminDashboard {...props} />;
       case 'admin':
+        if (dashboardData.hasClinics === false) {
+          return (
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm max-w-4xl mx-auto animate-in fade-in zoom-in duration-500">
+              <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                <Building2 size={40} />
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Welcome to BookMyDoctor</h1>
+              <p className="text-slate-500 mt-3 font-medium max-w-md mx-auto leading-relaxed">
+                You have not created any clinics yet. Create your first clinic workspace to start configuring doctors, receptionists, and booking schedules.
+              </p>
+              <div className="mt-8">
+                <Link href="/dashboard/clinics?action=create">
+                  <Button className="h-14 px-8 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2">
+                    <Plus size={20} /> Create Your First Clinic
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          );
+        }
         return <AdminDashboard {...props} />;
       case 'doctor':
         return <DoctorDashboard {...props} />;

@@ -83,9 +83,10 @@ export const getPendingAdmins = async (req: Request, res: Response, next: NextFu
 
 export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, rejectionReason } = z.object({
-      status: z.enum(['pending', 'approved', 'rejected']),
-      rejectionReason: z.string().optional()
+    const { status, rejectionReason, infoRequestedMessage } = z.object({
+      status: z.enum(['pending', 'approved', 'rejected', 'info_requested']),
+      rejectionReason: z.string().optional(),
+      infoRequestedMessage: z.string().optional()
     }).parse(req.body);
 
     const user = await User.findById(req.params.id);
@@ -94,13 +95,139 @@ export const updateUserStatus = async (req: Request, res: Response, next: NextFu
     }
 
     const oldStatus = user.status;
-    user.status = status;
-    if (rejectionReason) user.rejectionReason = rejectionReason;
+    const crypto = await import('crypto');
+    const { sendEmail } = await import('../utils/email');
 
-    // Admin Approval logic handled by super admin manual review
-    // Clinic/Organization creation is now done manually by the Admin after login
+    if (status === 'approved') {
+      user.status = 'approved';
+      
+      // 1. Generate password creation token (reusing reset password flow)
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+      user.passwordResetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      user.passwordSet = false;
 
-    await user.save();
+      // 2. Auto-create default Clinic only for Clinic Admins
+      if (user.role === UserRole.ADMIN) {
+        const Clinic = (await import('../models/Clinic')).default;
+        const clinic = await Clinic.create({
+          clinicName: user.clinicName || 'Clinic Branch',
+          legalName: user.clinicName || 'Clinic Branch',
+          clinicType: 'Private Clinic',
+          ownerName: user.fullName || user.name,
+          ownerPhone: user.phone || '0000000000',
+          ownerEmail: user.email,
+          address: `${user.city || 'Default Address'}, ${user.state || 'Default State'}`,
+          city: user.city || 'Default City',
+          state: user.state || 'Default State',
+          pincode: '000000',
+          country: 'India',
+          location: {
+            type: 'Point',
+            coordinates: [77.2090, 28.6139] // Delhi fallback
+          },
+          phone: user.phone || '0000000000',
+          email: user.email,
+          openingTime: '09:00',
+          closingTime: '18:00',
+          registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
+          registrationProof: 'default_proof.pdf',
+          clinicStatus: 'approved',
+          owner: user._id,
+          createdByAdminId: user._id,
+          isActive: true,
+          isDeleted: false
+        });
+
+        user.branchId = clinic._id;
+        user.clinic = clinic._id;
+        user.branchIds = [clinic._id];
+      }
+
+      await user.save();
+
+      // 3. Send approval notification email with password link
+      const dashboardURL = process.env.DASHBOARD_URL || 'http://localhost:3000';
+      const resetURL = `${dashboardURL}/reset-password/${resetToken}`;
+      
+      try {
+        await sendEmail(
+          user.email,
+          'Your Clinic Onboarding Application has been Approved!',
+          `Congratulations! Your application for ${user.clinicName} has been approved. Please set up your password to activate your dashboard: ${resetURL}`,
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <h2 style="color: #00B5B5;">Application Approved!</h2>
+              <p>Dear ${user.name},</p>
+              <p>We are pleased to inform you that your application for <strong>${user.clinicName}</strong> has been approved by our Super Administrator.</p>
+              <p>To activate your dashboard and begin managing your clinic, please click the button below to create your password:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetURL}" style="background-color: #00B5B5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">Create Password & Login</a>
+              </div>
+              <p style="font-size: 12px; color: #718096;">Note: This secure link is valid for 24 hours.</p>
+            </div>
+          `
+        );
+      } catch (emailErr) {
+        console.error('Failed to send approval email:', emailErr);
+      }
+
+      await logActivity(req, 'APPROVE_CLINIC_ADMIN', 'User', user.id, `Approved clinic admin application for ${user.email} and auto-created clinic ${user.clinicName}`);
+
+    } else if (status === 'rejected') {
+      user.status = 'rejected';
+      if (rejectionReason) user.rejectionReason = rejectionReason;
+      await user.save();
+
+      // Send rejection notification email
+      try {
+        await sendEmail(
+          user.email,
+          'Update on your Clinic Onboarding Application',
+          `Your application has been rejected. Reason: ${rejectionReason || 'No reason specified'}`,
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <h2 style="color: #e53e3e;">Application Update</h2>
+              <p>Dear ${user.name},</p>
+              <p>Thank you for your interest in our platform. After reviewing your clinic application for <strong>${user.clinicName}</strong>, we regret to inform you that we cannot approve it at this time.</p>
+              <p><strong>Reason:</strong> ${rejectionReason || 'Incomplete/invalid documentation'}</p>
+              <p>If you believe this was an error or wish to submit a new application, please contact support.</p>
+            </div>
+          `
+        );
+      } catch (emailErr) {
+        console.error('Failed to send rejection email:', emailErr);
+      }
+
+      await logActivity(req, 'REJECT_CLINIC_ADMIN', 'User', user.id, `Rejected clinic admin application for ${user.email}. Reason: ${rejectionReason}`);
+
+    } else if (status === 'info_requested') {
+      user.status = 'info_requested';
+      if (infoRequestedMessage) user.infoRequestedMessage = infoRequestedMessage;
+      await user.save();
+
+      // Send Request More Information email
+      try {
+        await sendEmail(
+          user.email,
+          'Information required for your Clinic Onboarding Application',
+          `We need more information to process your application. Message: ${infoRequestedMessage}`,
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <h2 style="color: #3182ce;">More Information Requested</h2>
+              <p>Dear ${user.name},</p>
+              <p>Our review team is currently processing your clinic application for <strong>${user.clinicName}</strong>. We require some additional details before we can proceed:</p>
+              <p style="background-color: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px; font-weight: bold; color: #2b6cb0;">${infoRequestedMessage}</p>
+              <p>Please reply to this email or contact support to provide the requested details.</p>
+            </div>
+          `
+        );
+      } catch (emailErr) {
+        console.error('Failed to send info requested email:', emailErr);
+      }
+
+      await logActivity(req, 'INFO_REQUESTED_CLINIC_ADMIN', 'User', user.id, `Requested more information for ${user.email}. Message: ${infoRequestedMessage}`);
+    }
 
     res.status(200).json({
       status: 'success',
@@ -116,18 +243,23 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
     const currentUser = (req as any).user;
     const branchId = (req as any).branchId;
     let query: any = {
-      role: { $nin: [UserRole.SUPER_ADMIN, UserRole.PATIENT] },
-      status: { $in: ['active', 'approved', 'suspended', 'inactive'] }
+      role: { $nin: [UserRole.SUPER_ADMIN, UserRole.PATIENT] }
     };
 
-    // Data Isolation Logic
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       // Global Mode: No branch filter unless specifically selected
       if (branchId) {
         query.branchId = new mongoose.Types.ObjectId(branchId);
       }
+      if (req.query.status) {
+        query.status = req.query.status;
+      }
+      if (req.query.role) {
+        query.role = req.query.role;
+      }
     } else {
       // Branch-Specific Mode: Enforce current branch filtering
+      query.status = { $in: ['active', 'approved', 'suspended', 'inactive'] };
       if (!branchId) {
         return next(new AppError('Unauthorized: No branch context found', 403));
       }
@@ -245,6 +377,7 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
     }
 
     const branchId = (req as any).branchId;
+    const initialStatus = (currentUser.role === UserRole.SUPER_ADMIN || validatedData.role === UserRole.RECEPTIONIST) ? 'active' : 'pending';
 
     const user = await User.create({
       ...validatedData,
@@ -253,7 +386,8 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
       branchId: validatedData.clinicId || (req as any).branchId || undefined,
       createdBy: currentUser.id,
       parentAdmin,
-      parentReceptionist
+      parentReceptionist,
+      status: initialStatus
     } as any);
 
     // If role is doctor, create a default Doctor profile so they appear in Doctors list
@@ -272,14 +406,18 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
         branchId: validatedData.clinicId || (req as any).branchId || undefined,
         createdBy: currentUser.id,
         parentAdmin,
-        parentReceptionist
+        parentReceptionist,
+        status: (currentUser.role === UserRole.SUPER_ADMIN) ? 'verified' : 'submitted'
       });
     }
+
+    // Log User Creation activity
+    await logActivity(req, 'CREATE_STAFF_USER', 'User', user._id.toString(), `Staff user ${user.email} of role ${user.role} created by ${currentUser.email} with status ${user.status}`);
 
     const u = user as any;
     res.status(201).json({
       status: 'success',
-      data: { user: { id: u._id, name: u.name, email: u.email, role: u.role } },
+      data: { user: { id: u._id, name: u.name, email: u.email, role: u.role, status: u.status } },
     });
   } catch (error) {
     next(error);

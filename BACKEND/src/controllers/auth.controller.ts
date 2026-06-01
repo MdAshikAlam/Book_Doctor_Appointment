@@ -20,13 +20,7 @@ const registerAdminSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  phoneNumber: z.string(),
-  governmentIdType: z.enum(['Aadhar', 'PAN', 'Passport']),
-  governmentIdNumber: z.string(),
-  idProofDocument: z.string().optional(),
-  clinicName: z.string(),
-  city: z.string(),
-  state: z.string(),
+  phoneNumber: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -79,17 +73,12 @@ export const registerAdmin = async (req: Request, res: Response, next: NextFunct
     const validatedData = registerAdminSchema.parse(req.body);
     const result = await authService.registerUser({
       name: validatedData.fullName,
+      fullName: validatedData.fullName,
       email: validatedData.email,
       password: validatedData.password,
       phone: validatedData.phoneNumber,
-      governmentIdType: validatedData.governmentIdType as any,
-      governmentIdNumber: validatedData.governmentIdNumber,
-      idProofDocument: validatedData.idProofDocument,
-      clinicName: validatedData.clinicName,
-      city: validatedData.city,
-      state: validatedData.state,
       role: 'admin' as any,
-      status: 'pending' as any
+      status: 'approved' as any
     } as any);
 
     sendTokenResponse(result, 201, res);
@@ -181,9 +170,16 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
     // Check if account already verified but password is not set
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (user && user.emailVerified && !user.passwordSet) {
-      return res.status(428).json({
-        status: 'pending_password',
-        message: 'Please set your password to continue.'
+      return res.status(200).json({
+        status: 'already_verified',
+        message: 'Email already verified.',
+        data: {
+          fullName: user.fullName || user.name || '',
+          phoneNumber: user.phone || '',
+          clinicName: user.clinicName || '',
+          city: user.city || '',
+          state: user.state || ''
+        }
       });
     }
 
@@ -217,11 +213,12 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
 
 export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, fullName, googleId, profilePicture } = z.object({
+    const { email, fullName, googleId, profilePicture, isDashboard } = z.object({
       email: z.string().email(),
       fullName: z.string(),
       googleId: z.string(),
-      profilePicture: z.string().optional()
+      profilePicture: z.string().optional(),
+      isDashboard: z.boolean().optional()
     }).parse(req.body);
 
     const googleAuthData: {
@@ -229,6 +226,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
       fullName: string;
       googleId: string;
       profilePicture?: string;
+      isDashboard?: boolean;
     } = {
       email,
       fullName,
@@ -236,6 +234,9 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     };
     if (profilePicture !== undefined) {
       googleAuthData.profilePicture = profilePicture;
+    }
+    if (isDashboard !== undefined) {
+      googleAuthData.isDashboard = isDashboard;
     }
 
     const result = await authService.googleAuth(googleAuthData);

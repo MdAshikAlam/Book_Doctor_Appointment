@@ -25,7 +25,9 @@ import {
   History,
   Trash2,
   CheckCircle2,
-  X
+  X,
+  IndianRupee,
+  Bell
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -37,24 +39,48 @@ function cn(...inputs) {
 
 const superAdminSections = [
   {
-    title: 'Core',
+    title: 'Overview',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' }
+    ]
+  },
+  {
+    title: 'Approval Center',
+    items: [
+      { icon: Building2, label: 'Clinic Verification Requests', href: '/dashboard/clinic-verification' },
+      { icon: Stethoscope, label: 'Doctor Verification Requests', href: '/dashboard/doctor-verification' },
+      { icon: FileCheck, label: 'KYC Verification Requests', href: '/dashboard/kyc-verification' }
+    ]
+  },
+  {
+    title: 'Clinic Management',
+    items: [
       { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
-      { icon: Shield, label: 'Admins', href: '/dashboard/staff?role=admin' },
-      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
-      { icon: UserRound, label: 'Receptionists', href: '/dashboard/staff?role=receptionist' },
-      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
+      { icon: Shield, label: 'Clinic Admins', href: '/dashboard/clinic-admins' },
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' }
+    ]
+  },
+  {
+    title: 'Analytics',
+    items: [
+      { icon: BarChart3, label: 'Patient Analytics', href: '/dashboard/analytics?tab=patient' },
+      { icon: Building2, label: 'Clinic Analytics', href: '/dashboard/analytics?tab=clinic' },
+      { icon: Stethoscope, label: 'Doctor Analytics', href: '/dashboard/analytics?tab=doctor' },
+      { icon: IndianRupee, label: 'Revenue Analytics', href: '/dashboard/analytics?tab=revenue' }
+    ]
+  },
+  {
+    title: 'Support & Governance',
+    items: [
+      { icon: Mail, label: 'Support Center', href: '/dashboard/support' },
+      { icon: History, label: 'Audit Logs', href: '/dashboard/logs' },
+      { icon: Bell, label: 'Notifications', href: '/dashboard/notifications' }
     ]
   },
   {
     title: 'System',
     items: [
-      { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
-      { icon: Flag, label: 'Revenue Reports', href: '/dashboard/reports' },
-      { icon: History, label: 'Activity Logs', href: '/dashboard/logs' },
-      { icon: Settings, label: 'System Settings', href: '/dashboard/settings' },
-      { icon: Mail, label: 'Contact Submissions', href: '/dashboard/contacts', category: 'contact' },
+      { icon: Settings, label: 'System Settings', href: '/dashboard/settings' }
     ]
   }
 ];
