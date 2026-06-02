@@ -29,13 +29,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(freshUser));
       } catch (err) {
         console.error('Auth Init Error:', err);
-        // Clear everything IMMEDIATELY to prevent redirect loops during the async logout
         setUser(null);
         localStorage.removeItem('user');
-        
-        if (err.message.includes('401') || err.message.includes('logged in')) {
-          await logout();
-        }
       } finally {
 
         setLoading(false);
@@ -66,14 +61,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const googleLogin = async (email, fullName, googleId, profilePicture) => {
+  const googleLogin = async (email, fullName, googleId, profilePicture, token) => {
     try {
       setError(null);
       setLoading(true);
       
       const response = await apiCall('/auth/google-login', {
         method: 'POST',
-        body: JSON.stringify({ email, fullName, googleId, profilePicture, isDashboard: true })
+        body: JSON.stringify({ email, fullName, googleId, profilePicture, token, isDashboard: true })
       });
       const { user } = response.data;
       

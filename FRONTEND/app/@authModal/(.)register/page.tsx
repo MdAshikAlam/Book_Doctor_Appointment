@@ -16,7 +16,7 @@ export default function RegisterModal() {
       />
       
       {/* Modal Content */}
-      <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 md:p-10 animate-in zoom-in-95 fade-in duration-300">
+      <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 sm:p-10 animate-in zoom-in-95 fade-in duration-300">
         <button 
           onClick={() => router.back()}
           className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"

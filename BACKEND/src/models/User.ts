@@ -26,7 +26,9 @@ export interface IUser extends Document {
   authProvider?: 'local' | 'google';
   googleId?: string;
   profilePicture?: string;
+  profileImage?: string;
   refreshToken?: string;
+  lastLoginAt?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   organization?: mongoose.Types.ObjectId;
@@ -62,7 +64,7 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
     fullName: { type: String, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, select: false },
     role: { 
       type: String, 
@@ -80,6 +82,7 @@ const userSchema = new Schema<IUser>(
     authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
     googleId: { type: String },
     profilePicture: { type: String },
+    profileImage: { type: String },
     refreshToken: { type: String, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
@@ -115,6 +118,7 @@ const userSchema = new Schema<IUser>(
     rejectionReason: { type: String },
     infoRequestedMessage: { type: String },
     lastLogoutAt: { type: Date },
+    lastLoginAt: { type: Date },
     lastViewedNotifications: {
       adminRequests: { type: Date, default: Date.now },
       clinicVerification: { type: Date, default: Date.now },
@@ -124,13 +128,16 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+userSchema.index({ email: 1, role: 1 }, { unique: true });
+
 userSchema.pre('save', async function (this: IUser) {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password!, 12);
 });
 
 userSchema.methods.comparePassword = async function (this: IUser, candidate: string): Promise<boolean> {
-  return bcrypt.compare(candidate, this.password!);
+  if (!this.password) return false;
+  return bcrypt.compare(candidate, this.password);
 };
 
 const User = mongoose.model<IUser>('User', userSchema);
