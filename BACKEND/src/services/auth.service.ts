@@ -138,9 +138,26 @@ export const loginUser = async (emailOrPhone: string, password?: string, isDashb
 
   logger.debug(`Attempting login for: ${emailOrPhone}`);
   
-  // Try to find user by email or phone
-  const searchKey = emailOrPhone.includes('@') ? { email: emailOrPhone.toLowerCase().trim() } : { phone: emailOrPhone.trim() };
-  const user = await User.findOne(searchKey).select('+password');
+  // Try to find user by email or phone (scoping by role to support same-email accounts)
+  let query: any;
+  if (emailOrPhone.includes('@')) {
+    const emailVal = emailOrPhone.toLowerCase().trim();
+    if (isDashboard) {
+      query = {
+        email: emailVal,
+        role: { $in: [UserRole.DOCTOR, UserRole.ADMIN, UserRole.RECEPTIONIST, 'super_admin'] }
+      };
+    } else {
+      query = {
+        email: emailVal,
+        role: UserRole.PATIENT
+      };
+    }
+  } else {
+    query = { phone: emailOrPhone.trim() };
+  }
+
+  const user = await User.findOne(query).select('+password');
   
   if (!user) {
     logger.debug(`User not found for: ${emailOrPhone}`);
@@ -305,32 +322,58 @@ export const googleAuth = async (data: {
   isDashboard?: boolean;
 }) => {
   const emailVal = data.email.toLowerCase().trim();
-  let user = await User.findOne({ email: emailVal });
+  let user;
+
+  // Role-based lookup: Admin/Staff vs Patient can share the same email address
+  if (data.isDashboard) {
+    user = await User.findOne({
+      email: emailVal,
+      role: { $in: [UserRole.ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST, 'super_admin'] }
+    });
+  } else {
+    user = await User.findOne({
+      email: emailVal,
+      role: UserRole.PATIENT
+    });
+  }
 
   if (!user) {
+    // Create new Google User
     const createData: any = {
       name: data.fullName,
       fullName: data.fullName,
       email: emailVal,
       googleId: data.googleId,
+      profilePicture: data.profilePicture,
+      profileImage: data.profilePicture,
       authProvider: 'google',
       isEmailVerified: true,
       emailVerified: true,
+      phoneVerified: false,
+      passwordSet: false,
       role: data.isDashboard ? UserRole.ADMIN : UserRole.PATIENT,
-      status: data.isDashboard ? 'approved' : 'active'
+      status: data.isDashboard ? 'approved' : 'active',
+      lastLoginAt: new Date(),
     };
-    if (data.profilePicture) {
-      createData.profilePicture = data.profilePicture;
-    }
     user = await User.create(createData);
   } else {
-    if (!user.googleId) {
+    // Existing User: Link Google Account if it's currently a local account
+    if (user.authProvider === 'local' || !user.googleId) {
       user.googleId = data.googleId;
       user.authProvider = 'google';
-      user.emailVerified = true;
-      user.isEmailVerified = true;
-      await user.save();
     }
+    
+    // Always update/ensure profile info, verification statuses, and last login time
+    user.emailVerified = true;
+    user.isEmailVerified = true;
+    user.lastLoginAt = new Date();
+    
+    if (data.profilePicture) {
+      user.profilePicture = data.profilePicture;
+      user.profileImage = data.profilePicture;
+    }
+    
+    await user.save();
   }
 
   const userObj = user.toObject();

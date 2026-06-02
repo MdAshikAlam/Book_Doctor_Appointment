@@ -16,7 +16,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (userData: any) => Promise<{ success: boolean; message?: string }>;
-  googleLogin: (email: string, fullName: string, googleId: string, profilePicture?: string) => Promise<{ success: boolean; message?: string }>;
+  googleLogin: (email: string, fullName: string, googleId: string, profilePicture?: string, token?: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -77,12 +77,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const googleLogin = async (email: string, fullName: string, googleId: string, profilePicture?: string) => {
+  const googleLogin = async (email: string, fullName: string, googleId: string, profilePicture?: string, token?: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName, googleId, profilePicture }),
+        body: JSON.stringify({ email, fullName, googleId, profilePicture, token }),
         credentials: 'include'
       });
 
