@@ -39,7 +39,7 @@ export default function ProfileDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl shadow-gray-200/80 border border-gray-100 py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl shadow-gray-200/80 border border-gray-100 py-2 z-[60]">
           {isAuthenticated ? (
             <>
               <div className="px-4 py-3 border-b border-gray-50 mb-1">

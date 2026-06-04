@@ -201,51 +201,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleSubmit = async (e) => {
-    e.preventDefault();
-    if (!googleEmail || !googleName) {
-      setGoogleError('Please fill out all fields.');
-      return;
-    }
-    try {
-      setGoogleLoading(true);
-      setGoogleError('');
-      const googleId = `google_oauth_${Math.floor(10000000 + Math.random() * 90000000)}`;
-      const result = await googleLogin(googleEmail, googleName, googleId, `https://ui-avatars.com/api/?name=${encodeURIComponent(googleName)}&background=0284c7&color=fff`);
-      if (result.success) {
-        setShowGoogleMock(false);
-        router.push('/dashboard');
-      } else {
-        setGoogleError(result.error || 'Google Login failed.');
-      }
-    } catch (err) {
-      setGoogleError(err.message || 'An error occurred during Google sign-in.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
-  const handleDirectGoogleSignup = async () => {
-    try {
-      setGoogleLoading(true);
-      setError(null);
-      const randomId = Math.floor(1000 + Math.random() * 9000);
-      const googleName = 'Google Admin';
-      const googleEmail = `google_admin_${randomId}@gmail.com`;
-      const googleId = `google_oauth_${Math.floor(10000000 + Math.random() * 90000000)}`;
-      
-      const result = await googleLogin(googleEmail, googleName, googleId, `https://ui-avatars.com/api/?name=${encodeURIComponent(googleName)}&background=0284c7&color=fff`);
-      if (result.success) {
-        router.push('/dashboard');
-      } else {
-        setError(result.error || 'Google signup failed.');
-      }
-    } catch (err) {
-      setError(err.message || 'An error occurred during Google sign-up.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -318,30 +274,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Google Signup Option */}
-            {googleClientAvailable ? (
-              <div id="google-signin-btn-dashboard-register" className="w-full flex justify-center mb-4 min-h-[44px]"></div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleDirectGoogleSignup}
-                disabled={googleLoading}
-                className="w-full h-12 rounded-2xl border border-slate-200 hover:border-slate-800 hover:bg-slate-50 font-black text-[11px] uppercase tracking-widest text-slate-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-              >
-                {googleLoading ? (
-                  <Loader2 size={18} className="animate-spin text-slate-500" />
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.62 14.98 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.96 3.07C6.4 7.69 8.97 5.04 12 5.04z" />
-                      <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.2 3.54-8.71z" />
-                      <path fill="#FBBC05" d="M5.46 10.57c-.24-.73-.38-1.5-.38-2.31s.14-1.58.38-2.31L1.5 2.88C.54 4.8 0 6.97 0 9.27s.54 4.47 1.5 6.39l3.96-3.09z" />
-                      <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.73-2.48 1.17-4.05 1.17-3.03 0-5.6-2.65-6.54-5.53L1.5 15.82C3.4 19.67 7.35 23 12 23z" />
-                    </svg>
-                    Continue with Google (Demo Mock)
-                  </>
-                )}
-              </button>
-            )}
+            <div id="google-signin-btn-dashboard-register" className="w-full flex justify-center mb-4 min-h-[44px]"></div>
 
             <div className="flex items-center my-6">
               <div className="flex-1 border-t border-slate-100"></div>
@@ -534,57 +467,6 @@ export default function RegisterPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* Google Sign-in Mock Modal */}
-      <Modal
-        isOpen={showGoogleMock}
-        onClose={() => setShowGoogleMock(false)}
-        title="Sign up with Google"
-        size="md"
-      >
-        <div className="space-y-5 py-2">
-          <p className="text-xs text-slate-500 font-medium">Link your Google Identity to register instantly as a Clinic Admin.</p>
-          
-          <form onSubmit={handleGoogleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-              <input 
-                type="text"
-                placeholder="Google User Name"
-                required
-                value={googleName}
-                onChange={(e) => setGoogleName(e.target.value)}
-                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-800 transition-all outline-none font-bold text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-              <input 
-                type="email"
-                placeholder="user@gmail.com"
-                required
-                value={googleEmail}
-                onChange={(e) => setGoogleEmail(e.target.value)}
-                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-800 transition-all outline-none font-bold text-sm"
-              />
-            </div>
-
-            {googleError && (
-              <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5 ml-1">
-                <AlertCircle size={14} /> {googleError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={googleLoading}
-              className="w-full h-11 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
-            >
-              {googleLoading ? <Loader2 className="animate-spin" /> : 'Confirm Google Sign-Up'}
-            </button>
-          </form>
-        </div>
-      </Modal>
     </div>
   );
 }
