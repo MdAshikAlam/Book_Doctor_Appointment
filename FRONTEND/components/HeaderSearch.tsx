@@ -54,7 +54,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch States
+  // Fetch States on mount
   useEffect(() => {
     const fetchStates = async () => {
       try {
@@ -70,10 +70,8 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
         setIsLoadingLocations(false);
       }
     };
-    if (isLocationOpen && states.length === 0) {
-      fetchStates();
-    }
-  }, [isLocationOpen, states.length]);
+    fetchStates();
+  }, []);
 
   // Fetch Districts when State changes
   useEffect(() => {
@@ -160,62 +158,57 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
         </button>
 
-        <AnimatePresence>
-          {isLocationOpen && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className={`absolute top-full mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60] ${mobile ? 'left-0 right-0 w-full' : 'left-0 w-80'}`}
-            >
-              <div className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">State</label>
-                  <select 
-                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                    value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
-                  >
-                    <option value="">Choose State</option>
-                    {states.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">District</label>
-                  <div className="relative">
-                    <select 
-                      className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
-                      value={selectedDistrict}
-                      onChange={(e) => {
-                        setSelectedDistrict(e.target.value);
-                        setIsLocationOpen(false);
-                      }}
-                      disabled={!selectedState || isLoadingLocations}
-                    >
-                      <option value="">{isLoadingLocations ? 'Loading...' : 'Choose District'}</option>
-                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                    {isLoadingLocations && (
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <Loader2 size={16} className="animate-spin text-primary" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {!selectedDistrict && (
-                  <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
-                    <Navigation size={18} />
-                    <p className="text-xs font-bold leading-tight">
-                      Please select your location to find nearby specialists.
-                    </p>
-                  </div>
-                )}
+        {isLocationOpen && (
+          <div 
+            className={`absolute top-full mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60] ${mobile ? 'left-0 right-0 w-full' : 'left-0 w-80'}`}
+          >
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-400 uppercase">State</label>
+                <select 
+                  className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                >
+                  <option value="">Choose State</option>
+                  {states.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-400 uppercase">District</label>
+                <div className="relative">
+                  <select 
+                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
+                    value={selectedDistrict}
+                    onChange={(e) => {
+                      setSelectedDistrict(e.target.value);
+                      setIsLocationOpen(false);
+                    }}
+                    disabled={!selectedState || isLoadingLocations}
+                  >
+                    <option value="">{isLoadingLocations ? 'Loading...' : 'Choose District'}</option>
+                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  {isLoadingLocations && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Loader2 size={16} className="animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!selectedDistrict && (
+                <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
+                  <Navigation size={18} />
+                  <p className="text-xs font-bold leading-tight">
+                    Please select your location to find nearby specialists.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Search Bar */}

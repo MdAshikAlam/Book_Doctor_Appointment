@@ -227,43 +227,7 @@ export default function RegisterForm({ isModal = false, onClose }: { isModal?: b
     }
   };
 
-  // Google Signup Handler (Mock Fallback)
-  const handleGoogleSignup = async () => {
-    try {
-      setLoading(true);
-      setStatus({ type: null, message: '' });
-      
-      // Simulate Google OAuth popup fetching user profile details
-      const mockProfile = {
-        email: `google_${Math.floor(1000 + Math.random() * 9000)}@gmail.com`,
-        fullName: 'Google User',
-        googleId: `google_id_${Math.floor(100000000 + Math.random() * 900000000)}`,
-        profilePicture: 'https://ui-avatars.com/api/?name=Google+User&background=0284c7&color=fff'
-      };
 
-      const result = await googleLogin(
-        mockProfile.email,
-        mockProfile.fullName,
-        mockProfile.googleId,
-        mockProfile.profilePicture
-      );
-
-      if (result.success) {
-        setStatus({ type: 'success', message: 'Signed up with Google successfully! Redirecting...' });
-        setTimeout(() => {
-          if (onClose) onClose();
-          router.push('/');
-        }, 1500);
-      } else {
-        setStatus({ type: 'error', message: result.message || 'Google signup failed' });
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus({ type: 'error', message: 'Failed to sign up with Google' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -333,24 +297,7 @@ export default function RegisterForm({ isModal = false, onClose }: { isModal?: b
       )}
 
       {/* Google Signup Option */}
-      {googleClientAvailable ? (
-        <div id="google-signin-btn-register" className="w-full flex justify-center mb-4 min-h-[44px]"></div>
-      ) : (
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          disabled={loading}
-          className="w-full h-12 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 font-black text-xs uppercase tracking-widest text-slate-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.62 14.98 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.96 3.07C6.4 7.69 8.97 5.04 12 5.04z" />
-            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.2 3.54-8.71z" />
-            <path fill="#FBBC05" d="M5.46 10.57c-.24-.73-.38-1.5-.38-2.31s.14-1.58.38-2.31L1.5 2.88C.54 4.8 0 6.97 0 9.27s.54 4.47 1.5 6.39l3.96-3.09z" />
-            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.73-2.48 1.17-4.05 1.17-3.03 0-5.6-2.65-6.54-5.53L1.5 15.82C3.4 19.67 7.35 23 12 23z" />
-          </svg>
-          Continue with Google (Demo Mock)
-        </button>
-      )}
+      <div id="google-signin-btn-register" className="w-full flex justify-center mb-4 min-h-[44px]"></div>
 
       <div className="flex items-center my-6">
         <div className="flex-1 border-t border-slate-100"></div>

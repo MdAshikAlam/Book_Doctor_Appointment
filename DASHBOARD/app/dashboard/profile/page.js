@@ -202,7 +202,9 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-slate-400 uppercase">Member Since</p>
-                  <p className="text-slate-900 font-bold">April 2026</p>
+                  <p className="text-slate-900 font-bold">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
+                  </p>
                 </div>
               </div>
             </motion.div>

@@ -30,7 +30,7 @@ const Hero = () => {
             </p>
 
             {/* Benefits list */}
-            <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mb-8 w-fit mx-auto lg:mx-0">
               {[
                 'Verified Doctors',
                 'Verified Clinics',
@@ -39,7 +39,7 @@ const Hero = () => {
                 'Secure Patient Experience',
                 'Real-Time Slot Availability'
               ].map((benefit, i) => (
-                <div key={i} className="flex items-center gap-2.5 justify-center">
+                <div key={i} className="flex items-center gap-2.5 justify-start">
                   <div className="w-5 h-5 rounded-full bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
                     <Check size={12} strokeWidth={3} />
                   </div>

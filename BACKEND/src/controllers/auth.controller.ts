@@ -215,55 +215,30 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
 
 export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token, email, fullName, googleId, profilePicture, isDashboard } = z.object({
-      token: z.string().optional(),
-      email: z.string().optional(),
-      fullName: z.string().optional(),
-      googleId: z.string().optional(),
-      profilePicture: z.string().optional(),
+    const { token, isDashboard } = z.object({
+      token: z.string(),
       isDashboard: z.boolean().optional()
     }).parse(req.body);
 
-    let googleAuthData: {
+    // Secure Token Verification flow
+    const verifiedProfile = await verifyGoogleToken(token);
+    const googleAuthData: {
       email: string;
       fullName: string;
       googleId: string;
       profilePicture?: string;
       isDashboard?: boolean;
+    } = {
+      email: verifiedProfile.email,
+      fullName: verifiedProfile.fullName,
+      googleId: verifiedProfile.googleId,
     };
-
-    if (token) {
-      // Secure Token Verification flow
-      const verifiedProfile = await verifyGoogleToken(token);
-      googleAuthData = {
-        email: verifiedProfile.email,
-        fullName: verifiedProfile.fullName,
-        googleId: verifiedProfile.googleId,
-      };
-      
-      const pic = verifiedProfile.profilePicture || profilePicture;
-      if (pic !== undefined) {
-        googleAuthData.profilePicture = pic;
-      }
-      if (isDashboard !== undefined) {
-        googleAuthData.isDashboard = isDashboard;
-      }
-    } else {
-      // Mock/Simulated flow
-      if (!email || !fullName || !googleId) {
-        throw new AppError('Missing Google user fields for mock auth', 400);
-      }
-      googleAuthData = {
-        email,
-        fullName,
-        googleId,
-      };
-      if (profilePicture !== undefined) {
-        googleAuthData.profilePicture = profilePicture;
-      }
-      if (isDashboard !== undefined) {
-        googleAuthData.isDashboard = isDashboard;
-      }
+    
+    if (verifiedProfile.profilePicture) {
+      googleAuthData.profilePicture = verifiedProfile.profilePicture;
+    }
+    if (isDashboard !== undefined) {
+      googleAuthData.isDashboard = isDashboard;
     }
 
     const result = await authService.googleAuth(googleAuthData);
@@ -273,6 +248,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
 
 export const forgotPasswordOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
