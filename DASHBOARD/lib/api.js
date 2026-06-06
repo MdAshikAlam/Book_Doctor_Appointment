@@ -37,7 +37,9 @@ export const apiCall = async (endpoint, options = {}) => {
       // Just clear local state, don't force redirect here to avoid loops
       localStorage.removeItem('user');
     }
-    throw new Error(data.message || 'Something went wrong');
+    const error = new Error(data.message || 'Something went wrong');
+    error.status = response.status;
+    throw error;
   }
 
   return data;

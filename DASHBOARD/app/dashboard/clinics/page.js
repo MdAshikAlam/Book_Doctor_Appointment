@@ -31,9 +31,10 @@ import {
   Lock,
   Trash2,
   PauseCircle,
-  PlayCircle
+  PlayCircle,
+  Navigation
 } from 'lucide-react';
-import { clinicsApi, doctorsApi, usersApi } from '@/lib/api';
+import { clinicsApi, doctorsApi, usersApi, utilityApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -85,6 +86,80 @@ export default function ClinicsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
+  // Geolocation & dropdown states
+  const [statesList, setStatesList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const res = await utilityApi.getStates();
+        setStatesList(res.data || []);
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      }
+    };
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (!formData.state) {
+        setDistrictsList([]);
+        return;
+      }
+      try {
+        const res = await utilityApi.getDistricts(formData.state);
+        setDistrictsList(res.data || []);
+      } catch (err) {
+        console.error('Failed to load districts:', err);
+      }
+    };
+    fetchDistricts();
+  }, [formData.state]);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/v1/utility/reverse-geocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude, longitude })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            const { city, district, state } = data.data;
+            setFormData(prev => ({
+              ...prev,
+              state,
+              district,
+              city
+            }));
+          } else {
+            alert('Failed to resolve coordinates to location details.');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Failed to connect to geocoding service.');
+        } finally {
+          setIsDetecting(false);
+        }
+      },
+      (error) => {
+        setIsDetecting(false);
+        alert(`Location permission denied or retrieval failed: ${error.message}`);
+      }
+    );
+  };
+
 
 
   // Slot Modal State
@@ -114,6 +189,7 @@ export default function ClinicsPage() {
     address: '',
     addressLine2: '',
     city: '',
+    district: '',
     state: '',
     pincode: '',
     country: 'India',
@@ -230,6 +306,7 @@ export default function ClinicsPage() {
       address: clinic.address || '',
       addressLine2: clinic.addressLine2 || '',
       city: clinic.city || '',
+      district: clinic.district || '',
       state: clinic.state || '',
       pincode: clinic.pincode || '',
       country: clinic.country || 'India',
@@ -266,6 +343,7 @@ export default function ClinicsPage() {
       address: '',
       addressLine2: '',
       city: user?.city || '',
+      district: '',
       state: user?.state || '',
       pincode: '',
       country: 'India',
@@ -321,12 +399,25 @@ export default function ClinicsPage() {
         console.warn('Geolocation access denied or timed out:', geoErr.message);
       }
 
-      const [clinicsRes, doctorsRes] = await Promise.all([
-        clinicsApi.getAll(params),
-        doctorsApi.getAll()
-      ]);
-      setClinics(clinicsRes.data.clinics || []);
-      setDoctors(doctorsRes.data.doctors || []);
+      let clinicsData = [];
+      let doctorsData = [];
+      
+      try {
+        const clinicsRes = await clinicsApi.getAll(params);
+        clinicsData = clinicsRes.data.clinics || [];
+      } catch (err) {
+        console.error('Failed to fetch clinics:', err);
+      }
+
+      try {
+        const doctorsRes = await doctorsApi.getAll();
+        doctorsData = doctorsRes.data.doctors || [];
+      } catch (err) {
+        console.warn('Failed to fetch doctors (possibly due to missing clinic context):', err.message);
+      }
+
+      setClinics(clinicsData);
+      setDoctors(doctorsData);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
@@ -915,15 +1006,71 @@ export default function ClinicsPage() {
                       animate={editingClinicId ? {} : { opacity: 1, x: 0 }}
                       className="space-y-6"
                     >
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        Step 2. Location Details
-                      </h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          Step 2. Location Details
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={handleUseCurrentLocation}
+                          disabled={isDetecting}
+                          className="flex items-center gap-1.5 px-4 h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 font-extrabold text-xs transition-all disabled:opacity-50 border border-blue-100 shadow-sm"
+                        >
+                          <Navigation size={14} className={isDetecting ? 'animate-spin' : ''} />
+                          {isDetecting ? 'Detecting...' : 'Use Current Location'}
+                        </button>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
                           <Input label="Detailed Address" name="address" placeholder="e.g. 123 Health Ave, Suite 4" value={formData.address} onChange={handleInputChange} error={fieldErrors.address} required />
                         </div>
-                        <Input label="City" name="city" placeholder="e.g. New Delhi" value={formData.city} onChange={handleInputChange} error={fieldErrors.city} required />
-                        <Input label="State" name="state" placeholder="e.g. Delhi" value={formData.state} onChange={handleInputChange} error={fieldErrors.state} required />
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">State *</label>
+                          <select
+                            name="state"
+                            value={formData.state}
+                            onChange={handleInputChange}
+                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm"
+                          >
+                            <option value="">Choose State</option>
+                            {statesList.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">District *</label>
+                          <select
+                            name="district"
+                            value={formData.district}
+                            onChange={(e) => {
+                              handleInputChange(e);
+                              if (!formData.city || formData.city === formData.district) {
+                                setFormData(prev => ({ ...prev, city: e.target.value }));
+                              }
+                            }}
+                            disabled={!formData.state}
+                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm disabled:opacity-50"
+                          >
+                            <option value="">Choose District</option>
+                            {districtsList.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">City *</label>
+                          <select
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            disabled={!formData.state}
+                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm disabled:opacity-50"
+                          >
+                            <option value="">Choose City</option>
+                            {districtsList.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+
                         <Input label="Pincode" name="pincode" placeholder="e.g. 110001" value={formData.pincode} onChange={handleInputChange} error={fieldErrors.pincode} required />
                         <Input label="Country" name="country" value={formData.country} onChange={handleInputChange} error={fieldErrors.country} required />
                       </div>
@@ -1078,7 +1225,7 @@ export default function ClinicsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setError(null);
+                          setFormError(null);
                           // Validate local step before proceeding
                           if (wizardStep === 1 && !formData.clinicName) {
                             setFormError('Clinic Display Name is required.');

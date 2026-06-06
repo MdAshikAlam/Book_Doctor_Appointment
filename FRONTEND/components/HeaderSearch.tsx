@@ -26,11 +26,49 @@ interface DoctorSuggestion {
 }
 
 export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = {}) {
-  const { selectedState, selectedDistrict, setSelectedState, setSelectedDistrict, latitude, longitude } = useLocation();
+  const { selectedState, selectedDistrict, selectedCity, setSelectedState, setSelectedDistrict, setSelectedCity, latitude, longitude, updateLocation } = useLocation();
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [states, setStates] = useState<string[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        try {
+          const res = await fetch(`${API_BASE_URL}/utility/reverse-geocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: lat, longitude: lng })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            const { city, district, state } = data.data;
+            updateLocation(state, district, city, lat, lng);
+            setIsLocationOpen(false);
+          } else {
+            alert('Failed to resolve coordinates to address details.');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Failed to connect to geocoding service.');
+        } finally {
+          setIsDetecting(false);
+        }
+      },
+      (error) => {
+        setIsDetecting(false);
+        alert(`Location permission denied or retrieval failed: ${error.message}`);
+      }
+    );
+  };
   
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<{ doctors: DoctorSuggestion[], clinics: ClinicSuggestion[] }>({ doctors: [], clinics: [] });
@@ -152,7 +190,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
           <div className="text-left">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-none mb-1">Your Location</p>
             <p className="text-sm font-extrabold text-gray-900 leading-none truncate max-w-[120px]">
-              {selectedDistrict || selectedState || 'Select District'}
+              {selectedCity ? (selectedState ? `${selectedCity}, ${selectedState}` : selectedCity) : (selectedDistrict || selectedState || 'Select District')}
             </p>
           </div>
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
@@ -163,6 +201,16 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
             className={`absolute top-full mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[60] ${mobile ? 'left-0 right-0 w-full' : 'left-0 w-80'}`}
           >
             <div className="p-6 space-y-4">
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={isDetecting}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-primary/5 hover:bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition-all disabled:opacity-50 border border-primary/10"
+              >
+                <Navigation size={14} className={isDetecting ? 'animate-spin' : ''} />
+                {isDetecting ? 'Detecting Location...' : 'Use Current Location'}
+              </button>
+
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-gray-400 uppercase">State</label>
                 <select 
@@ -183,7 +231,6 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                     value={selectedDistrict}
                     onChange={(e) => {
                       setSelectedDistrict(e.target.value);
-                      setIsLocationOpen(false);
                     }}
                     disabled={!selectedState || isLoadingLocations}
                   >
@@ -198,7 +245,25 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                 </div>
               </div>
 
-              {!selectedDistrict && (
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-400 uppercase">City</label>
+                <div className="relative">
+                  <select 
+                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
+                    value={selectedCity}
+                    onChange={(e) => {
+                      setSelectedCity(e.target.value);
+                      setIsLocationOpen(false);
+                    }}
+                    disabled={!selectedDistrict || isLoadingLocations}
+                  >
+                    <option value="">Choose City</option>
+                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {!selectedCity && (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
                   <Navigation size={18} />
                   <p className="text-xs font-bold leading-tight">
