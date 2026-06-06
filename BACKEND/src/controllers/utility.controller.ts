@@ -34,3 +34,26 @@ export const getDistricts = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
+import { reverseGeocode } from '../utils/geocoder';
+
+export const handleReverseGeocode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { latitude, longitude } = req.body;
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Latitude and longitude are required'
+      });
+    }
+
+    const result = await reverseGeocode(Number(latitude), Number(longitude));
+
+    res.status(200).json({
+      status: 'success',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};

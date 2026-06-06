@@ -28,11 +28,14 @@ export const AuthProvider = ({ children }) => {
         setUser(freshUser);
         localStorage.setItem('user', JSON.stringify(freshUser));
       } catch (err) {
-        console.error('Auth Init Error:', err);
+        if (err.status === 401 || (err.message && (err.message.includes('not logged in') || err.message.includes('Please log in') || err.message.includes('unauthorized') || err.message.includes('Unauthorized')))) {
+          console.warn('Auth Init: User is not logged in.');
+        } else {
+          console.error('Auth Init Error:', err);
+        }
         setUser(null);
         localStorage.removeItem('user');
       } finally {
-
         setLoading(false);
       }
     };
