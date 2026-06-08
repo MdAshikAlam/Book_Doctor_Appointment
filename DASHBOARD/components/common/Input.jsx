@@ -31,6 +31,7 @@ const Input = React.forwardRef(({ className, label, error, type = 'text', icon: 
           )}
           ref={ref}
           {...props}
+          value={type === 'file' ? undefined : (props.value ?? '')}
         />
       </div>
       {error && (

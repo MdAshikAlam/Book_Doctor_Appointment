@@ -2,12 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export enum ClinicType {
   PRIVATE_CLINIC = 'Private Clinic',
-  DIAGNOSTIC_CENTER = 'Diagnostic Center',
-  DIAGNOSTIC_CLINIC = 'Diagnostic Clinic',
-  DENTAL_CLINIC = 'Dental Clinic',
-  MULTI_SPECIALITY = 'Multi Speciality',
-  SKIN_CLINIC = 'Skin Clinic',
-  EYE_CLINIC = 'Eye Clinic'
+  GOVERNMENT_CLINIC = 'Government Clinic'
 }
 
 export enum VerificationStatus {
@@ -20,6 +15,7 @@ export interface IClinic extends Document {
   clinicName: string;
   legalName: string;
   clinicType: ClinicType;
+  specialties: string[];
   description?: string;
   images: string[];
   
@@ -84,13 +80,14 @@ export interface IClinic extends Document {
 const clinicSchema = new Schema<IClinic>(
   {
     clinicName: { type: String, required: true, trim: true },
-    legalName: { type: String, required: true, trim: true },
+    legalName: { type: String, trim: true },
     clinicType: { 
       type: String, 
       enum: Object.values(ClinicType), 
       required: true,
       default: ClinicType.PRIVATE_CLINIC 
     },
+    specialties: { type: [String], default: [] },
     description: { type: String },
     images: [{ type: String }],
 
@@ -167,6 +164,9 @@ clinicSchema.pre('save', function() {
       .toLowerCase()
       .replace(/[^\w ]+/g, '')
       .replace(/ +/g, '-');
+  }
+  if (!this.legalName) {
+    this.legalName = this.clinicName;
   }
 });
 

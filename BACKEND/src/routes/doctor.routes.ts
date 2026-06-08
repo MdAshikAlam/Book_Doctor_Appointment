@@ -83,7 +83,7 @@ router.post(
   '/',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   doctorController.adminCreateDoctor
 );
 
@@ -91,7 +91,7 @@ router.patch(
   '/:id',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.adminUpdateDoctor
 );
@@ -100,7 +100,7 @@ router.delete(
   '/:id',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   checkDoctorOwnership,
   doctorController.deleteDoctor
 );

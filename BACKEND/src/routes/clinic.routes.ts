@@ -51,7 +51,7 @@ router.post(
   '/',
   protect,
   branchHandler,
-  restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   clinicController.createClinic
 );
 
@@ -59,7 +59,7 @@ router.patch(
   '/:id',
   protect,
   branchHandler,
-  restrictTo(UserRole.DOCTOR, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   clinicController.updateClinic
 );
 
@@ -67,7 +67,7 @@ router.patch(
   '/:id/verify',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN),
   clinicController.verifyClinic
 );
 
@@ -75,7 +75,7 @@ router.delete(
   '/:id',
   protect,
   branchHandler,
-  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  restrictTo(UserRole.ADMIN),
   clinicController.deleteClinic
 );
 

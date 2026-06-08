@@ -2,7 +2,7 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5000, clinicName, name, district, state } = query;
+  const { lat, lng, radius = 5000, clinicName, name, district, state, clinicType, specialty } = query;
   const filter: any = {};
 
   // Status Filtering
@@ -11,6 +11,16 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
   } else if (!creatorId && !query.isDashboard) {
     // If no status provided, not a creator, AND not a dashboard request, default to approved for public visibility
     filter.clinicStatus = 'approved';
+  }
+
+  // Clinic Type Filtering
+  if (clinicType && clinicType !== 'all') {
+    filter.clinicType = clinicType;
+  }
+
+  // Medical Specialty Filtering
+  if (specialty && specialty !== 'all') {
+    filter.specialties = specialty;
   }
 
   const targetClinicName = clinicName || name;

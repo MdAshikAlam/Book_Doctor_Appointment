@@ -53,11 +53,11 @@ const superAdminSections = [
     ]
   },
   {
-    title: 'Clinic Management',
+    title: 'Platform Management',
     items: [
       { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
-      { icon: Shield, label: 'Clinic Admins', href: '/dashboard/clinic-admins' },
-      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' }
+      { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
+      { icon: Users, label: 'Patients', href: '/dashboard/patients' }
     ]
   },
   {
@@ -97,9 +97,10 @@ const adminSections = [
   {
     title: 'Management',
     items: [
-      { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
+      { icon: Building2, label: 'Clinic Profile', href: '/dashboard/clinics' },
       { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
       { icon: Shield, label: 'Staff Management', href: '/dashboard/staff' },
+      { icon: Users, label: 'Receptionists', href: '/dashboard/receptionists' },
       { icon: Flag, label: 'Reports', href: '/dashboard/reports' },
       { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
     ]
@@ -153,15 +154,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
   const pathname = usePathname();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user?.role === 'super_admin') {
-      fetchNotifications();
-      // Polling for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
-
   const fetchNotifications = async () => {
     try {
       const response = await analyticsApi.getNotifications();
@@ -170,6 +162,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
       console.error('Failed to fetch notifications:', err);
     }
   };
+
+  useEffect(() => {
+    if (user?.role === 'super_admin') {
+      fetchNotifications();
+      // Polling for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLinkClick = async (category) => {
     if (category && notifications[category]?.new > 0) {

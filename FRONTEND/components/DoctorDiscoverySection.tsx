@@ -37,13 +37,28 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5
 // Constants
 const SPECIALTIES = [
   'All',
-  'Cardiologist',
-  'Dentist',
-  'Dermatologist',
-  'Neurologist',
-  'Orthopedic',
-  'Gynecologist',
-  'Pediatrician'
+  'General Physician',
+  'Cardiology',
+  'Neurology',
+  'Orthopedics',
+  'Dermatology',
+  'Pediatrics',
+  'Gynecology',
+  'Ophthalmology',
+  'ENT',
+  'Psychiatry',
+  'Urology',
+  'Nephrology',
+  'Oncology',
+  'Gastroenterology',
+  'Pulmonology',
+  'Endocrinology',
+  'Rheumatology',
+  'Dentistry',
+  'Physiotherapy',
+  'General Surgery',
+  'Plastic Surgery',
+  'Emergency Medicine'
 ];
 
 interface Doctor {
