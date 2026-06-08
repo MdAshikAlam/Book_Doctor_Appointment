@@ -50,7 +50,31 @@ const getFullImageUrl = (path) => {
   return `${BACKEND_URL}${path}`;
 };
 
-const CLINIC_TYPES = ['Private Clinic', 'Diagnostic Center', 'Diagnostic Clinic', 'Dental Clinic', 'Multi Speciality', 'Skin Clinic', 'Eye Clinic'];
+const CLINIC_TYPES = ['Private Clinic', 'Government Clinic'];
+const CLINIC_SPECIALTIES = [
+  'General Physician',
+  'Cardiology',
+  'Neurology',
+  'Orthopedics',
+  'Dermatology',
+  'Pediatrics',
+  'Gynecology',
+  'Ophthalmology',
+  'ENT',
+  'Psychiatry',
+  'Urology',
+  'Nephrology',
+  'Oncology',
+  'Gastroenterology',
+  'Pulmonology',
+  'Endocrinology',
+  'Rheumatology',
+  'Dentistry',
+  'Physiotherapy',
+  'General Surgery',
+  'Plastic Surgery',
+  'Emergency Medicine'
+];
 const WORKING_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SERVICES = ['OPD', 'Emergency', 'Lab Test', 'Pharmacy'];
 const FACILITIES = ['ICU', 'Ambulance', 'Parking', 'Wheelchair Access'];
@@ -64,6 +88,10 @@ export default function ClinicsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [clinicTypeFilter, setClinicTypeFilter] = useState('all');
+  const [specialtyFilter, setSpecialtyFilter] = useState('all');
+  const [specialtySearch, setSpecialtySearch] = useState('');
+  const [isSpecialtyDropdownOpen, setIsSpecialtyDropdownOpen] = useState(false);
   const [selectedClinic, setSelectedClinic] = useState(null);
   
   // Registration Form State
@@ -85,6 +113,41 @@ export default function ClinicsPage() {
   const [resettingClinic, setResettingClinic] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+
+  // Registration Form State
+  const [formData, setFormData] = useState({
+    clinicName: '',
+    legalName: '',
+    ownerName: '',
+    ownerPhone: '',
+    ownerEmail: '',
+    clinicType: 'Private Clinic',
+    specialties: [],
+    description: '',
+    images: [],
+    address: '',
+    addressLine2: '',
+    city: '',
+    district: '',
+    state: '',
+    pincode: '',
+    country: 'India',
+    phone: '',
+    alternatePhone: '',
+    email: '',
+    website: '',
+    openingTime: '09:00',
+    closingTime: '21:00',
+    workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    emergencyAvailable: false,
+    receptionAssistantMode: false,
+    doctors: [],
+    services: [],
+    facilities: [],
+    registrationNumber: '',
+    registrationProof: '',
+    addressProof: ''
+  });
 
   // Geolocation & dropdown states
   const [statesList, setStatesList] = useState([]);
@@ -176,38 +239,6 @@ export default function ClinicsPage() {
   });
   const [slotFormError, setSlotFormError] = useState(null);
   const [slotSuccessMsg, setSlotSuccessMsg] = useState(null);
-
-  const [formData, setFormData] = useState({
-    clinicName: '',
-    legalName: '',
-    ownerName: '',
-    ownerPhone: '',
-    ownerEmail: '',
-    clinicType: 'Private Clinic',
-    description: '',
-    images: [],
-    address: '',
-    addressLine2: '',
-    city: '',
-    district: '',
-    state: '',
-    pincode: '',
-    country: 'India',
-    phone: '',
-    alternatePhone: '',
-    email: '',
-    openingTime: '09:00',
-    closingTime: '21:00',
-    workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    emergencyAvailable: false,
-    receptionAssistantMode: false,
-    doctors: [],
-    services: [],
-    facilities: [],
-    registrationNumber: '',
-    registrationProof: '',
-    addressProof: ''
-  });
 
   const handleApprove = async (id) => {
     try {
@@ -301,6 +332,7 @@ export default function ClinicsPage() {
       ownerPhone: clinic.ownerPhone || '',
       ownerEmail: clinic.ownerEmail || '',
       clinicType: clinic.clinicType || 'Private Clinic',
+      specialties: clinic.specialties || [],
       description: clinic.description || '',
       images: clinic.images || [],
       address: clinic.address || '',
@@ -313,6 +345,7 @@ export default function ClinicsPage() {
       phone: clinic.phone || '',
       alternatePhone: clinic.alternatePhone || '',
       email: clinic.email || '',
+      website: clinic.website || '',
       openingTime: clinic.openingTime || '09:00',
       closingTime: clinic.closingTime || '21:00',
       workingDays: clinic.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -338,6 +371,7 @@ export default function ClinicsPage() {
       ownerPhone: user?.phone || '',
       ownerEmail: user?.email || '',
       clinicType: 'Private Clinic',
+      specialties: [],
       description: '',
       images: [],
       address: '',
@@ -350,6 +384,7 @@ export default function ClinicsPage() {
       phone: user?.phone || '',
       alternatePhone: '',
       email: user?.email || '',
+      website: '',
       openingTime: '09:00',
       closingTime: '21:00',
       workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -366,7 +401,7 @@ export default function ClinicsPage() {
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter]);
+  }, [statusFilter, clinicTypeFilter, specialtyFilter]);
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -382,7 +417,9 @@ export default function ClinicsPage() {
       
       let params = {
         status: statusFilter,
-        isDashboard: true
+        isDashboard: true,
+        clinicType: clinicTypeFilter,
+        specialty: specialtyFilter
       };
       
       try {
@@ -643,7 +680,7 @@ export default function ClinicsPage() {
       </div>
 
       {/* Filters & Tabs */}
-      <div className="bg-white p-4 rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-white p-4 rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 flex flex-col xl:flex-row items-center justify-between gap-6">
         <div className="relative flex-1 group w-full">
           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
           <input 
@@ -655,7 +692,31 @@ export default function ClinicsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-full md:w-auto overflow-x-auto custom-scrollbar">
+        {/* Clinic Type Dropdown Filter */}
+        <div className="w-full xl:w-auto">
+          <select 
+            value={clinicTypeFilter}
+            onChange={(e) => setClinicTypeFilter(e.target.value)}
+            className="w-full xl:w-48 h-14 px-4 rounded-2xl bg-slate-50 border border-slate-200/50 focus:bg-white focus:border-blue-600 outline-none font-bold text-xs cursor-pointer text-slate-700"
+          >
+            <option value="all">All Clinic Types</option>
+            {CLINIC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        {/* Specialty Dropdown Filter */}
+        <div className="w-full xl:w-auto">
+          <select 
+            value={specialtyFilter}
+            onChange={(e) => setSpecialtyFilter(e.target.value)}
+            className="w-full xl:w-56 h-14 px-4 rounded-2xl bg-slate-50 border border-slate-200/50 focus:bg-white focus:border-blue-600 outline-none font-bold text-xs cursor-pointer text-slate-700"
+          >
+            <option value="all">All Specialties</option>
+            {CLINIC_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-full xl:w-auto overflow-x-auto custom-scrollbar">
            {['all', 'approved', 'pending', 'rejected'].map((tab) => (
              <button
                key={tab}
@@ -713,7 +774,8 @@ export default function ClinicsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(user?.role === 'admin' || user?.role === 'super_admin' || clinic.owner === user?._id) && (
+                      {/* Clinic Admin / Owner Actions */}
+                      {(user?.role === 'admin' || clinic.owner === user?._id) && (
                         <>
                           <button 
                             onClick={() => handleEdit(clinic)}
@@ -722,28 +784,7 @@ export default function ClinicsPage() {
                           >
                             <Pencil size={20} />
                           </button>
-                          {user?.role === 'super_admin' && (
-                            <>
-                              {clinic.clinicStatus === 'suspended' ? (
-                                <button 
-                                  onClick={() => handleUpdateStatus(clinic._id, 'approved')}
-                                  className="w-12 h-12 rounded-2xl bg-slate-50 text-emerald-400 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all shadow-sm"
-                                  title="Resume Clinic"
-                                >
-                                  <PlayCircle size={20} />
-                                </button>
-                              ) : (
-                                <button 
-                                  onClick={() => handleUpdateStatus(clinic._id, 'suspended')}
-                                  className="w-12 h-12 rounded-2xl bg-slate-50 text-amber-400 hover:bg-amber-50 hover:text-amber-600 flex items-center justify-center transition-all shadow-sm"
-                                  title="Pause Clinic"
-                                >
-                                  <PauseCircle size={20} />
-                                </button>
-                              )}
-                            </>
-                          )}
-
+                          
                           <button 
                             onClick={() => {
                               setResettingClinic(clinic);
@@ -765,7 +806,49 @@ export default function ClinicsPage() {
                           >
                             <Trash2 size={20} />
                           </button>
+                        </>
+                      )}
 
+                      {/* Super Admin Actions */}
+                      {user?.role === 'super_admin' && (
+                        <>
+                          {clinic.clinicStatus !== 'approved' && (
+                            <button 
+                              onClick={() => handleApprove(clinic._id)}
+                              className="w-12 h-12 rounded-2xl bg-slate-50 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all shadow-sm"
+                              title="Approve Clinic"
+                            >
+                              <CheckCircle size={20} />
+                            </button>
+                          )}
+                          
+                          {clinic.clinicStatus !== 'rejected' && clinic.clinicStatus !== 'suspended' && (
+                            <button 
+                              onClick={() => handleReject(clinic._id)}
+                              className="w-12 h-12 rounded-2xl bg-slate-50 text-red-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all shadow-sm"
+                              title="Reject Clinic"
+                            >
+                              <XCircle size={20} />
+                            </button>
+                          )}
+
+                          {clinic.clinicStatus === 'suspended' ? (
+                            <button 
+                              onClick={() => handleUpdateStatus(clinic._id, 'approved')}
+                              className="w-12 h-12 rounded-2xl bg-slate-50 text-emerald-400 hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition-all shadow-sm"
+                              title="Resume Clinic"
+                            >
+                              <PlayCircle size={20} />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleUpdateStatus(clinic._id, 'suspended')}
+                              className="w-12 h-12 rounded-2xl bg-slate-50 text-amber-400 hover:bg-amber-50 hover:text-amber-600 flex items-center justify-center transition-all shadow-sm"
+                              title="Pause/Suspend Clinic"
+                            >
+                              <PauseCircle size={20} />
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -874,7 +957,7 @@ export default function ClinicsPage() {
           }) : (
             <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
               <Filter size={64} className="text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-500 font-bold text-xl">No {statusFilter !== 'all' ? statusFilter : ''} clinics found matching "{searchTerm}"</p>
+              <p className="text-slate-500 font-bold text-xl">No {statusFilter !== 'all' ? statusFilter : ''} clinics found matching &quot;{searchTerm}&quot;</p>
               <button onClick={() => {setSearchTerm(''); setStatusFilter('all');}} className="text-blue-600 font-bold mt-2 hover:underline">Clear filters</button>
             </div>
           )}
@@ -960,22 +1043,20 @@ export default function ClinicsPage() {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input 
-                          label="Clinic Display Name" 
+                          label="Clinic Name" 
                           name="clinicName" 
                           placeholder="e.g. Metro Healthcare Centre" 
                           value={formData.clinicName} 
                           onChange={(e) => {
                             handleInputChange(e);
-                            // Auto fill legalName if empty
-                            if (!formData.legalName) {
-                              setFormData(prev => ({ ...prev, legalName: e.target.value }));
-                            }
+                            setFormData(prev => ({ ...prev, legalName: e.target.value }));
                           }} 
                           error={fieldErrors.clinicName}
                           required 
                         />
+
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Type</label>
+                          <label className="text-sm font-bold text-slate-700 ml-1">Clinic Type *</label>
                           <select 
                             name="clinicType"
                             value={formData.clinicType}
@@ -985,13 +1066,138 @@ export default function ClinicsPage() {
                             {CLINIC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
+
+                        {/* Specialties Searchable Multi-Select Component */}
+                        <div className="space-y-2 relative md:col-span-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Specialties Offered *</label>
+                          
+                          {/* Selected Chips */}
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {formData.specialties && formData.specialties.length > 0 ? (
+                              formData.specialties.map(spec => (
+                                <span key={spec} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 font-extrabold text-[10px] uppercase tracking-wider border border-blue-100">
+                                  {spec}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        specialties: prev.specialties.filter(s => s !== spec)
+                                      }));
+                                    }}
+                                    className="text-blue-400 hover:text-red-500 transition-colors"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-400 font-medium italic ml-1">No specialties selected yet.</span>
+                            )}
+                          </div>
+
+                          {/* Search Input */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Type to search and select medical specialties..."
+                              value={specialtySearch}
+                              onChange={(e) => {
+                                setSpecialtySearch(e.target.value);
+                                setIsSpecialtyDropdownOpen(true);
+                              }}
+                              onFocus={() => setIsSpecialtyDropdownOpen(true)}
+                              className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm"
+                            />
+                            {isSpecialtyDropdownOpen && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsSpecialtyDropdownOpen(false);
+                                  setSpecialtySearch('');
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg uppercase tracking-wider"
+                              >
+                                Done
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Dropdown Options */}
+                          {isSpecialtyDropdownOpen && (
+                            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 custom-scrollbar divide-y divide-slate-50">
+                              {CLINIC_SPECIALTIES.filter(spec => 
+                                spec.toLowerCase().includes(specialtySearch.toLowerCase())
+                              ).length > 0 ? (
+                                CLINIC_SPECIALTIES.filter(spec => 
+                                  spec.toLowerCase().includes(specialtySearch.toLowerCase())
+                                ).map(spec => {
+                                  const isSelected = formData.specialties?.includes(spec);
+                                  return (
+                                    <div
+                                      key={spec}
+                                      onClick={() => {
+                                        setFormData(prev => {
+                                          const current = prev.specialties || [];
+                                          const updated = current.includes(spec)
+                                            ? current.filter(s => s !== spec)
+                                            : [...current, spec];
+                                          return { ...prev, specialties: updated };
+                                        });
+                                      }}
+                                      className={`px-4 py-2.5 hover:bg-slate-50 cursor-pointer font-bold text-xs flex items-center justify-between transition-colors ${
+                                        isSelected ? 'bg-blue-50/35 text-blue-600' : 'text-slate-600'
+                                      }`}
+                                    >
+                                      <span>{spec}</span>
+                                      {isSelected && <CheckCircle size={14} className="text-blue-600" />}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="px-4 py-3 text-xs text-slate-400 font-bold italic">No matching specialties found</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <Input 
+                          label="Primary Contact Number" 
+                          name="phone" 
+                          placeholder="e.g. +91 98765 43210" 
+                          value={formData.phone} 
+                          onChange={handleInputChange} 
+                          error={fieldErrors.phone}
+                          required 
+                        />
+
+                        <Input 
+                          label="Official Email" 
+                          name="email" 
+                          placeholder="e.g. contact@metrohealth.com" 
+                          type="email"
+                          value={formData.email} 
+                          onChange={handleInputChange} 
+                          error={fieldErrors.email}
+                          required 
+                        />
+
+                        <Input 
+                          label="Website URL (Optional)" 
+                          name="website" 
+                          placeholder="e.g. https://www.metrohealth.com" 
+                          value={formData.website} 
+                          onChange={handleInputChange} 
+                          error={fieldErrors.website}
+                        />
+
                         <div className="md:col-span-2 space-y-2">
                           <label className="text-sm font-bold text-slate-700 ml-1">Description (About Clinic)</label>
                           <textarea 
                             name="description"
                             value={formData.description}
                             onChange={handleInputChange}
-                            placeholder="Describe clinic specialization, hours, or context..."
+                            placeholder="Describe clinic services, healthcare focus, or custom details..."
                             className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm min-h-[100px]"
                           />
                         </div>
@@ -1126,7 +1332,6 @@ export default function ClinicsPage() {
                     </motion.div>
                   )}
 
-                  {/* STEP 4: Review Details */}
                   {!editingClinicId && wizardStep === 4 && (
                     <motion.div 
                       initial={{ opacity: 0, x: 20 }}
@@ -1146,6 +1351,30 @@ export default function ClinicsPage() {
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Clinic Type</span>
                           <span className="text-xs font-black text-slate-800">{formData.clinicType}</span>
                         </div>
+                        <div className="flex flex-col py-2.5 border-b border-slate-200/65 gap-1.5">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Specialties Offered</span>
+                          <div className="flex flex-wrap gap-1">
+                            {formData.specialties?.map(spec => (
+                              <span key={spec} className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold text-[9px] uppercase tracking-wider border border-blue-100">
+                                {spec}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contact Number</span>
+                          <span className="text-xs font-black text-slate-800">{formData.phone}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Official Email</span>
+                          <span className="text-xs font-black text-slate-800">{formData.email}</span>
+                        </div>
+                        {formData.website && (
+                          <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Website</span>
+                            <span className="text-xs font-black text-slate-800">{formData.website}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</span>
                           <span className="text-xs font-black text-slate-800 truncate max-w-sm">{formData.address}, {formData.city}, {formData.state} - {formData.pincode}</span>
@@ -1225,16 +1454,6 @@ export default function ClinicsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setFormError(null);
-                          // Validate local step before proceeding
-                          if (wizardStep === 1 && !formData.clinicName) {
-                            setFormError('Clinic Display Name is required.');
-                            return;
-                          }
-                          if (wizardStep === 2 && (!formData.address || !formData.city || !formData.state || !formData.pincode)) {
-                            setFormError('All location fields are required.');
-                            return;
-                          }
                           setFormError(null);
                           setWizardStep(prev => prev + 1);
                         }}

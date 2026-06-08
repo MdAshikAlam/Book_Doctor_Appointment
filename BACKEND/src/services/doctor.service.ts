@@ -84,16 +84,16 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
 
   // 2. Pre-Match Stage: Filter by Doctor-specific fields before performing expensive lookups
   const preMatch: any = {};
+  const postMatch: any = {};
   
   // Status Filtering
   if (query.status && query.status !== 'all') {
     preMatch.status = query.status;
   } else if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
-    // Public view only shows verified doctors
+    // Public view only shows verified doctors under approved clinics
     preMatch.status = 'verified';
+    postMatch['branch_info.clinicStatus'] = 'approved';
   }
-
-  // Doctor-level advanced filters
 
   // Doctor-level advanced filters
   if (maxFee) {
@@ -152,7 +152,6 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
   });
 
   // 4. Post-Match Stage: Filter by joined fields (user, clinic, etc.)
-  const postMatch: any = {};
   
   if (gender && gender !== 'all') {
     postMatch['user.gender'] = gender;
@@ -314,8 +313,20 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
       $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' }
     });
     fallbackPipeline.push({ $unwind: '$user' });
+    
+    fallbackPipeline.push({
+      $lookup: {
+        from: 'clinics',
+        localField: 'branchId',
+        foreignField: '_id',
+        as: 'branch_info',
+      },
+    });
 
     const fallbackMatch: any = { status: 'verified' };
+    if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
+      fallbackMatch['branch_info.clinicStatus'] = 'approved';
+    }
     if (specialty) fallbackMatch.specialty = { $regex: specialty, $options: 'i' };
     if (name) {
       fallbackMatch.$or = [
@@ -365,8 +376,20 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
         $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' }
       });
       globalFallbackPipeline.push({ $unwind: '$user' });
+      
+      globalFallbackPipeline.push({
+        $lookup: {
+          from: 'clinics',
+          localField: 'branchId',
+          foreignField: '_id',
+          as: 'branch_info',
+        },
+      });
 
       const globalMatch: any = { status: 'verified' };
+      if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
+        globalMatch['branch_info.clinicStatus'] = 'approved';
+      }
       if (specialty) globalMatch.specialty = { $regex: specialty, $options: 'i' };
       if (name) {
         globalMatch.$or = [

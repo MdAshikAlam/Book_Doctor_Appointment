@@ -86,9 +86,10 @@ export const getClinic = async (req: Request, res: Response, next: NextFunction)
 };
 
 const clinicSchema = z.object({
-  clinicName: z.string().min(2, { message: "Clinic display name must be at least 2 characters" }),
-  legalName: z.string().min(2, { message: "Legal registered name must be at least 2 characters" }),
+  clinicName: z.string().min(2, { message: "Clinic name must be at least 2 characters" }),
+  legalName: z.string().optional(),
   clinicType: z.nativeEnum(ClinicType, { message: "Please select a valid clinic type" }),
+  specialties: z.array(z.string()).min(1, { message: "At least one medical specialty must be selected" }),
   description: z.string().optional(),
   images: z.array(z.string()).optional(),
   
@@ -137,6 +138,9 @@ const clinicSchema = z.object({
 export const createClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedData = clinicSchema.parse(req.body);
+    if (!validatedData.legalName) {
+      validatedData.legalName = validatedData.clinicName;
+    }
 
     // Removed restriction: Admins can now register multiple clinics
     
@@ -214,6 +218,9 @@ export const verifyClinic = async (req: AuthRequest, res: Response, next: NextFu
 export const updateClinic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedData = clinicSchema.partial().parse(req.body);
+    if (validatedData.clinicName && !validatedData.legalName) {
+      validatedData.legalName = validatedData.clinicName;
+    }
     const clinic = await clinicService.updateClinic(req.params.id as string, req.user!.id, validatedData as any);
 
     res.status(200).json({

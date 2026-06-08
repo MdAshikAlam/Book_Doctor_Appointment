@@ -72,7 +72,16 @@ export default function DoctorsPage() {
   const [viewingDoctor, setViewingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const canManage = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'receptionist';
+  const canWrite = currentUser?.role === 'admin' || currentUser?.role === 'receptionist';
+  const canViewActions = canWrite || currentUser?.role === 'super_admin';
+
+  const maxDobDate = (() => {
+    const today = new Date();
+    const maxYear = today.getFullYear() - 18;
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${maxYear}-${month}-${day}`;
+  })();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -621,7 +630,7 @@ export default function DoctorsPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Doctor Management</h1>
           <p className="text-slate-500 mt-1 font-medium">Add, edit, or remove healthcare professionals from the system.</p>
         </div>
-        {canManage && (
+        {canWrite && (
           <div className="flex flex-col items-end">
             <Button
               onClick={handleOpenAddModal}
@@ -684,7 +693,7 @@ export default function DoctorsPage() {
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Consultation</th>
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Rating</th>
                 <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Verification Status</th>
-                {canManage && <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>}
+                {canViewActions && <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -780,7 +789,7 @@ export default function DoctorsPage() {
                         )}
                       </div>
                     </td>
-                    {canManage && (
+                    {canViewActions && (
                       <td className="px-8 py-5 text-right">
                         <div className="flex items-center justify-end gap-2 transition-opacity">
                           <button
@@ -790,7 +799,7 @@ export default function DoctorsPage() {
                           >
                             <Eye size={18} />
                           </button>
-                          {canManage && (
+                          {canWrite && (
                             <button
                               onClick={() => handleOpenEditModal(doc)}
                               className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
@@ -798,7 +807,7 @@ export default function DoctorsPage() {
                               <Edit size={18} />
                             </button>
                           )}
-                          {canManage && (
+                          {canWrite && (
                             <button 
                               onClick={() => {
                                 setResettingDoctor(doc);
@@ -810,7 +819,7 @@ export default function DoctorsPage() {
                               <KeyRound size={18} />
                             </button>
                           )}
-                          {canManage && (
+                          {canWrite && (
                             <button
                               onClick={() => setDoctorToDelete(doc)}
                               className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
@@ -923,7 +932,7 @@ export default function DoctorsPage() {
                   <div className="text-center">
                     <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">Verify Email OTP</h4>
                     <p className="text-[10px] text-slate-400 mt-1 font-bold">
-                      Enter 6-digit OTP code sent to doctor's email. {otpTimer > 0 ? `(Expires in ${formatTime(otpTimer)})` : <span className="text-rose-500 font-bold">(Expired)</span>}
+                      Enter 6-digit OTP code sent to doctor&apos;s email. {otpTimer > 0 ? `(Expires in ${formatTime(otpTimer)})` : <span className="text-rose-500 font-bold">(Expired)</span>}
                     </p>
                   </div>
                   
@@ -955,7 +964,7 @@ export default function DoctorsPage() {
                   )}
                   {otpTimer === 0 && (
                     <p className="text-[10px] font-black text-rose-500 text-center flex items-center justify-center gap-1">
-                      <AlertCircle size={12} /> OTP code has expired. Please click "Resend" to get a new code.
+                      <AlertCircle size={12} /> OTP code has expired. Please click &quot;Resend&quot; to get a new code.
                     </p>
                   )}
 
@@ -1011,6 +1020,7 @@ export default function DoctorsPage() {
                 value={formData.dob}
                 onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                 required
+                max={maxDobDate}
               />
             </div>
             <div className="space-y-2">
