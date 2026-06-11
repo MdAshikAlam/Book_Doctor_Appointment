@@ -8,7 +8,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string(),
   JWT_SECRET: z.string().min(8),
-  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
   REFRESH_TOKEN_SECRET: z.string().min(8),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
   REDIS_HOST: z.string().default('localhost'),

@@ -15,6 +15,11 @@ export const apiCall = async (endpoint, options = {}) => {
     headers['X-Clinic-ID'] = selectedClinicId;
   }
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
@@ -34,8 +39,10 @@ export const apiCall = async (endpoint, options = {}) => {
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      // Just clear local state, don't force redirect here to avoid loops
       localStorage.removeItem('user');
+      if (!endpoint.includes('/auth/logout') && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/me')) {
+        window.location.href = '/?auth=failed';
+      }
     }
     const error = new Error(data.message || 'Something went wrong');
     error.status = response.status;

@@ -47,9 +47,9 @@ const superAdminSections = [
   {
     title: 'Approval Center',
     items: [
-      { icon: Building2, label: 'Clinic Verification Requests', href: '/dashboard/clinic-verification' },
-      { icon: Stethoscope, label: 'Doctor Verification Requests', href: '/dashboard/doctor-verification' },
-      { icon: FileCheck, label: 'KYC Verification Requests', href: '/dashboard/kyc-verification' }
+      { icon: Building2, label: 'Clinic Verification Requests', href: '/dashboard/clinic-verification', category: 'clinicVerification' },
+      { icon: Stethoscope, label: 'Doctor Verification Requests', href: '/dashboard/doctor-verification', category: 'doctorVerification' },
+      { icon: FileCheck, label: 'KYC Verification Requests', href: '/dashboard/kyc-verification', category: 'kycVerification' }
     ]
   },
   {
@@ -211,7 +211,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         <Icon size={20} className={cn("shrink-0", isActive ? "text-white" : "group-hover:scale-110 transition-transform")} />
         {(!isCollapsed || isMobileOpen) && (
           <div className="flex-1 flex items-center justify-between min-w-0">
-            <span className="font-medium text-sm whitespace-nowrap overflow-hidden truncate">
+            <span className="font-medium text-sm text-left leading-tight whitespace-normal break-words">
               {item.label}
             </span>
             {showBadge && (

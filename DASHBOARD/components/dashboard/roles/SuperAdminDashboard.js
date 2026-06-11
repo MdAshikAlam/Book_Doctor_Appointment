@@ -241,8 +241,8 @@ export default function SuperAdminDashboard({ data, selectedDate, onDateSelect }
               },
               { 
                 header: 'Avg Rating', 
-                accessor: 'rating', 
-                render: () => <span className="text-amber-500 font-bold flex items-center gap-1">★ 4.8</span> 
+                accessor: 'averageRating', 
+                render: (row) => <span className="text-amber-500 font-bold flex items-center gap-1">★ {row.averageRating !== undefined && row.averageRating !== null ? Number(row.averageRating).toFixed(1) : '0.0'}</span> 
               }
             ]} 
             data={branchPerformance || []} 

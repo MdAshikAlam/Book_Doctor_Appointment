@@ -90,7 +90,6 @@ export default function StaffManagementPage() {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [otpTimer, setOtpTimer] = useState(300);
-
   const otpRefs = React.useRef([]);
 
   useEffect(() => {
@@ -126,7 +125,7 @@ export default function StaffManagementPage() {
         setCooldown(30);
         setOtpTimer(300);
         setOtpSuccess('Verification code sent to email!');
-        setTimeout(() => setOtpSuccess(null), 4000);
+        setTimeout(() => setOtpSuccess(null), 10000);
       } else {
         setOtpError(res.message || 'Failed to send verification code.');
       }
@@ -676,7 +675,6 @@ export default function StaffManagementPage() {
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               required 
-              disabled={emailVerified}
             />
             <div className="space-y-1.5 w-full">
               <label className="text-sm font-medium text-slate-700 ml-1">
@@ -709,6 +707,16 @@ export default function StaffManagementPage() {
               {emailVerified && (
                 <p className="text-[10px] font-black text-emerald-600 ml-1 flex items-center gap-1">
                   <CheckCircle2 size={10} /> Email Verified
+                </p>
+              )}
+              {otpSuccess && (
+                <p className="text-[10px] font-black text-emerald-650 ml-1 mt-1">
+                  {otpSuccess}
+                </p>
+              )}
+              {otpError && (
+                <p className="text-[10px] font-black text-rose-500 ml-1 mt-1 flex items-center gap-1">
+                  <AlertCircle size={12} /> {otpError}
                 </p>
               )}
             </div>

@@ -49,10 +49,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       const response = await authApi.login(credentials);
-      const { user } = response.data;
+      const { user, accessToken } = response.data;
       
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('accessToken', accessToken);
       
       router.push('/dashboard');
       return { success: true };
@@ -73,10 +74,11 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ email, fullName, googleId, profilePicture, token, isDashboard: true })
       });
-      const { user } = response.data;
+      const { user, accessToken } = response.data;
       
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('accessToken', accessToken);
       
       router.push('/dashboard');
       return { success: true };
@@ -95,6 +97,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout API Error:', err);
     } finally {
       localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
       setUser(null);
       // Add a query param to signal to the middleware/proxy that we shouldn't auto-redirect back
       router.push('/?auth=failed');

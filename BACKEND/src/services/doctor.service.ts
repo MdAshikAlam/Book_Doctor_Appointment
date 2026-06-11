@@ -459,8 +459,43 @@ export const getDoctorById = async (idOrSlug: string) => {
   return doctor;
 };
 
+const generateDefaultAvailability = () => {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const startTime = '09:00';
+  const endTime = '17:00';
+  const duration = 20;
+  
+  const slots: string[] = [];
+  const parseTime = (time: string) => {
+    const parts = time.split(':');
+    const h = parseInt(parts[0] || '0', 10);
+    const m = parseInt(parts[1] || '0', 10);
+    return h * 60 + m;
+  };
+  
+  let current = parseTime(startTime);
+  const endMins = parseTime(endTime);
+  
+  const formatTime = (mins: number) => {
+    const h = Math.floor(mins / 60).toString().padStart(2, '0');
+    const m = (mins % 60).toString().padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
+  while (current + duration <= endMins) {
+    const slotEnd = current + duration;
+    slots.push(`${formatTime(current)} - ${formatTime(slotEnd)}`);
+    current = slotEnd;
+  }
+
+  return days.map(day => ({ day, slots }));
+};
+
 export const createDoctorProfile = async (data: Partial<IDoctor>) => {
   invalidateCache();
+  if (!data.availability || data.availability.length === 0) {
+    data.availability = generateDefaultAvailability();
+  }
   return await Doctor.create(data);
 };
 
@@ -547,8 +582,13 @@ export const createDoctorWithUser = async (userData: any, profileData: any, crea
     counter++;
   }
 
+  const availability = profileData.availability && profileData.availability.length > 0
+    ? profileData.availability
+    : generateDefaultAvailability();
+
   const doctor = await Doctor.create({
     ...profileData,
+    availability,
     user: user._id,
     slug,
     createdBy: creatorId,

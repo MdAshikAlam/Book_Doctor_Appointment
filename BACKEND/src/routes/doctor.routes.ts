@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as doctorController from '../controllers/doctor.controller';
+import * as reviewController from '../controllers/review.controller';
 import { protect, restrictTo, optionalProtect, checkDoctorOwnership } from '../middlewares/auth';
 import { branchHandler } from '../middlewares/branchHandler';
 import { UserRole } from '../models/User';
@@ -121,6 +122,19 @@ router.post(
   restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR),
   checkDoctorOwnership,
   doctorController.addLeave
+);
+
+// Review routes
+router.post(
+  '/:id/reviews',
+  protect,
+  reviewController.createOrUpdateDoctorReview
+);
+
+router.get(
+  '/:id/reviews',
+  optionalProtect,
+  reviewController.getDoctorReviews
 );
 
 export default router;
