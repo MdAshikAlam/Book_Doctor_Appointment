@@ -102,58 +102,118 @@ export default function DoctorProfilePage() {
   const [similarDoctors, setSimilarDoctors] = useState<DoctorDetails[]>([]);
 
   // Reviews stateful list
-  const [reviewsList, setReviewsList] = useState([
-    { name: "Meera Nair", rating: 5, date: "May 24, 2026", text: "Dr. Sharma was extremely patient and listened to all my symptoms without rushing. Highly recommend her for dermatology concerns!" },
-    { name: "Rahul Deshmukh", rating: 5, date: "May 18, 2026", text: "Excellent consultation. She explained the root cause of my skin condition very clearly. The prescribed medicine worked wonders." },
-    { name: "Aditi Sen", rating: 4, date: "May 05, 2026", text: "Very professional doctor. The clinic is clean and sanitized. Slight waiting time of 15 minutes, but the consultation was top-notch." }
-  ]);
-
-  const [ratingDistribution, setRatingDistribution] = useState([
-    { stars: 5, percent: 84 },
-    { stars: 4, percent: 12 },
-    { stars: 3, percent: 3 },
-    { stars: 2, percent: 1 },
-    { stars: 1, percent: 0 }
-  ]);
+  // Reviews stateful list
+  const [reviewsList, setReviewsList] = useState<any[]>([]);
+  const [isEditingReview, setIsEditingReview] = useState(false);
 
   const [userRating, setUserRating] = useState(5);
   const [userComment, setUserComment] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Fetch reviews function
+  const fetchReviews = async (doctorId: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const headers: any = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch(`${API_BASE_URL}/doctors/${doctorId}/reviews`, { headers });
+      const data = await res.json();
+      if (data.status === "success") {
+        setReviewsList(data.data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    }
+  };
+
   // Computed state for reviews count and average rating
   const averageRating = useMemo(() => {
     if (reviewsList.length === 0) return 0;
-    const sum = reviewsList.reduce((acc, r) => acc + r.rating, 0);
+    const sum = reviewsList.reduce((acc, r) => acc + (r.rating || 0), 0);
     return Number((sum / reviewsList.length).toFixed(1));
   }, [reviewsList]);
 
   const numReviews = reviewsList.length;
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userComment.trim()) return;
-
-    const newReview = {
-      name: user?.name || "Anonymous Patient",
-      rating: userRating,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      text: userComment
-    };
-
-    setReviewsList(prev => [newReview, ...prev]);
-
-    // Update distribution mock-wise
-    setRatingDistribution(prev => prev.map(row => {
-      if (row.stars === userRating) {
-        return { ...row, percent: Math.min(100, row.percent + 4) };
+  const ratingDistribution = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0]; // 5, 4, 3, 2, 1 stars
+    reviewsList.forEach(r => {
+      const star = Math.round(r.rating || 5);
+      if (star >= 1 && star <= 5) {
+        counts[5 - star]++;
       }
-      return { ...row, percent: Math.max(0, row.percent - 1) };
-    }));
+    });
+    const total = reviewsList.length || 1;
+    return [
+      { stars: 5, percent: Math.round((counts[0] / total) * 100) },
+      { stars: 4, percent: Math.round((counts[1] / total) * 100) },
+      { stars: 3, percent: Math.round((counts[2] / total) * 100) },
+      { stars: 2, percent: Math.round((counts[3] / total) * 100) },
+      { stars: 1, percent: Math.round((counts[4] / total) * 100) },
+    ];
+  }, [reviewsList]);
 
-    setUserComment("");
-    setUserRating(5);
-    setSubmitSuccess(true);
-    setTimeout(() => setSubmitSuccess(false), 5000);
+  const userReview = useMemo(() => {
+    if (!user || !reviewsList.length) return null;
+    return reviewsList.find(r => r.user?._id === user.id || r.user === user.id || r.userId === user.id);
+  }, [user, reviewsList]);
+
+  useEffect(() => {
+    if (userReview && !isEditingReview) {
+      setUserRating(userReview.rating);
+      setUserComment(userReview.comment || userReview.text || "");
+    }
+  }, [userReview, isEditingReview]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userComment.trim() || !doctor) return;
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        alert("Please login first to submit a review.");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/doctors/${doctor._id}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rating: userRating,
+          comment: userComment
+        })
+      });
+
+      if (res.status === 401) {
+        return;
+      }
+
+      const data = await res.json();
+      if (data.status === "success") {
+        setSubmitSuccess(true);
+        setIsEditingReview(false);
+        setTimeout(() => setSubmitSuccess(false), 5000);
+        // Refresh doctor profile details (to update average rating and count)
+        const docRes = await fetch(`${API_BASE_URL}/doctors/${doctor.slug || doctor._id}`);
+        const docData = await docRes.json();
+        if (docData.status === "success") {
+          setDoctor(docData.data.doctor);
+        }
+        // Refresh reviews
+        fetchReviews(doctor._id);
+      } else {
+        alert(data.message || "Failed to submit review");
+      }
+    } catch (err) {
+      console.error("Error submitting review:", err);
+      alert("Error submitting review. Please try again.");
+    }
   };
 
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -235,6 +295,13 @@ export default function DoctorProfilePage() {
       fetchDoctor();
     }
   }, [id]);
+
+  // Fetch Reviews when doctor is loaded
+  useEffect(() => {
+    if (doctor?._id) {
+      fetchReviews(doctor._id);
+    }
+  }, [doctor]);
 
   // Fetch Similar Doctors
   useEffect(() => {
@@ -548,10 +615,21 @@ export default function DoctorProfilePage() {
               <div className="flex justify-between items-start flex-wrap gap-4">
                 <div>
                   <h2 className="text-xl font-black text-slate-900 mb-1">Clinic Information</h2>
-                  <p className="text-xs font-bold text-[#00B5B5] flex items-center gap-1">
-                    <Hospital className="w-3.5 h-3.5" />
-                    {doctor.clinic?.clinicName || "Central Specialty Clinic"}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Hospital className="w-5 h-5 text-[#00B5B5] shrink-0" />
+                    {doctor.clinic ? (
+                      <Link 
+                        href={`/clinics/${doctor.clinic.slug || doctor.clinic._id}`}
+                        className="hover:underline text-lg font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
+                      >
+                        {doctor.clinic.clinicName || "Central Specialty Clinic"}
+                      </Link>
+                    ) : (
+                      <span className="text-lg font-extrabold text-slate-800">
+                        Central Specialty Clinic
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-wider">
@@ -658,56 +736,107 @@ export default function DoctorProfilePage() {
                 </h3>
                 
                 {isAuthenticated ? (
-                  <form onSubmit={handleReviewSubmit} className="space-y-4">
-                    {submitSuccess && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl text-center">
-                        Thank you! Your rating and review have been submitted successfully.
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xs font-bold text-slate-500">Your Rating:</span>
-                      <div className="flex gap-1.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
+                  userReview && !isEditingReview ? (
+                    <div className="space-y-4">
+                      <div className="p-5 bg-blue-50/30 border border-blue-100/60 rounded-2xl flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                            <CheckCircle size={14} className="text-blue-500" /> You have already reviewed this doctor
+                          </span>
                           <button
-                            key={star}
                             type="button"
-                            onClick={() => setUserRating(star)}
-                            className="text-amber-400 focus:outline-none transition-all active:scale-90 hover:scale-110"
+                            onClick={() => setIsEditingReview(true)}
+                            className="text-xs font-black text-[#00B5B5] hover:underline uppercase tracking-wider"
                           >
-                            <Star 
-                              className={`w-7 h-7 transition-colors ${
-                                star <= userRating ? "fill-amber-500 text-amber-500" : "text-slate-200"
-                              }`} 
-                            />
+                            Edit Review
                           </button>
-                        ))}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500">Your Rating:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star 
+                                key={star}
+                                size={18}
+                                className={star <= userRating ? "fill-amber-500 text-amber-500" : "text-slate-200"} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-white/80 rounded-xl border border-slate-100/50 text-xs md:text-sm font-medium text-slate-700 italic">
+                          "{userComment}"
+                        </div>
                       </div>
                     </div>
+                  ) : (
+                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                      {submitSuccess && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl text-center">
+                          Thank you! Your rating and review have been submitted successfully.
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold text-slate-500">Your Rating:</span>
+                        <div className="flex gap-1.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setUserRating(star)}
+                              className="text-amber-400 focus:outline-none transition-all active:scale-90 hover:scale-110"
+                            >
+                              <Star 
+                                className={`w-7 h-7 transition-colors ${
+                                  star <= userRating ? "fill-amber-500 text-amber-500" : "text-slate-200"
+                                }`} 
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                    <div className="space-y-1.5">
-                      <textarea
-                        value={userComment}
-                        onChange={(e) => setUserComment(e.target.value)}
-                        placeholder="Write your review here... How was your consultation experience?"
-                        rows={3}
-                        required
-                        className="w-full bg-white border border-slate-200 focus:border-[#00B5B5] focus:ring-1 focus:ring-[#00B5B5] rounded-2xl p-4 text-xs md:text-sm font-medium outline-none transition-all resize-none text-slate-800"
-                      />
-                    </div>
+                      <div className="space-y-1.5">
+                        <textarea
+                          value={userComment}
+                          onChange={(e) => setUserComment(e.target.value)}
+                          placeholder="Write your review here... How was your consultation experience?"
+                          rows={3}
+                          required
+                          className="w-full bg-white border border-slate-200 focus:border-[#00B5B5] focus:ring-1 focus:ring-[#00B5B5] rounded-2xl p-4 text-xs md:text-sm font-medium outline-none transition-all resize-none text-slate-800"
+                        />
+                      </div>
 
-                    <button
-                      type="submit"
-                      className="btn-primary-custom !py-2.5 !px-5 text-xs font-black uppercase tracking-wider block ml-auto"
-                    >
-                      Submit Review
-                    </button>
-                  </form>
+                      <div className="flex justify-end gap-2">
+                        {userReview && isEditingReview && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingReview(false);
+                              setUserRating(userReview.rating);
+                              setUserComment(userReview.comment || userReview.text || "");
+                            }}
+                            className="btn-secondary-custom !py-2.5 !px-5 text-xs font-black uppercase tracking-wider"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        <button
+                          type="submit"
+                          className="btn-primary-custom !py-2.5 !px-5 text-xs font-black uppercase tracking-wider"
+                        >
+                          {userReview ? "Update Review" : "Submit Review"}
+                        </button>
+                      </div>
+                    </form>
+                  )
                 ) : (
                   <div className="text-center py-4 space-y-3">
                     <p className="text-xs text-slate-500 font-bold">Please log in to your account to write a review and give a rating for this doctor.</p>
                     <Link
-                      href="/appointments"
+                      href="/login"
                       className="btn-secondary-custom inline-block !py-2 !px-4 text-xs font-black uppercase tracking-wider"
                     >
                       Log In / Sign Up
@@ -718,36 +847,51 @@ export default function DoctorProfilePage() {
 
               {/* Review Comments list */}
               <div className="space-y-4">
-                {reviewsList.map((r, idx) => (
-                  <div key={idx} className="bg-slate-50/40 p-5 rounded-2xl border border-slate-100/50 flex gap-4 items-start hover:shadow-md transition-shadow">
-                    <div className="w-10 h-10 rounded-full bg-[#00B5B5]/10 text-[#00B5B5] flex items-center justify-center font-black text-sm shrink-0 uppercase">
-                      {r.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex justify-between items-start flex-wrap gap-2">
-                        <div>
-                          <p className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                            {r.name}
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-50 text-[9px] font-black text-[#00B5B5] uppercase tracking-wider">
-                              Verified Patient
-                            </span>
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-bold">{r.date}</p>
-                        </div>
-                        <div className="flex text-amber-400">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star 
-                              key={i} 
-                              size={12} 
-                              className={i < r.rating ? "fill-amber-500 text-amber-500" : "text-slate-200"} 
-                            />
-                          ))}
-                        </div>
+                {reviewsList.map((r, idx) => {
+                  const reviewerName = r.user?.name || r.name || "Anonymous Patient";
+                  const reviewComment = r.comment || r.text || "";
+                  const reviewDate = r.createdAt 
+                    ? new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+                    : (r.date || "");
+                  const isCurrentUserReview = user && (r.user?._id === user.id || r.user === user.id || r.userId === user.id);
+                  
+                  return (
+                    <div key={r._id || idx} className="bg-slate-50/40 p-5 rounded-2xl border border-slate-100/50 flex gap-4 items-start hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-full bg-[#00B5B5]/10 text-[#00B5B5] flex items-center justify-center font-black text-sm shrink-0 uppercase">
+                        {reviewerName.charAt(0)}
                       </div>
-                      <p className="text-xs md:text-sm font-body-secondary text-slate-600 leading-relaxed italic">"{r.text}"</p>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex justify-between items-start flex-wrap gap-2">
+                          <div>
+                            <p className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                              {reviewerName}
+                              {isCurrentUserReview ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-50 text-[9px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
+                                  Your Review
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-50 text-[9px] font-black text-[#00B5B5] uppercase tracking-wider">
+                                  Verified Patient
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold">{reviewDate}</p>
+                          </div>
+                          <div className="flex text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star 
+                                key={i} 
+                                size={12} 
+                                className={i < r.rating ? "fill-amber-500 text-amber-500" : "text-slate-200"} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-xs md:text-sm font-body-secondary text-slate-600 leading-relaxed italic">"{reviewComment}"</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

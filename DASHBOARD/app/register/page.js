@@ -35,7 +35,6 @@ export default function RegisterPage() {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [otpTimer, setOtpTimer] = useState(300);
-
   const otpRefs = useRef([]);
 
   // Google OAuth states
@@ -143,7 +142,7 @@ export default function RegisterPage() {
         setCooldown(30);
         setOtpTimer(300);
         setOtpSuccess('Verification code sent to your email!');
-        setTimeout(() => setOtpSuccess(null), 4000);
+        setTimeout(() => setOtpSuccess(null), 10000);
       } else {
         setOtpError(res.message || 'Failed to send verification code.');
       }

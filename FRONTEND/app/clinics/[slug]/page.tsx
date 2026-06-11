@@ -95,14 +95,29 @@ const mockNearbyClinics = [
 
 export default function ClinicDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [clinic, setClinic] = useState<ClinicDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [isEditingReview, setIsEditingReview] = useState(false);
+
+  const userReview = useMemo(() => {
+    if (!user || !reviews.length) return null;
+    return reviews.find(r => r.user?._id === user.id || r.user === user.id || r.userId === user.id);
+  }, [user, reviews]);
+
+  useEffect(() => {
+    if (userReview && !isEditingReview) {
+      setNewReview({
+        rating: userReview.rating,
+        comment: userReview.comment || userReview.text || ""
+      });
+    }
+  }, [userReview, isEditingReview]);
 
   // Gallery state
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -173,9 +188,14 @@ export default function ClinicDetailsPage() {
         body: JSON.stringify(newReview)
       });
 
+      if (res.status === 401) {
+        return;
+      }
+
       const data = await res.json();
       if (data.status === "success") {
         setNewReview({ rating: 5, comment: "" });
+        setIsEditingReview(false);
         fetchReviews(clinic._id);
         const refreshRes = await fetch(`${API_BASE_URL}/clinics/${slug}`);
         const refreshData = await refreshRes.json();
@@ -692,45 +712,101 @@ export default function ClinicDetailsPage() {
                   </div>
                 )}
               </div>
-
-              {/* Write Review Form */}
               <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6">
                 <h4 className="font-black text-slate-900 mb-4 text-sm flex items-center gap-2">
-                  <AwardIcon size={16} className="text-[#00B5B5]" /> Write a Patient Review
+                  <AwardIcon size={16} className="text-[#00B5B5]" /> {userReview && !isEditingReview ? "Your Review" : "Write a Patient Review"}
                 </h4>
                 {isAuthenticated ? (
-                  <form onSubmit={handleReviewSubmit} className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-500">Your Rating:</span>
-                      <div className="flex items-center gap-1 text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
+                  userReview && !isEditingReview ? (
+                    <div className="space-y-4">
+                      <div className="p-5 bg-blue-50/30 border border-blue-100/60 rounded-2xl flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                            <Check size={14} className="text-blue-500" strokeWidth={3} /> You have already reviewed this clinic
+                          </span>
                           <button
-                            key={star}
                             type="button"
-                            onClick={() => setNewReview({ ...newReview, rating: star })}
-                            className="p-1 hover:scale-110 transition-transform"
+                            onClick={() => setIsEditingReview(true)}
+                            className="text-xs font-black text-[#00B5B5] hover:underline uppercase tracking-wider"
                           >
-                            <StarIcon size={18} fill={newReview.rating >= star ? "currentColor" : "none"} />
+                            Edit Review
                           </button>
-                        ))}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500">Your Rating:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <StarIcon 
+                                key={star}
+                                size={18}
+                                fill={newReview.rating >= star ? "currentColor" : "none"}
+                                className={newReview.rating >= star ? "text-amber-500" : "text-slate-200"} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-white/80 rounded-xl border border-slate-100/50 text-xs md:text-sm font-medium text-slate-700 italic">
+                          "{newReview.comment}"
+                        </div>
                       </div>
                     </div>
-                    <textarea
-                      required
-                      rows={3}
-                      placeholder="Share details of your clinical visit, consultation, and facility standards..."
-                      value={newReview.comment}
-                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                      className="w-full bg-white border border-slate-100 rounded-xl p-3.5 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={submittingReview}
-                      className="bg-slate-900 text-white text-xs font-black uppercase tracking-wider px-5 py-3 rounded-xl hover:bg-black transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {submittingReview ? <Loader2 className="animate-spin" size={14} /> : "Submit Review"}
-                    </button>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500">Your Rating:</span>
+                        <div className="flex items-center gap-1 text-yellow-400">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewReview({ ...newReview, rating: star })}
+                              className="p-1 hover:scale-110 transition-transform"
+                            >
+                              <StarIcon size={18} fill={newReview.rating >= star ? "currentColor" : "none"} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <textarea
+                        required
+                        rows={3}
+                        placeholder="Share details of your clinical visit, consultation, and facility standards..."
+                        value={newReview.comment}
+                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                        className="w-full bg-white border border-slate-100 rounded-xl p-3.5 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        {userReview && isEditingReview && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingReview(false);
+                              setNewReview({
+                                rating: userReview.rating,
+                                comment: userReview.comment || userReview.text || ""
+                              });
+                            }}
+                            className="bg-slate-100 text-slate-600 py-3 px-5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-slate-200 transition-all"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={submittingReview}
+                          className="bg-slate-900 text-white text-xs font-black uppercase tracking-wider px-5 py-3 rounded-xl hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {submittingReview ? (
+                            <Loader2 className="animate-spin" size={14} />
+                          ) : (
+                            userReview ? "Update Review" : "Submit Review"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  )
                 ) : (
                   <div className="text-center py-8 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center">
                     <Lock size={28} className="text-slate-400 mb-3 animate-pulse" />

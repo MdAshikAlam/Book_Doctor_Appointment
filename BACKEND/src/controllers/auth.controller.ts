@@ -34,17 +34,18 @@ const loginSchema = z.object({
 const sendTokenResponse = (result: any, statusCode: number, res: Response) => {
   const { user, accessToken, refreshToken } = result;
 
+  const isProd = process.env.NODE_ENV === 'production';
   const cookieOptions: any = {
     httpOnly: true,
-    secure: false, // Local dev
-    sameSite: 'lax',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 
   res.cookie('accessToken', accessToken, {
     ...cookieOptions,
-    maxAge: 60 * 60 * 1000, // 1 hour
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   res.cookie('refreshToken', refreshToken, cookieOptions);

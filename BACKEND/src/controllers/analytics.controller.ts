@@ -261,7 +261,8 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
           $project: {
             name: '$clinicName',
             appointmentCount: { $size: '$apts' },
-            revenue: { $sum: 0 }
+            revenue: { $sum: 0 },
+            averageRating: { $ifNull: ['$averageRating', 0] }
           }
         },
         { $sort: { appointmentCount: -1 } },
@@ -517,7 +518,8 @@ export const getNotificationCounts = async (req: Request, res: Response, next: N
     const lastViewed = user.lastViewedNotifications || {
       adminRequests: new Date(0),
       clinicVerification: new Date(0),
-      doctorVerification: new Date(0)
+      doctorVerification: new Date(0),
+      kycVerification: new Date(0)
     };
 
     // 1. Admin Requests (Pending users with role admin)
@@ -548,12 +550,31 @@ export const getNotificationCounts = async (req: Request, res: Response, next: N
       })
     ]);
 
+    // 4. KYC Verification (Combined pending clinics and submitted doctors document reviews)
+    const [kycPendingClinics, kycNewClinics] = await Promise.all([
+      Clinic.countDocuments({ clinicStatus: 'pending' }),
+      Clinic.countDocuments({ 
+        clinicStatus: 'pending', 
+        createdAt: { $gt: (lastViewed as any).kycVerification || new Date(0) } 
+      })
+    ]);
+    const [kycPendingDoctors, kycNewDoctors] = await Promise.all([
+      Doctor.countDocuments({ status: 'submitted' }),
+      Doctor.countDocuments({ 
+        status: 'submitted', 
+        createdAt: { $gt: (lastViewed as any).kycVerification || new Date(0) } 
+      })
+    ]);
+    const kycPending = kycPendingClinics + kycPendingDoctors;
+    const kycNew = kycNewClinics + kycNewDoctors;
+
     res.status(200).json({
       status: 'success',
       data: {
         adminRequests: { total: adminPending, new: adminNew },
         clinicVerification: { total: clinicPending, new: clinicNew },
-        doctorVerification: { total: doctorPending, new: doctorNew }
+        doctorVerification: { total: doctorPending, new: doctorNew },
+        kycVerification: { total: kycPending, new: kycNew }
       }
     });
   } catch (error) {
@@ -566,7 +587,7 @@ export const markNotificationsViewed = async (req: Request, res: Response, next:
     const { category } = req.body;
     const userId = (req as any).user.id;
 
-    if (!['adminRequests', 'clinicVerification', 'doctorVerification'].includes(category)) {
+    if (!['adminRequests', 'clinicVerification', 'doctorVerification', 'kycVerification'].includes(category)) {
       return res.status(400).json({ status: 'fail', message: 'Invalid category' });
     }
 

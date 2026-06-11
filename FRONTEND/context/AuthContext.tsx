@@ -29,9 +29,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchCurrentUser = async () => {
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include' // Important for cookies
       });
 
@@ -50,6 +56,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Intercept all fetch requests globally to inject token and detect token expiration
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (input, init) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+      let newInit = init ? { ...init } : {};
+      
+      if (token && typeof input === 'string') {
+        if (newInit.headers) {
+          if (newInit.headers instanceof Headers) {
+            newInit.headers.set('Authorization', `Bearer ${token}`);
+          } else if (Array.isArray(newInit.headers)) {
+            newInit.headers.push(['Authorization', `Bearer ${token}`]);
+          } else {
+            const recordHeaders = newInit.headers as Record<string, string>;
+            recordHeaders['Authorization'] = `Bearer ${token}`;
+          }
+        } else {
+          const recordHeaders: Record<string, string> = {};
+          recordHeaders['Authorization'] = `Bearer ${token}`;
+          newInit.headers = recordHeaders;
+        }
+      }
+
+      const response = await originalFetch(input, newInit);
+      
+      let url = "";
+      if (typeof input === 'string') {
+        url = input;
+      } else if (input instanceof URL) {
+        url = input.href;
+      } else if (input && typeof input === 'object' && 'url' in input) {
+        url = (input as Request).url;
+      }
+
+      if (response.status === 401 && !url.includes('/auth/logout') && !url.includes('/auth/login') && !url.includes('/auth/me')) {
+        try {
+          const clone = response.clone();
+          const data = await clone.json();
+          if (data.message && (
+            data.message.toLowerCase().includes('expired') || 
+            data.message.toLowerCase().includes('token') ||
+            data.message.toLowerCase().includes('jwt') ||
+            data.message.toLowerCase().includes('unauthorized') ||
+            data.message.toLowerCase().includes('log in again')
+          )) {
+            logout();
+          }
+        } catch (e) {
+          logout();
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   useEffect(() => {
     fetchCurrentUser();
   }, []);
@@ -67,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && data.status === 'success') {
         setUser(data.data.user);
+        localStorage.setItem("accessToken", data.data.accessToken);
         return { success: true };
       } else {
         return { success: false, status: response.status, message: data.message || 'Login failed' };
@@ -90,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && data.status === 'success') {
         setUser(data.data.user);
+        localStorage.setItem("accessToken", data.data.accessToken);
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Google Login failed' };
@@ -121,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok && data.status === 'success') {
         // Automatically log in after registration
         setUser(data.data.user);
+        localStorage.setItem("accessToken", data.data.accessToken);
         return { success: true, message: 'Registration successful!' };
       } else {
         return { success: false, message: data.message || 'Registration failed' };
@@ -133,6 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      localStorage.removeItem("accessToken");
       await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
