@@ -72,7 +72,7 @@ export const authApi = {
   }),
   sendOtp: (email) => apiCall('/auth/send-otp', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, isDashboard: true }),
   }),
   verifyOtp: (email, otp, fullName) => apiCall('/auth/verify-otp', {
     method: 'POST',

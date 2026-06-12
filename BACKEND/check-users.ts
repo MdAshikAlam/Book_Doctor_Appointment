@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import User from './src/models/User';
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, './.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -23,7 +23,7 @@ async function checkUsers() {
         authProvider: u.authProvider,
         googleId: u.googleId,
         status: u.status,
-        createdAt: u.createdAt
+        createdAt: (u as any).createdAt
       });
     });
   } catch (err) {

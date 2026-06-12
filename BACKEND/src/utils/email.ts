@@ -36,5 +36,6 @@ export const sendEmail = async (to: string, subject: string, text: string, html?
     logger.info(`✅ Email sent successfully to ${to}`);
   } catch (error: any) {
     logger.error('❌ Error sending email:', error.message);
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 };

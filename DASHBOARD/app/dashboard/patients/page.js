@@ -29,7 +29,7 @@ import {
   Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usersApi, doctorsApi } from '@/lib/api';
+import { usersApi, doctorsApi, analyticsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
@@ -89,6 +89,11 @@ export default function PatientsPage() {
 
   useEffect(() => {
     fetchPatients();
+    try {
+      analyticsApi.markNotified('patients').catch(err => console.error(err));
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   const filteredPatients = patients.filter(patient => {

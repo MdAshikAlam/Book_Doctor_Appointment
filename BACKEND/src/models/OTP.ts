@@ -13,7 +13,7 @@ const otpSchema = new Schema<IOTP>({
   otp: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   verified: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now, expires: 300 } // TTL index: auto delete after 5 minutes (300 seconds)
+  createdAt: { type: Date, default: Date.now, expires: 1800 } // TTL index: auto delete after 30 minutes (1800 seconds)
 });
 
 const OTP = mongoose.model<IOTP>('OTP', otpSchema);

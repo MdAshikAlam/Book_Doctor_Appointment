@@ -519,7 +519,9 @@ export const getNotificationCounts = async (req: Request, res: Response, next: N
       adminRequests: new Date(0),
       clinicVerification: new Date(0),
       doctorVerification: new Date(0),
-      kycVerification: new Date(0)
+      kycVerification: new Date(0),
+      patients: new Date(0),
+      appointments: new Date(0)
     };
 
     // 1. Admin Requests (Pending users with role admin)
@@ -568,13 +570,67 @@ export const getNotificationCounts = async (req: Request, res: Response, next: N
     const kycPending = kycPendingClinics + kycPendingDoctors;
     const kycNew = kycNewClinics + kycNewDoctors;
 
+    // 5. Patients (Patient History / new patients recorded)
+    let branchObjId: mongoose.Types.ObjectId | null = null;
+    const branchId = (req as any).branchId || user.branchId;
+    if (branchId) {
+      branchObjId = new mongoose.Types.ObjectId(branchId);
+    }
+    if (user.role === UserRole.ADMIN && !branchObjId) {
+      const clinics = await Clinic.find({ owner: user.id, isDeleted: false });
+      if (clinics.length > 0) {
+        branchObjId = clinics[0]!._id as mongoose.Types.ObjectId;
+      }
+    }
+
+    let doctorProfileId: mongoose.Types.ObjectId | null = null;
+    if (user.role === UserRole.DOCTOR) {
+      const doctorProfile = await Doctor.findOne({ user: user.id });
+      if (doctorProfile) {
+        doctorProfileId = doctorProfile._id as mongoose.Types.ObjectId;
+      }
+    }
+
+    const patientFilter: any = {};
+    if (user.role === UserRole.DOCTOR && doctorProfileId) {
+      patientFilter.doctorId = doctorProfileId;
+    } else if (branchObjId) {
+      patientFilter.branchId = branchObjId;
+    }
+
+    const [patientsTotal, patientsNew] = await Promise.all([
+      Patient.countDocuments(patientFilter),
+      Patient.countDocuments({
+        ...patientFilter,
+        createdAt: { $gt: (lastViewed as any).patients || new Date(0) }
+      })
+    ]);
+
+    // 6. Appointments (new appointments booked)
+    const appointmentFilter: any = {};
+    if (user.role === UserRole.DOCTOR && doctorProfileId) {
+      appointmentFilter.doctor = doctorProfileId;
+    } else if (branchObjId) {
+      appointmentFilter.branchId = branchObjId;
+    }
+
+    const [appointmentsTotal, appointmentsNew] = await Promise.all([
+      Appointment.countDocuments(appointmentFilter),
+      Appointment.countDocuments({
+        ...appointmentFilter,
+        createdAt: { $gt: (lastViewed as any).appointments || new Date(0) }
+      })
+    ]);
+
     res.status(200).json({
       status: 'success',
       data: {
         adminRequests: { total: adminPending, new: adminNew },
         clinicVerification: { total: clinicPending, new: clinicNew },
         doctorVerification: { total: doctorPending, new: doctorNew },
-        kycVerification: { total: kycPending, new: kycNew }
+        kycVerification: { total: kycPending, new: kycNew },
+        patients: { total: patientsTotal, new: patientsNew },
+        appointments: { total: appointmentsTotal, new: appointmentsNew }
       }
     });
   } catch (error) {
@@ -587,7 +643,7 @@ export const markNotificationsViewed = async (req: Request, res: Response, next:
     const { category } = req.body;
     const userId = (req as any).user.id;
 
-    if (!['adminRequests', 'clinicVerification', 'doctorVerification', 'kycVerification'].includes(category)) {
+    if (!['adminRequests', 'clinicVerification', 'doctorVerification', 'kycVerification', 'patients', 'appointments'].includes(category)) {
       return res.status(400).json({ status: 'fail', message: 'Invalid category' });
     }
 
