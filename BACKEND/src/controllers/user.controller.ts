@@ -259,11 +259,20 @@ export const getStaff = async (req: Request, res: Response, next: NextFunction) 
       }
     } else {
       // Branch-Specific Mode: Enforce current branch filtering
-      query.status = { $in: ['active', 'approved', 'suspended', 'inactive'] };
       if (!branchId) {
         return next(new AppError('Unauthorized: No branch context found', 403));
       }
       query.branchId = new mongoose.Types.ObjectId(branchId);
+
+      if (req.query.status) {
+        query.status = req.query.status;
+      } else {
+        query.status = { $in: ['active', 'approved', 'suspended', 'inactive'] };
+      }
+
+      if (req.query.role) {
+        query.role = req.query.role;
+      }
     }
 
     // Additional Role-based filtering for internal hierarchy (optional, but keep for safety)
@@ -377,11 +386,12 @@ export const createStaff = async (req: Request, res: Response, next: NextFunctio
     }
 
     const branchId = (req as any).branchId;
-    const initialStatus = (currentUser.role === UserRole.SUPER_ADMIN || validatedData.role === UserRole.RECEPTIONIST) ? 'active' : 'pending';
+    const initialStatus = 'active';
 
     const user = await User.create({
       ...validatedData,
       isEmailVerified: true,
+      emailVerified: true,
       clinic: currentUser.clinicId,
       branchId: validatedData.clinicId || (req as any).branchId || undefined,
       createdBy: currentUser.id,

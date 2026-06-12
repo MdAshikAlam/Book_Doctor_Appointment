@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Stethoscope, User, LogIn, X, MapPin, Calendar as CalendarIcon, Clock } from "lucide-react";
+import Link from "next/link";
+import { Stethoscope, User, LogIn, X, MapPin, Calendar as CalendarIcon, Clock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { getAvatarFallback, resolveImageUrl } from "@/lib/resolveImageUrl";
 
 // Import global UI components
 import Section from "@/components/ui/Section";
@@ -27,8 +29,10 @@ interface DoctorInfo {
   district?: string;
   state?: string;
   slug?: string;
+  profileImage?: string;
   user?: {
     name: string;
+    avatar?: string;
   };
   leaves?: DoctorLeave[];
   availability?: DoctorAvailability[];
@@ -36,10 +40,11 @@ interface DoctorInfo {
 
 function AppointmentsForm() {
   const searchParams = useSearchParams();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, googleLogin } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,6 +67,65 @@ function AppointmentsForm() {
 
   const [doctorInfo, setDoctorInfo] = useState<DoctorInfo | null>(null);
   
+  useEffect(() => {
+    if (!showAuthModal) return;
+
+    const initializeGoogleGSI = () => {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (clientId && (window as any).google) {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse,
+        });
+        setTimeout(() => {
+          const btnContainer = document.getElementById('google-signin-btn-appointments');
+          if (btnContainer && (window as any).google) {
+            const parentWidth = btnContainer.clientWidth || btnContainer.parentElement?.clientWidth || 320;
+            const targetWidth = Math.max(250, Math.min(380, parentWidth));
+            (window as any).google.accounts.id.renderButton(
+              btnContainer,
+              { theme: 'outline', size: 'large', width: targetWidth, shape: 'pill' }
+            );
+          }
+        }, 300);
+      }
+    };
+
+    const handleGoogleCredentialResponse = async (response: any) => {
+      setIsLoggingIn(true);
+      setLoginError("");
+      try {
+        const result = await googleLogin('', '', '', '', response.credential);
+        if (result.success) {
+          setShowAuthModal(false);
+          setStatus({ type: "success", message: "Logged in with Google successfully! You can now submit your appointment." });
+        } else {
+          setLoginError(result.message || "Google login failed");
+        }
+      } catch (err) {
+        console.error(err);
+        setLoginError("Failed to authenticate with Google");
+      } finally {
+        setIsLoggingIn(false);
+      }
+    };
+
+    if (document.getElementById('google-gsi-client')) {
+      initializeGoogleGSI();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-gsi-client';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      initializeGoogleGSI();
+    };
+  }, [showAuthModal, googleLogin]);
+
   useEffect(() => {
     const doctorId = searchParams.get("doctorId");
     if (doctorId) {
@@ -119,6 +183,15 @@ function AppointmentsForm() {
     type: null,
     message: "",
   });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bookedDetails, setBookedDetails] = useState<{
+    doctorName: string;
+    doctorAvatar: string;
+    date: string;
+    time: string;
+    department: string;
+    clinicAddress: string;
+  } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -153,7 +226,20 @@ function AppointmentsForm() {
       });
 
       if (response.ok) {
-        setStatus({ type: "success", message: "Appointment booked successfully!" });
+        const docName = doctorInfo ? `Dr. ${doctorInfo.user?.name}` : (formData.doctor || "your doctor");
+        const docAvatar = doctorInfo 
+          ? (resolveImageUrl(doctorInfo.profileImage) || resolveImageUrl(doctorInfo.user?.avatar) || getAvatarFallback(doctorInfo.user?.name || ""))
+          : getAvatarFallback(docName);
+
+        setBookedDetails({
+          doctorName: docName,
+          doctorAvatar: docAvatar,
+          date: formData.appointmentDate,
+          time: formData.appointmentTime,
+          department: formData.department,
+          clinicAddress: doctorInfo?.address || formData.address
+        });
+        setShowSuccessModal(true);
         setFormData({
           department: "Pediatrics",
           city: "",
@@ -212,8 +298,8 @@ function AppointmentsForm() {
             <p className="font-body-primary text-slate-500 mx-auto">Fill in the details below to schedule your consultation with our specialists.</p>
           </header>
 
-          {status.type && (
-            <div className={`mb-8 p-4 rounded-2xl text-center text-sm font-semibold ${status.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"}`}>
+          {status.type && status.type !== "success" && (
+            <div className="mb-8 p-4 rounded-2xl text-center text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-100">
               {status.message}
             </div>
           )}
@@ -228,15 +314,51 @@ function AppointmentsForm() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-2">
                   <label htmlFor="department" className="text-xs font-black text-slate-400 uppercase tracking-widest">Department <span className="text-rose-500">*</span></label>
-                  <input id="department" name="department" value={formData.department} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input 
+                    id="department" 
+                    name="department" 
+                    value={formData.department} 
+                    onChange={handleChange} 
+                    required 
+                    readOnly={!!doctorInfo}
+                    className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
+                      doctorInfo 
+                        ? "text-slate-400 cursor-not-allowed focus:outline-none" 
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                    }`} 
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="city" className="text-xs font-black text-slate-400 uppercase tracking-widest">Clinic City <span className="text-rose-500">*</span></label>
-                  <input id="city" name="city" value={formData.city} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input 
+                    id="city" 
+                    name="city" 
+                    value={formData.city} 
+                    onChange={handleChange} 
+                    required 
+                    readOnly={!!doctorInfo}
+                    className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
+                      doctorInfo 
+                        ? "text-slate-400 cursor-not-allowed focus:outline-none" 
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                    }`} 
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="country" className="text-xs font-black text-slate-400 uppercase tracking-widest">Country <span className="text-rose-500">*</span></label>
-                  <input id="country" name="country" value={formData.country} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input 
+                    id="country" 
+                    name="country" 
+                    value={formData.country} 
+                    onChange={handleChange} 
+                    required 
+                    readOnly={!!doctorInfo}
+                    className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
+                      doctorInfo 
+                        ? "text-slate-400 cursor-not-allowed focus:outline-none" 
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                    }`} 
+                  />
                 </div>
               </div>
 
@@ -302,14 +424,57 @@ function AppointmentsForm() {
                     const dayAvailability = doctorInfo.availability?.find((a: DoctorAvailability) => a.day === dayName);
                     const availableSlots = dayAvailability?.slots || [];
 
-                    if (availableSlots.length === 0) {
+                    const isSlotInPast = (slotStr: string) => {
+                      const selectedDateStr = formData.appointmentDate;
+                      if (!selectedDateStr) return false;
+                      
+                      const selectedDate = new Date(selectedDateStr);
+                      const today = new Date();
+                      
+                      const isToday = selectedDate.getFullYear() === today.getFullYear() &&
+                                      selectedDate.getMonth() === today.getMonth() &&
+                                      selectedDate.getDate() === today.getDate();
+                                      
+                      if (!isToday) return false;
+                      
+                      const startTimeStr = slotStr.split("-")[0]?.trim() || "";
+                      const matches = startTimeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                      if (!matches) return false;
+                      
+                      let slotHours = parseInt(matches[1], 10);
+                      const slotMinutes = parseInt(matches[2], 10);
+                      const ampm = matches[3];
+                      
+                      if (ampm) {
+                        if (ampm.toUpperCase() === "PM" && slotHours < 12) {
+                          slotHours += 12;
+                        } else if (ampm.toUpperCase() === "AM" && slotHours === 12) {
+                          slotHours = 0;
+                        }
+                      }
+                      
+                      const currentHours = today.getHours();
+                      const currentMinutes = today.getMinutes();
+                      
+                      if (slotHours < currentHours) {
+                        return true;
+                      } else if (slotHours === currentHours && slotMinutes <= currentMinutes) {
+                        return true;
+                      }
+                      
+                      return false;
+                    };
+
+                    const activeSlots = availableSlots.filter((slot: string) => !isSlotInPast(slot));
+
+                    if (activeSlots.length === 0) {
                       return <div className="w-full bg-rose-50 border border-rose-100 text-rose-500 rounded-2xl p-4 text-sm font-bold text-center">No slots available</div>;
                     }
 
                     return (
                       <select id="appointmentTime" name="appointmentTime" value={formData.appointmentTime} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800 appearance-none">
                         <option value="">Select slot</option>
-                        {availableSlots.map((slot: string) => (
+                        {activeSlots.map((slot: string) => (
                           <option key={slot} value={slot}>{slot}</option>
                         ))}
                       </select>
@@ -414,6 +579,15 @@ function AppointmentsForm() {
               
               {loginError && <p className="text-rose-500 text-sm font-semibold mb-4">{loginError}</p>}
               
+              {/* Google Login Option */}
+              <div id="google-signin-btn-appointments" className="w-full flex justify-center mb-4 min-h-[44px]"></div>
+
+              <div className="flex items-center mb-6">
+                <div className="flex-1 border-t border-slate-200"></div>
+                <span className="mx-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">OR</span>
+                <div className="flex-1 border-t border-slate-200"></div>
+              </div>
+              
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setIsLoggingIn(true);
@@ -433,7 +607,23 @@ function AppointmentsForm() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Password</label>
-                  <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] outline-none transition-all text-sm font-semibold text-slate-800" placeholder="Enter your password" />
+                  <div className="relative w-full">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={loginPassword} 
+                      onChange={(e) => setLoginPassword(e.target.value)} 
+                      required 
+                      className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] outline-none transition-all text-sm font-semibold text-slate-800" 
+                      placeholder="Enter your password" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <button 
                   type="submit"
@@ -445,6 +635,18 @@ function AppointmentsForm() {
                 </button>
               </form>
               
+              <div className="mt-6 text-center">
+                <p className="text-slate-500 font-bold text-xs">
+                  Not Registered?{" "}
+                  <Link 
+                    href={`/register?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/appointments")}`} 
+                    className="text-[#00B5B5] hover:underline font-black ml-1"
+                  >
+                    Register Now
+                  </Link>
+                </p>
+              </div>
+              
               <button 
                 onClick={() => setShowAuthModal(false)}
                 className="py-4 text-slate-500 font-bold hover:text-slate-700 transition-colors w-full mt-2 text-sm"
@@ -452,6 +654,86 @@ function AppointmentsForm() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Thank You / Success Modal */}
+      {showSuccessModal && bookedDetails && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-lg w-full p-8 md:p-10 relative animate-in zoom-in-95 duration-200 text-center">
+            
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <img 
+                src={bookedDetails.doctorAvatar} 
+                alt={bookedDetails.doctorName} 
+                className="w-full h-full object-cover rounded-full border-4 border-emerald-50 shadow-md ring-2 ring-emerald-500/20" 
+              />
+              <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1.5 rounded-full border-2 border-white shadow-md">
+                <CheckCircle2 size={14} className="fill-emerald-500 text-white" />
+              </div>
+            </div>
+            
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">Appointment Booked!</h2>
+            <p className="font-body-secondary text-slate-500 mb-8 text-sm md:text-base">
+              Your appointment has been successfully scheduled. A confirmation email has been sent to you.
+            </p>
+            
+            {/* Summary Card */}
+            <div className="bg-slate-50 rounded-3xl border border-slate-100 p-6 mb-8 text-left space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100">Appointment Details</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Doctor</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5">{bookedDetails.doctorName}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Department</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5">{bookedDetails.department}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Date</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5">
+                    {new Date(bookedDetails.date).toLocaleDateString("en-US", {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Time Slot</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5">{bookedDetails.time}</p>
+                </div>
+              </div>
+              
+              {bookedDetails.clinicAddress && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Clinic Address</p>
+                  <p className="text-xs font-bold text-slate-600 mt-1 flex items-start gap-1.5">
+                    <MapPin size={14} className="text-[#00B5B5] shrink-0 mt-0.5" />
+                    <span>{bookedDetails.clinicAddress}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link 
+                href="/bookings"
+                className="flex-1 py-4 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl transition-colors text-sm"
+              >
+                View My Bookings
+              </Link>
+              <Link
+                href="/"
+                className="flex-1 py-4 bg-[#00B5B5] hover:bg-[#009A9A] text-white font-bold rounded-2xl transition-colors text-sm shadow-lg shadow-[#00B5B5]/10"
+              >
+                Go to Homepage
+              </Link>
+            </div>
+            
           </div>
         </div>
       )}

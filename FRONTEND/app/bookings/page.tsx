@@ -351,7 +351,7 @@ export default function MyAppointmentsPage() {
                             </div>
                           </div>
 
-                          <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 space-y-2 shrink-0 justify-between flex flex-row md:flex-col items-center md:items-start w-full md:w-auto text-metadata">
+                          <div className="border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 gap-4 md:gap-2 shrink-0 justify-between flex flex-row md:flex-col items-center md:items-start w-full md:w-auto text-metadata">
                             <div>
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date & Time</p>
                               <p className="text-sm font-extrabold text-slate-800">{appointmentDate}</p>

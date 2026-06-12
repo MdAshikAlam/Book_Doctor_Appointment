@@ -285,6 +285,39 @@ export default function ClinicDetailsPage() {
 
   const [activeSession, setActiveSession] = useState<'morning' | 'afternoon' | 'evening'>('morning');
 
+  const isSlotInPast = (slotStr: string) => {
+    if (!selectedDate) return false;
+    
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const todayDate = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${todayYear}-${todayMonth}-${todayDate}`;
+    
+    const isToday = selectedDate === todayStr;
+    if (!isToday) return false;
+    
+    const startTimeStr = slotStr.split("-")[0]?.trim() || "";
+    const matches = startTimeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!matches) return false;
+    
+    let slotHours = parseInt(matches[1], 10);
+    const slotMinutes = parseInt(matches[2], 10);
+    const ampm = matches[3];
+    
+    if (ampm) {
+      if (ampm.toUpperCase() === "PM" && slotHours < 12) slotHours += 12;
+      else if (ampm.toUpperCase() === "AM" && slotHours === 12) slotHours = 0;
+    }
+    
+    const currentHours = today.getHours();
+    const currentMinutes = today.getMinutes();
+    
+    if (slotHours < currentHours) return true;
+    if (slotHours === currentHours && slotMinutes <= currentMinutes) return true;
+    return false;
+  };
+
   const groupedSlots = useMemo(() => {
     const morning: string[] = [];
     const afternoon: string[] = [];
@@ -985,20 +1018,26 @@ export default function ClinicDetailsPage() {
                         </div>
                       ) : groupedSlots[activeSession].length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
-                          {groupedSlots[activeSession].map((time, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => setSelectedTime(time)}
-                              className={`py-2 text-[10px] font-black rounded-lg border transition-all text-center ${
-                                selectedTime === time
-                                  ? "bg-slate-900 border-slate-900 text-white"
-                                  : "border-slate-150 text-slate-600 bg-white hover:border-slate-350"
-                              }`}
-                            >
-                              {time}
-                            </button>
-                          ))}
+                          {groupedSlots[activeSession].map((time, i) => {
+                            const isPast = isSlotInPast(time);
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                disabled={isPast}
+                                onClick={() => setSelectedTime(time)}
+                                className={`py-2 text-[10px] font-black rounded-lg border transition-all text-center ${
+                                  isPast
+                                    ? "opacity-40 cursor-not-allowed bg-slate-100 border-slate-100 text-slate-400"
+                                    : selectedTime === time
+                                      ? "bg-slate-900 border-slate-900 text-white"
+                                      : "border-slate-150 text-slate-600 bg-white hover:border-slate-350"
+                                }`}
+                              >
+                                {time}
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="bg-slate-50 p-4 rounded-xl text-center text-slate-400 text-xs font-bold">

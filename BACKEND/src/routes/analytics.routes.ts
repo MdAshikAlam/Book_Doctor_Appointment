@@ -6,8 +6,8 @@ import { UserRole } from '../models/User';
 const router = Router();
 
 router.get('/dashboard-stats', protect, restrictTo(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST), analyticsController.getDashboardStats);
-router.get('/notifications', protect, restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST), analyticsController.getNotificationCounts);
-router.post('/mark-notified', protect, restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST), analyticsController.markNotificationsViewed);
+router.get('/notifications', protect, restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.DOCTOR), analyticsController.getNotificationCounts);
+router.post('/mark-notified', protect, restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.DOCTOR), analyticsController.markNotificationsViewed);
 
 
 export default router;

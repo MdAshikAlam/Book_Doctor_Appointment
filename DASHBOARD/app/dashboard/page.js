@@ -14,7 +14,8 @@ import {
   IndianRupee,
   TrendingUp,
   Star,
-  Building2
+  Building2,
+  AlertCircle
 } from 'lucide-react';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import Chart from '@/components/dashboard/Chart';
@@ -23,6 +24,7 @@ import AppointmentCard from '@/components/dashboard/AppointmentCard';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import { useAuth } from '@/context/AuthContext';
+import { apiCall } from '@/lib/api';
 
 const statsData = [
   { title: 'Total Patients', value: '42,908', icon: Users, growth: 12.5, isIncrease: true, color: 'blue' },
@@ -127,6 +129,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filterRange, setFilterRange] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
@@ -140,25 +143,23 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        let url = `${API_BASE_URL}/analytics/dashboard-stats`;
+        setError(null);
+        let endpoint = `/analytics/dashboard-stats`;
+        const params = new URLSearchParams();
         if (filterRange) {
-          url += `?range=${filterRange}`;
+          params.append('range', filterRange);
         } else if (selectedDate) {
-          url += `?date=${selectedDate}`;
+          params.append('date', selectedDate);
         } else {
-          url += `?range=today`;
+          params.append('range', 'today');
         }
 
-        const res = await fetch(url, {
-          credentials: 'include'
-        });
-        const data = await res.json();
-
-        if (data.status === 'success') {
-          setDashboardData(data.data);
-        }
+        endpoint += `?${params.toString()}`;
+        const data = await apiCall(endpoint);
+        setDashboardData(data.data);
       } catch (err) {
         console.error('Failed to fetch dashboard stats', err);
+        setError(err.message || 'Failed to connect to server');
       } finally {
         setLoading(false);
       }
@@ -172,6 +173,24 @@ export default function DashboardPage() {
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-slate-500 font-medium animate-pulse">Synchronizing Dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 text-center bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm max-w-4xl mx-auto">
+        <div className="w-16 h-16 bg-red-50 text-red-650 rounded-full flex items-center justify-center mb-4">
+          <AlertCircle className="w-8 h-8 text-red-500" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-900">Failed to Load Dashboard</h3>
+        <p className="text-slate-500 mt-2 font-medium max-w-md">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-6 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

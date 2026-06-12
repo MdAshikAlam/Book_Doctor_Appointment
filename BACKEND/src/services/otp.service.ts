@@ -6,12 +6,12 @@ import User from '../models/User';
 export const sendOTP = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Cooldown check: resend limit 30 seconds
+  // Cooldown check: resend limit 60 seconds
   const lastOTP = await OTP.findOne({ email: normalizedEmail }).sort({ createdAt: -1 });
   if (lastOTP) {
     const timePassed = (Date.now() - lastOTP.createdAt.getTime()) / 1000;
-    if (timePassed < 30) {
-      throw new AppError(`Please wait ${Math.ceil(30 - timePassed)} seconds before requesting a new OTP.`, 429);
+    if (timePassed < 60) {
+      throw new AppError(`Please wait ${Math.ceil(60 - timePassed)} seconds before requesting a new OTP.`, 429);
     }
   }
 
@@ -28,6 +28,12 @@ export const sendOTP = async (email: string) => {
   // Generate secure 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  // Log OTP to console for development/troubleshooting
+  console.log(`\n===================================`);
+  console.log(`🔑 OTP Generated for ${normalizedEmail}`);
+  console.log(`CODE: ${otp}`);
+  console.log(`===================================\n`);
 
   // Save to DB
   await OTP.create({
@@ -62,7 +68,7 @@ export const sendOTP = async (email: string) => {
   `;
 
   await sendEmail(normalizedEmail, subject, text, html);
-  return { success: true, message: 'OTP sent successfully!' };
+  return { success: true, message: 'OTP sent successfully!', otp };
 };
 
 export const verifyOTP = async (email: string, otp: string, fullName?: string) => {

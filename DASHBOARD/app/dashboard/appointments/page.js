@@ -34,7 +34,7 @@ import {
   LogOut,
   Trash2
 } from 'lucide-react';
-import { appointmentsApi, doctorsApi } from '@/lib/api';
+import { appointmentsApi, doctorsApi, analyticsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -98,6 +98,11 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     fetchAppointments();
+    try {
+      analyticsApi.markNotified('appointments').catch(err => console.error(err));
+    } catch (err) {
+      console.error(err);
+    }
   }, [fetchAppointments]);
 
   useEffect(() => {
@@ -489,12 +494,14 @@ export default function AppointmentsPage() {
                                             setActiveMenu(null);
                                           }} 
                                         />
-                                        <MenuButton 
-                                          icon={<User size={18} />} 
-                                          label="Check-In Patient" 
-                                          color="text-cyan-600"
-                                          onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
-                                        />
+                                        {app.status !== 'checked_in' && (
+                                          <MenuButton 
+                                            icon={<User size={18} />} 
+                                            label="Check-In Patient" 
+                                            color="text-cyan-600"
+                                            onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                          />
+                                        )}
                                         {(app.clinic?.receptionAssistantMode === true || app.doctor?.clinic?.receptionAssistantMode === true || app.doctor?.branchId?.receptionAssistantMode === true) && (
                                           <>
                                             <div className="h-px bg-slate-50 my-1" />

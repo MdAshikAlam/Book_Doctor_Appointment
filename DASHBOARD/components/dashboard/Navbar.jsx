@@ -1,12 +1,13 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Bell, Menu, LogOut, User, Settings as SettingsIcon, HelpCircle, Stethoscope } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAuth } from '@/context/AuthContext';
 import BranchSelector from './BranchSelector';
+import { analyticsApi } from '@/lib/api';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -15,6 +16,26 @@ function cn(...inputs) {
 const Navbar = ({ onMenuClick }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout } = useAuth();
+  const [notifications, setNotifications] = useState({});
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await analyticsApi.getNotifications();
+      setNotifications(response.data || {});
+    } catch (err) {
+      console.error('Failed to fetch notifications in Navbar:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role && ['super_admin', 'admin', 'receptionist', 'doctor'].includes(user.role)) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const hasNewNotifications = Object.values(notifications).some(n => n && n.new > 0);
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
@@ -49,10 +70,12 @@ const Navbar = ({ onMenuClick }) => {
           <BranchSelector />
 
           {/* Notifications */}
-          <button className="relative p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
+          <Link href="/dashboard/notifications" className="relative p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
             <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+            {hasNewNotifications && (
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+            )}
+          </Link>
 
           {/* Vertical Divider */}
           <div className="w-px h-6 bg-border mx-2"></div>

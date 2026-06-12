@@ -29,8 +29,8 @@ router.patch('/:id/status', restrictTo(UserRole.SUPER_ADMIN), userController.upd
 router.delete('/:id', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.deleteUser);
 
 // Super Admin Management Routes
-router.patch('/:id/suspend', restrictTo(UserRole.SUPER_ADMIN), userController.suspendUser);
-router.patch('/:id/reactivate', restrictTo(UserRole.SUPER_ADMIN), userController.reactivateUser);
+router.patch('/:id/suspend', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.suspendUser);
+router.patch('/:id/reactivate', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN), checkAdminOwnership, userController.reactivateUser);
 router.post('/:id/reset-password', restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.RECEPTIONIST), userController.resetUserPassword);
 router.post('/transfer-data', restrictTo(UserRole.SUPER_ADMIN), userController.transferAdminData);
 router.get('/activity-logs', restrictTo(UserRole.SUPER_ADMIN), userController.getActivityLogs);

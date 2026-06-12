@@ -6,6 +6,7 @@ import User from '../models/User';
 import { generateAccessToken, generateRefreshToken } from '../utils/auth';
 import { AppError } from '../middlewares/error';
 import { verifyGoogleToken } from '../utils/google';
+import config from '../config';
 
 
 const registerSchema = z.object({
@@ -168,22 +169,28 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 
 export const sendOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    const { email, isDashboard } = z.object({
+      email: z.string().email(),
+      isDashboard: z.boolean().optional()
+    }).parse(req.body);
     
-    // Check if account already verified but password is not set
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (user && user.emailVerified && !user.passwordSet) {
-      return res.status(200).json({
-        status: 'already_verified',
-        message: 'Email already verified.',
-        data: {
-          fullName: user.fullName || user.name || '',
-          phoneNumber: user.phone || '',
-          clinicName: user.clinicName || '',
-          city: user.city || '',
-          state: user.state || ''
-        }
-      });
+    // For the registration flow (not dashboard): if user already verified but no password set,
+    // skip resending OTP and return already_verified so frontend can redirect to set-password.
+    if (!isDashboard) {
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
+      if (user && user.emailVerified && !user.passwordSet) {
+        return res.status(200).json({
+          status: 'already_verified',
+          message: 'Email already verified.',
+          data: {
+            fullName: user.fullName || user.name || '',
+            phoneNumber: user.phone || '',
+            clinicName: user.clinicName || '',
+            city: user.city || '',
+            state: user.state || ''
+          }
+        });
+      }
     }
 
     const result = await otpService.sendOTP(email);

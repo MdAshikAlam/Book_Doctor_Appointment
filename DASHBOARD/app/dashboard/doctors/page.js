@@ -164,7 +164,7 @@ export default function DoctorsPage() {
 
       if (res.status === 'success') {
         setOtpSent(true);
-        setCooldown(30);
+        setCooldown(60);
         setOtpTimer(300);
         setOtpSuccess('Verification code sent to email!');
         setTimeout(() => setOtpSuccess(null), 10000);
@@ -887,7 +887,7 @@ export default function DoctorsPage() {
                       disabled={otpSending || cooldown > 0 || !formData.email}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[9px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
                     >
-                      {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
+                      {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : otpSent ? 'Resend' : 'Send'}
                     </button>
                   )}
                 </div>

@@ -56,6 +56,8 @@ export interface IUser extends Document {
     clinicVerification?: Date;
     doctorVerification?: Date;
     kycVerification?: Date;
+    patients?: Date;
+    appointments?: Date;
   };
 
   comparePassword(candidate: string): Promise<boolean>;
@@ -124,7 +126,9 @@ const userSchema = new Schema<IUser>(
       adminRequests: { type: Date, default: Date.now },
       clinicVerification: { type: Date, default: Date.now },
       doctorVerification: { type: Date, default: Date.now },
-      kycVerification: { type: Date, default: Date.now }
+      kycVerification: { type: Date, default: Date.now },
+      patients: { type: Date, default: Date.now },
+      appointments: { type: Date, default: Date.now }
     }
   },
   { timestamps: true }

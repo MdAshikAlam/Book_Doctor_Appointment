@@ -57,7 +57,7 @@ const superAdminSections = [
     items: [
       { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
       { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
-      { icon: Users, label: 'Patients', href: '/dashboard/patients' }
+      { icon: Users, label: 'Patients', href: '/dashboard/patients', category: 'patients' }
     ]
   },
   {
@@ -90,8 +90,8 @@ const adminSections = [
     title: 'Operations',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', category: 'appointments' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
     ]
   },
   {
@@ -112,8 +112,8 @@ const receptionistSections = [
     title: 'Operations',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', category: 'appointments' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
     ]
   },
   {
@@ -132,9 +132,9 @@ const doctorSections = [
     title: 'Consultation',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: CalendarCheck, label: 'Today Appointments', href: '/dashboard/appointments?filter=today' },
+      { icon: CalendarCheck, label: 'Today Appointments', href: '/dashboard/appointments?filter=today', category: 'appointments' },
       { icon: CheckCircle2, label: 'Completed Consultations', href: '/dashboard/appointments?filter=completed' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients' },
+      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
       { icon: CalendarCheck, label: 'Follow-Ups', href: '/dashboard/appointments?filter=follow_up' },
     ]
   },
@@ -164,7 +164,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
   };
 
   useEffect(() => {
-    if (user?.role === 'super_admin') {
+    if (user?.role && ['super_admin', 'admin', 'receptionist', 'doctor'].includes(user.role)) {
       fetchNotifications();
       // Polling for new notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
