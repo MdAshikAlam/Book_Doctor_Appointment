@@ -50,7 +50,7 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     name,
     lat,
     lng,
-    radius = 5000,
+    radius = 5,
     district,
     state,
     gender,
@@ -73,7 +73,7 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
           coordinates: [parseFloat(lng), parseFloat(lat)],
         },
         distanceField: 'distance',
-        maxDistance: parseInt(radius),  // radius in metres (e.g. 5000 = 5 km)
+        maxDistance: parseInt(radius) * 1000,  // radius in metres (e.g. 50 km = 50000 m)
         spherical: true,
         // Pre-filter to verified doctors only inside $geoNear for performance
         query: { status: 'verified' },
@@ -187,7 +187,7 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     andConditions.push({ $or: nameConditions });
   }
 
-  if (district) {
+  if (district && !lat && !lng) {
     andConditions.push({
       $or: [
         { district: { $regex: district, $options: 'i' } },
@@ -199,7 +199,7 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     });
   }
 
-  if (state) {
+  if (state && !lat && !lng) {
     andConditions.push({
       $or: [
         { state: { $regex: state, $options: 'i' } },
@@ -292,8 +292,21 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
   let doctors = await Doctor.aggregate(pipeline);
   console.timeEnd('[getAllDoctors] DB Query Time');
 
-  // FALLBACK LOGIC: If no doctors found in the specific district, search for others in the same state
-  if (doctors.length === 0 && (district || (lat && lng))) {
+  if (lat && lng) {
+    doctors.forEach((doc: any) => {
+      const doctorLat = doc.location?.coordinates?.[1];
+      const doctorLng = doc.location?.coordinates?.[0];
+      const distanceMeters = doc.distance;
+      const distanceKm = distanceMeters !== undefined ? (distanceMeters / 1000).toFixed(1) : 'N/A';
+      console.log("User Coordinates:", lat, lng);
+      console.log("Doctor Coordinates:", doctorLat, doctorLng);
+      console.log("Selected Radius:", radius);
+      console.log("Calculated Distance:", distanceKm);
+    });
+  }
+
+  // FALLBACK LOGIC: Only run fallback if NOT using coordinate/radius filtering (i.e. manual plain state/district search without coordinates)
+  if (doctors.length === 0 && district && !lat && !lng) {
     const fallbackPipeline: any[] = [];
     
     // If we had lat/lng, search with a much larger radius (500 km) as fallback

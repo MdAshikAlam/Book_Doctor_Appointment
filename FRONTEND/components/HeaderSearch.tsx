@@ -152,7 +152,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
         
         // Add geographical filters if available
         if (latitude && longitude) {
-          url += `&lat=${latitude}&lng=${longitude}&radius=60000`; // 60km radius
+          url += `&lat=${latitude}&lng=${longitude}&radius=60`; // 60km radius
         } else if (selectedDistrict) {
           url += `&district=${encodeURIComponent(selectedDistrict)}`;
           if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;

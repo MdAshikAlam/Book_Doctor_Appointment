@@ -104,7 +104,7 @@ export default function DoctorDiscoverySection() {
   // Location Geolocation Coords
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-  const [radius, setRadius] = useState<number>(5000); // 5km default
+  const [radius, setRadius] = useState<number>(5); // 5km default
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -119,6 +119,7 @@ export default function DoctorDiscoverySection() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
 
   // Filter state
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
@@ -313,6 +314,7 @@ export default function DoctorDiscoverySection() {
         if (selectedState) {
           params.append('state', selectedState);
         }
+        params.append('radius', radius.toString());
       }
 
       // Advanced filters
@@ -335,12 +337,15 @@ export default function DoctorDiscoverySection() {
 
       if (data.status === 'success') {
         setDoctors(data.data.doctors);
+        setApiMessage(data.message || null);
       } else {
         setDoctors([]);
+        setApiMessage(null);
       }
     } catch (err) {
       console.error('Fetch doctors error:', err);
       setDoctors([]);
+      setApiMessage(null);
     } finally {
       setLoading(false);
     }
@@ -389,6 +394,7 @@ export default function DoctorDiscoverySection() {
     setLat(null);
     setLng(null);
     clearLocation();
+    setApiMessage(null);
   };
 
   // Has active filters checker
@@ -421,7 +427,7 @@ export default function DoctorDiscoverySection() {
         />
 
         {/* Search, Location, Radius Bar */}
-        <div className="bg-white rounded-3xl border border-slate-100 p-4 md:p-6 shadow-xl shadow-slate-100/70 mb-8 relative z-50">
+        <div className="bg-white rounded-3xl border border-slate-100 p-4 md:p-6 shadow-xl shadow-slate-100/70 mb-8 relative z-30">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
             
             {/* Search Input field */}
@@ -615,10 +621,11 @@ export default function DoctorDiscoverySection() {
                     }
                   }}
                 >
-                  <option value={5000}>5 km</option>
-                  <option value={10000}>10 km</option>
-                  <option value={20000}>20 km</option>
-                  <option value={50000}>50 km</option>
+                  <option value={5}>5 km</option>
+                  <option value={10}>10 km</option>
+                  <option value={20}>20 km</option>
+                  <option value={50}>50 km</option>
+                  <option value={70}>70 km</option>
                 </select>
               </div>
               {/* GPS status hint below the radius box */}
@@ -631,7 +638,7 @@ export default function DoctorDiscoverySection() {
               {lat && (
                 <p className="text-[10px] font-black text-[#00B5B5] mt-1.5 text-right px-1 flex items-center justify-end gap-1">
                   <Navigation size={10} className="text-[#00B5B5]" />
-                  GPS active · {radius / 1000} km range
+                  GPS active · {radius} km range
                 </p>
               )}
             </div>
@@ -643,7 +650,7 @@ export default function DoctorDiscoverySection() {
         <div className="flex flex-col gap-5 mb-8">
           
           {/* Horizontal Specialty Chips */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div className="w-full overflow-x-auto flex gap-2 pb-2 scrollbar-thin scrollbar-thumb-slate-200">
               {SPECIALTIES.map((spec) => (
                 <button
@@ -838,9 +845,9 @@ export default function DoctorDiscoverySection() {
         </div>
 
         {/* Main Doctor Grid Results */}
-        {loading ? (
+         {loading ? (
           /* Skeleton Loader Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between h-[360px] animate-pulse">
                 <div>
@@ -867,19 +874,19 @@ export default function DoctorDiscoverySection() {
         ) : doctors.length > 0 ? (
           <>
             {/* Fallback Area Notification */}
-            {doctors.some(d => d.isFallback) && (
+            {(doctors.some(d => d.isFallback) || (selectedDistrict && doctors.length > 0 && doctors.every(d => d.district?.toLowerCase() !== selectedDistrict.toLowerCase()))) && (
               <div className="bg-amber-50 border border-amber-100 p-5 rounded-2xl mb-8 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500 max-w-3xl mx-auto">
                 <AlertCircle className="text-amber-600 shrink-0" size={18} />
                 <div>
                   <p className="text-amber-800 text-xs sm:text-sm font-bold">
                     {lat && lng
-                      ? `No doctors found within ${radius / 1000} km of your GPS location. Showing nearest verified doctors:`
+                      ? `No doctors found within ${radius} km of your GPS location. Showing nearest verified doctors:`
                       : `No specialists found directly in ${selectedDistrict || 'your area'}. Showing nearest available doctors:`
                     }
                   </p>
                   {lat && lng && (
                     <p className="text-amber-600 text-[10px] font-bold mt-0.5">
-                      Try expanding the radius to 20 km or 50 km — or clear GPS to browse all doctors nationally.
+                      Try expanding the radius to 20 km, 50 km or 70 km — or clear GPS to browse all doctors nationally.
                     </p>
                   )}
                 </div>
@@ -887,7 +894,7 @@ export default function DoctorDiscoverySection() {
             )}
 
             {/* Doctors Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {doctors.slice(0, visibleCount).map((doc) => (
                 <DoctorCard 
                   key={doc._id}
@@ -935,7 +942,7 @@ export default function DoctorDiscoverySection() {
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">No Doctors Found</h3>
             <p className="text-slate-400 text-xs sm:text-sm font-bold leading-relaxed max-w-sm mx-auto mb-6">
-              We couldn&apos;t find any healthcare professionals matching your filters. Try clearing some active filters or expanding your radius.
+              {apiMessage || "We couldn't find any healthcare professionals matching your filters. Try clearing some active filters or expanding your radius."}
             </p>
             {hasActiveFilters && (
               <button

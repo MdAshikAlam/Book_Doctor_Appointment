@@ -170,6 +170,10 @@ export const loginUser = async (emailOrPhone: string, password?: string, isDashb
   }
 
   // Check if they need to set a password
+  if (user.authProvider === 'google' && user.passwordSet === false) {
+    throw new AppError('This account uses Google Sign-In. Please continue with Google.', 400, 'GOOGLE_SIGNIN_REQUIRED');
+  }
+
   if (user.passwordSet === false) {
     throw new AppError('Please set your password to continue.', 428);
   }
@@ -300,6 +304,7 @@ export const resetPassword = async (token: string, password?: string) => {
   }
 
   user.password = password;
+  user.passwordSet = true;
   (user as any).passwordResetToken = undefined;
   (user as any).passwordResetExpires = undefined;
   await user.save();
@@ -450,6 +455,7 @@ export const resetPasswordOtp = async (email: string, otp: string, passwordConfi
   }
 
   user.password = passwordConfirm;
+  user.passwordSet = true;
   await user.save();
 
   await OTP.deleteMany({ email: emailVal });

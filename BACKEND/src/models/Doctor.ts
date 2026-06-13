@@ -20,6 +20,7 @@ export interface IDoctor extends Document {
   address: string;
   district: string;
   state: string;
+  pincode?: string;
   availability: {
     day: string;
     slots: string[];
@@ -76,6 +77,7 @@ const doctorSchema = new Schema<IDoctor>(
     address: { type: String },
     district: { type: String },
     state: { type: String },
+    pincode: { type: String },
     availability: [
       {
         day: { type: String, required: true },

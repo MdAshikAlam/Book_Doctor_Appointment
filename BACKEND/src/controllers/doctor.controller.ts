@@ -27,13 +27,53 @@ export const getDoctors = async (req: Request, res: Response, next: NextFunction
     }
     // Super admins, patients, and unauthenticated users → global query (no branchId filter)
     
-    console.log('[getDoctors] Fetching doctors with query:', req.query, 'branchId:', branchId);
+    const query = { ...req.query };
 
-    const doctors = await doctorService.getAllDoctors(req.query, creatorId, branchId);
+    // Geocode district on the backend if lat/lng are missing but district is provided
+    if (query.district && (!query.lat || !query.lng)) {
+      try {
+        const { lat, lng } = await geocodeAddress(
+          '',
+          query.district as string,
+          (query.state as string) || ''
+        );
+        query.lat = lat.toString();
+        query.lng = lng.toString();
+        console.log(`[getDoctors] Geocoded district "${query.district}" to: lat=${lat}, lng=${lng}`);
+      } catch (err) {
+        console.error('[getDoctors] Failed to geocode district:', err);
+      }
+    }
+
+    console.log('[getDoctors] Fetching doctors with query:', query, 'branchId:', branchId);
+
+    const doctors = await doctorService.getAllDoctors(query, creatorId, branchId);
+    
+    // Format response to include required fields
+    const formattedDoctors = doctors.map((doc: any) => {
+      const distanceKm = doc.distance !== undefined ? parseFloat((doc.distance / 1000).toFixed(1)) : undefined;
+      return {
+        ...doc,
+        doctorId: doc._id,
+        doctorName: doc.user?.name ? (doc.user.name.startsWith('Dr. ') ? doc.user.name : `Dr. ${doc.user.name}`) : undefined,
+        distanceKm,
+        clinicName: doc.clinic_info?.[0]?.clinicName || doc.branch_info?.[0]?.clinicName || undefined,
+        clinicLocation: doc.clinic_info?.[0]?.address || doc.branch_info?.[0]?.address || undefined
+      };
+    });
+
+    let message: string | undefined;
+    if (formattedDoctors.length === 0 && query.radius) {
+      const specialtyStr = typeof query.specialty === 'string' ? query.specialty : '';
+      const specialtyName = specialtyStr && specialtyStr !== 'All' ? `${specialtyStr.toLowerCase()}s` : 'doctors';
+      message = `No ${specialtyName} found within ${query.radius} km.`;
+    }
+
     res.status(200).json({
       status: 'success',
-      results: doctors.length,
-      data: { doctors },
+      results: formattedDoctors.length,
+      data: { doctors: formattedDoctors },
+      ...(message && { message })
     });
   } catch (error) {
     next(error);
@@ -114,6 +154,7 @@ const doctorProfileSchema = z.object({
   address: z.string(),
   district: z.string(),
   state: z.string(),
+  pincode: z.string().optional(),
   clinicId: z.string().optional(),
   registrationYear: z.number().optional(),
   licenseDocument: z.string().optional(),
@@ -173,7 +214,8 @@ export const adminCreateDoctor = async (req: Request, res: Response, next: NextF
       const { lat, lng } = await geocodeAddress(
         validatedData.profileData.address,
         validatedData.profileData.district,
-        validatedData.profileData.state
+        validatedData.profileData.state,
+        validatedData.profileData.pincode
       );
       validatedData.profileData.location = {
         type: 'Point',
@@ -237,7 +279,8 @@ export const adminUpdateDoctor = async (req: Request, res: Response, next: NextF
           const { lat, lng } = await geocodeAddress(
             p.address || d.address,
             p.district || d.district,
-            p.state || d.state
+            p.state || d.state,
+            p.pincode || d.pincode
           );
           p.location = {
             type: 'Point',

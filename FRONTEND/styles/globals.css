@@ -84,13 +84,13 @@ h3,
 
 /* Section Spacing System */
 .global-section {
-  padding-top: 64px;
+  padding-top: 32px;
   padding-bottom: 64px;
 }
 
 @media (min-width: 1024px) {
   .global-section {
-    padding-top: 96px;
+    padding-top: 48px;
     padding-bottom: 96px;
   }
 }
