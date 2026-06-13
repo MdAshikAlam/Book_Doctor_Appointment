@@ -157,6 +157,8 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
           if (onClose) onClose();
           router.push(redirect || '/');
         }, 1500);
+      } else if ((result as any).code === 'GOOGLE_SIGNIN_REQUIRED') {
+        setStatus({ type: 'error', message: result.message || 'This account uses Google Sign-In. Please continue with Google.' });
       } else if ((result as any).status === 428 || (result.message && (result.message.includes('PASSWORD_NOT_SET') || result.message.includes('password to continue')))) {
         setStatus({ type: 'success', message: 'Account exists but password is not set. Redirecting to set password page...' });
         setTimeout(() => {

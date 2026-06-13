@@ -34,6 +34,13 @@ type Appointment = {
   reason: string;
   fullName: string;
   dob: string;
+  email?: string;
+  phone?: string;
+  aadhaar?: string;
+  gender?: string;
+  address?: string;
+  city?: string;
+  country?: string;
   createdAt?: string;
   doctor?: {
     _id: string;
@@ -202,7 +209,7 @@ export default function MyAppointmentsPage() {
   const completedCount = appointments.filter(a => a.status === 'completed' || a.status === 'visited').length;
   const cancelledCount = appointments.filter(a => a.status === 'cancelled').length;
 
-  const uniqueClinics = new Set(appointments.map(a => a.clinic?._id || a.clinic?.name).filter(Boolean));
+  const uniqueClinics = new Set(appointments.map(a => a.clinic?._id || a.clinic?.name || (a.doctor?._id ? `clinic_${a.doctor._id}` : 'Default Clinic')).filter(Boolean));
   const uniqueDoctors = new Set(appointments.map(a => a.doctor?._id || a.doctor?.user?.name).filter(Boolean));
   const uniqueSpecialties = new Set(appointments.map(a => a.doctor?.specialty).filter(Boolean));
 
@@ -618,18 +625,53 @@ export default function MyAppointmentsPage() {
               </div>
 
               {/* Patient Details */}
-              <div className="border-t border-slate-100 pt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Patient Name</p>
-                  <p className="text-sm font-extrabold text-slate-900 mt-0.5">{selectedAppointment.fullName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Patient Age & DOB</p>
-                  <p className="text-xs font-bold text-slate-500 mt-0.5">
-                    {calculateAge(selectedAppointment.dob)} Years ({new Date(selectedAppointment.dob).toLocaleDateString('en-IN', {
-                      day: 'numeric', month: 'short', year: 'numeric'
-                    })})
-                  </p>
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Patient Details</p>
+                <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Full Name</p>
+                    <p className="text-sm font-extrabold text-slate-900 mt-0.5">{selectedAppointment.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Age & DOB</p>
+                    <p className="text-xs font-bold text-slate-700 mt-0.5">
+                      {calculateAge(selectedAppointment.dob)} Years ({new Date(selectedAppointment.dob).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                      })})
+                    </p>
+                  </div>
+                  {selectedAppointment.gender && (
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gender</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5 capitalize">{selectedAppointment.gender}</p>
+                    </div>
+                  )}
+                  {selectedAppointment.phone && (
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Phone Number</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5">{selectedAppointment.phone}</p>
+                    </div>
+                  )}
+                  {selectedAppointment.email && (
+                    <div className="col-span-2">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Email Address</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5">{selectedAppointment.email}</p>
+                    </div>
+                  )}
+                  {selectedAppointment.aadhaar && (
+                    <div className="col-span-2">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Aadhaar Card</p>
+                      <p className="text-xs font-bold text-slate-700 mt-0.5 font-mono">{selectedAppointment.aadhaar}</p>
+                    </div>
+                  )}
+                  {(selectedAppointment.address || selectedAppointment.city || selectedAppointment.country) && (
+                    <div className="col-span-2">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Address</p>
+                      <p className="text-xs font-semibold text-slate-600 mt-0.5">
+                        {[selectedAppointment.address, selectedAppointment.city, selectedAppointment.country].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

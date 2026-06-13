@@ -151,7 +151,8 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
         const geo = await geocodeAddress(
           validatedData.address,
           validatedData.city,
-          validatedData.state
+          validatedData.state,
+          validatedData.pincode
         );
         coordinates = [geo.lng, geo.lat];
       } catch (err) {
@@ -221,6 +222,27 @@ export const updateClinic = async (req: AuthRequest, res: Response, next: NextFu
     if (validatedData.clinicName && !validatedData.legalName) {
       validatedData.legalName = validatedData.clinicName;
     }
+
+    // Auto-geocode address if location is not provided but address fields are changed
+    if (!validatedData.location && (validatedData.address || validatedData.city || validatedData.state || validatedData.pincode)) {
+      try {
+        const existingClinic = await Clinic.findById(req.params.id);
+        if (existingClinic) {
+          const geo = await geocodeAddress(
+            validatedData.address || existingClinic.address,
+            validatedData.city || existingClinic.city,
+            validatedData.state || existingClinic.state,
+            validatedData.pincode || existingClinic.pincode
+          );
+          validatedData.location = {
+            coordinates: [geo.lng, geo.lat]
+          };
+        }
+      } catch (err) {
+        console.error('Geocoding failed during clinic update:', err);
+      }
+    }
+
     const clinic = await clinicService.updateClinic(req.params.id as string, req.user!.id, validatedData as any);
 
     res.status(200).json({

@@ -395,7 +395,7 @@ export default function ClinicDetailsPage() {
   ].filter(Boolean).join(", ");
 
   return (
-    <div className="bg-[#FAFBFD] min-h-screen pt-24 pb-20">
+    <div className="bg-[#FAFBFD] min-h-screen pt-12 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
 
         {/* 1. PREMIUM HERO SECTION */}

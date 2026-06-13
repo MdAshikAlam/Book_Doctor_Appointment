@@ -16,7 +16,8 @@ interface GeocodeResult {
 export const geocodeAddress = async (
   address: string,
   district: string,
-  state: string
+  state: string,
+  pincode?: string
 ): Promise<GeocodeResult> => {
   const apiKey = process.env.OPENCAGE_API_KEY;
   
@@ -24,7 +25,8 @@ export const geocodeAddress = async (
     throw new AppError('OpenCage API key is missing from environment variables', 500);
   }
 
-  const query = `${address}, ${district}, ${state}, India`;
+  const queryParts = [address, district, state, pincode, 'India'].filter(Boolean);
+  const query = queryParts.join(', ');
   const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${apiKey}`;
 
   try {

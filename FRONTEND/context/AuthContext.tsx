@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem("accessToken", data.data.accessToken);
         return { success: true };
       } else {
-        return { success: false, status: response.status, message: data.message || 'Login failed' };
+        return { success: false, status: response.status, code: data.code, message: data.message || 'Login failed' };
       }
     } catch (error) {
       console.error('Login error:', error);

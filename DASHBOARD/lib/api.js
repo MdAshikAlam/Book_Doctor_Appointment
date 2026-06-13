@@ -46,6 +46,7 @@ export const apiCall = async (endpoint, options = {}) => {
     }
     const error = new Error(data.message || 'Something went wrong');
     error.status = response.status;
+    error.code = data.code;
     throw error;
   }
 

@@ -2,7 +2,7 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5000, clinicName, name, district, state, clinicType, specialty } = query;
+  const { lat, lng, radius = 5, clinicName, name, district, state, clinicType, specialty } = query;
   const filter: any = {};
 
   // Status Filtering
@@ -28,7 +28,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
     filter.clinicName = { $regex: targetClinicName, $options: 'i' };
   }
 
-  if (district) {
+  if (district && !lat && !lng) {
     filter.$or = filter.$or || [];
     filter.$or.push({
       $or: [
@@ -37,7 +37,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
       ]
     });
   }
-  if (state) {
+  if (state && !lat && !lng) {
     filter.state = { $regex: state, $options: 'i' };
   }
 
@@ -48,7 +48,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
           type: 'Point',
           coordinates: [parseFloat(lng), parseFloat(lat)],
         },
-        $maxDistance: parseInt(radius),
+        $maxDistance: parseInt(radius) * 1000,
       },
     };
   }

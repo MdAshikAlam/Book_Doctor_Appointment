@@ -154,7 +154,7 @@ function SpecialtiesList() {
         let url = `${API_BASE_URL}/search?${searchTerm.length >= 2 ? `name=${encodeURIComponent(searchTerm)}` : ''}`;
         
         if (latitude && longitude) {
-          url += `&lat=${latitude}&lng=${longitude}&radius=60000`;
+          url += `&lat=${latitude}&lng=${longitude}&radius=60`;
         } else if (selectedDistrict) {
           url += `&district=${encodeURIComponent(selectedDistrict)}`;
           if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
@@ -278,26 +278,22 @@ function SpecialtiesList() {
           : allDoctors;
 
         if (matchingDoctors.length > 0) {
-          // Enhance API results with UI metadata
-          const enhancedDoctors = matchingDoctors.map((doc: any, index: number) => {
-            const genders: ('Male' | 'Female')[] = ['Male', 'Female'];
-            const clinicTypes: ('Hospital' | 'Private Clinic' | 'Medical Center')[] = ['Hospital', 'Private Clinic', 'Medical Center'];
-            const nextSlots = ['Today, 04:30 PM', 'Tomorrow, 10:00 AM', 'Tomorrow, 02:00 PM', 'Today, 06:15 PM'];
-
+          // Clean API results without dummy fallback metadata
+          const enhancedDoctors = matchingDoctors.map((doc: any) => {
             return {
               ...doc,
-              rating: doc.rating || (4.5 + (index % 5) * 0.1),
-              reviews: doc.reviews || doc.numReviews || (45 + (index * 13) % 150),
-              consultationFee: doc.consultationFee || (300 + (index % 4) * 200),
-              languages: doc.languages || (index % 2 === 0 ? ['Hindi', 'English'] : ['Hindi', 'English', 'Bengali']),
-              gender: doc.gender || doc.user?.gender || genders[index % genders.length],
-              clinicType: doc.clinicType || clinicTypes[index % clinicTypes.length],
-              nextSlot: doc.nextSlot || nextSlots[index % nextSlots.length],
-              isAvailableToday: doc.isAvailableToday !== undefined ? doc.isAvailableToday : (index % 2 === 0),
-              distance: doc.distance !== undefined ? doc.distance : (5000 + (index * 7000) % 25000),
-              clinicName: doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName || 'Healthcare Clinic',
-              emergencyConsultation: doc.emergencyConsultation || (index % 3 === 0),
-              insuranceAccepted: doc.insuranceAccepted !== undefined ? doc.insuranceAccepted : (index % 2 === 0)
+              rating: doc.rating || 5.0,
+              reviews: doc.reviews || doc.numReviews || 0,
+              consultationFee: doc.consultationFee || 0,
+              languages: doc.languages || ['Hindi', 'English'],
+              gender: doc.gender || doc.user?.gender || 'Male',
+              clinicType: doc.clinicType || 'Clinic',
+              nextSlot: doc.nextSlot || 'Contact Clinic',
+              isAvailableToday: doc.isAvailableToday || false,
+              distance: doc.distance !== undefined ? doc.distance : 0,
+              clinicName: doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName || '',
+              emergencyConsultation: doc.emergencyConsultation || false,
+              insuranceAccepted: doc.insuranceAccepted || false
             };
           });
 
@@ -314,148 +310,19 @@ function SpecialtiesList() {
 
           setDoctors(finalDoctors);
         } else {
-          // No matching doctors from API — use local simulated data
-          simulateLocalDoctors();
+          // No matching doctors from API
+          setDoctors([]);
         }
       } else {
         throw new Error(data.message || 'Failed to fetch specialists');
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      // Fallback local simulation if backend fails to connect
-      simulateLocalDoctors();
+      setDoctors([]);
     } finally {
       setLoading(false);
     }
   }, [selectedSpecialty, currentLocation]);
-
-  const simulateLocalDoctors = () => {
-    // Generate realistic simulated doctor database for client-side search
-    const isNawada = currentLocation.toLowerCase() === 'nawada';
-    const simList: Doctor[] = [
-      {
-        _id: 'sim_1', slug: 'dr-kunal-sinha',
-        user: { name: 'Kunal Sinha', avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'ENT', experience: 5, district: 'Ranchi', state: 'Jharkhand',
-        distance: isNawada ? 120000 : 4000, isFallback: isNawada,
-        consultationFee: 500, languages: ['Hindi', 'English'], gender: 'Male',
-        clinicType: 'Private Clinic', nextSlot: 'Today, 04:30 PM', isAvailableToday: true,
-        rating: 4.8, reviews: 120, clinicName: 'Central Healthcare Clinic',
-        emergencyConsultation: true, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_2', slug: 'dr-neha-sharma',
-        user: { name: 'Neha Sharma', avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'ENT', experience: 12, district: 'Patna', state: 'Bihar',
-        distance: isNawada ? 95000 : 3500, isFallback: isNawada,
-        consultationFee: 400, languages: ['Hindi', 'English', 'Bengali'], gender: 'Female',
-        clinicType: 'Hospital', nextSlot: 'Tomorrow, 11:00 AM', isAvailableToday: false,
-        rating: 4.9, reviews: 95, clinicName: 'Apollo Diagnostics',
-        emergencyConsultation: false, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_3', slug: 'dr-rajesh-varma',
-        user: { name: 'Rajesh Varma', avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Cardiology', experience: 16, district: 'Gaya', state: 'Bihar',
-        distance: isNawada ? 60000 : 6000, isFallback: isNawada,
-        consultationFee: 800, languages: ['Hindi', 'English', 'Urdu'], gender: 'Male',
-        clinicType: 'Hospital', nextSlot: 'Today, 06:00 PM', isAvailableToday: true,
-        rating: 4.7, reviews: 210, clinicName: 'Metro Cardiac Centre',
-        emergencyConsultation: true, insuranceAccepted: false
-      },
-      {
-        _id: 'sim_4', slug: 'dr-priya-mukherjee',
-        user: { name: 'Priya Mukherjee', avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Dermatology', experience: 8, district: 'Ranchi', state: 'Jharkhand',
-        distance: isNawada ? 122000 : 5000, isFallback: isNawada,
-        consultationFee: 600, languages: ['English', 'Bengali'], gender: 'Female',
-        clinicType: 'Medical Center', nextSlot: 'Today, 03:30 PM', isAvailableToday: true,
-        rating: 4.6, reviews: 80, clinicName: 'Skin Care & Laser Centre',
-        emergencyConsultation: false, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_5', slug: 'dr-amit-sinha',
-        user: { name: 'Amit Sinha', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Pediatrics', experience: 4, district: 'Patna', state: 'Bihar',
-        distance: isNawada ? 98000 : 2500, isFallback: isNawada,
-        consultationFee: 300, languages: ['Hindi', 'English'], gender: 'Male',
-        clinicType: 'Private Clinic', nextSlot: 'Tomorrow, 09:30 AM', isAvailableToday: false,
-        rating: 4.5, reviews: 34, clinicName: 'Kidz Clinic',
-        emergencyConsultation: true, insuranceAccepted: false
-      },
-      {
-        _id: 'sim_6', slug: 'dr-shalini-kumari',
-        user: { name: 'Shalini Kumari', avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Dentist', experience: 11, district: 'Nawada', state: 'Bihar',
-        distance: 1200, isFallback: false,
-        consultationFee: 250, languages: ['Hindi', 'English'], gender: 'Female',
-        clinicType: 'Private Clinic', nextSlot: 'Today, 05:00 PM', isAvailableToday: true,
-        rating: 4.8, reviews: 142, clinicName: 'Smile Dental Clinic',
-        emergencyConsultation: false, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_7', slug: 'dr-sunil-kumar',
-        user: { name: 'Sunil Kumar', avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Orthopedics', experience: 14, district: 'Patna', state: 'Bihar',
-        distance: isNawada ? 95000 : 4000, isFallback: isNawada,
-        consultationFee: 700, languages: ['Hindi', 'English'], gender: 'Male',
-        clinicType: 'Hospital', nextSlot: 'Today, 05:30 PM', isAvailableToday: true,
-        rating: 4.7, reviews: 175, clinicName: 'Bone & Joint Care Hospital',
-        emergencyConsultation: true, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_8', slug: 'dr-ananya-das',
-        user: { name: 'Ananya Das', avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Neurology', experience: 10, district: 'Ranchi', state: 'Jharkhand',
-        distance: isNawada ? 120000 : 3000, isFallback: isNawada,
-        consultationFee: 900, languages: ['Hindi', 'English', 'Bengali'], gender: 'Female',
-        clinicType: 'Hospital', nextSlot: 'Tomorrow, 10:00 AM', isAvailableToday: false,
-        rating: 4.9, reviews: 88, clinicName: 'Neuro Care Centre',
-        emergencyConsultation: true, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_9', slug: 'dr-vikash-gupta',
-        user: { name: 'Vikash Gupta', avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'Eye Specialist (Ophthalmologist)', experience: 9, district: 'Gaya', state: 'Bihar',
-        distance: isNawada ? 60000 : 5000, isFallback: isNawada,
-        consultationFee: 550, languages: ['Hindi', 'English'], gender: 'Male',
-        clinicType: 'Medical Center', nextSlot: 'Today, 04:00 PM', isAvailableToday: true,
-        rating: 4.6, reviews: 67, clinicName: 'Clear Vision Eye Hospital',
-        emergencyConsultation: false, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_10', slug: 'dr-meena-devi',
-        user: { name: 'Meena Devi', avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'General Physician', experience: 18, district: 'Nawada', state: 'Bihar',
-        distance: 2000, isFallback: false,
-        consultationFee: 300, languages: ['Hindi', 'English'], gender: 'Female',
-        clinicType: 'Private Clinic', nextSlot: 'Today, 02:30 PM', isAvailableToday: true,
-        rating: 4.8, reviews: 230, clinicName: 'City Health Clinic',
-        emergencyConsultation: true, insuranceAccepted: true
-      },
-      {
-        _id: 'sim_11', slug: 'dr-ravi-shankar',
-        user: { name: 'Ravi Shankar', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&h=300&auto=format&fit=crop' },
-        specialty: 'General Physician', experience: 7, district: 'Patna', state: 'Bihar',
-        distance: isNawada ? 95000 : 3500, isFallback: isNawada,
-        consultationFee: 400, languages: ['Hindi', 'English', 'Urdu'], gender: 'Male',
-        clinicType: 'Hospital', nextSlot: 'Tomorrow, 11:30 AM', isAvailableToday: false,
-        rating: 4.5, reviews: 156, clinicName: 'Patna Medical Centre',
-        emergencyConsultation: false, insuranceAccepted: true
-      }
-    ];
-
-    // Filter by specialty using fuzzy matching (same logic as API)
-    const backendNames = specialtyToBackendMap[selectedSpecialty] || [selectedSpecialty];
-    const matching = simList.filter(doc => {
-      const docSpec = doc.specialty.toLowerCase().trim();
-      return backendNames.some(name => {
-        const lowerName = name.toLowerCase();
-        return docSpec === lowerName || docSpec.includes(lowerName) || lowerName.includes(docSpec);
-      });
-    });
-    setDoctors(matching);
-  };
 
   useEffect(() => {
     fetchDoctors();
@@ -552,7 +419,7 @@ function SpecialtiesList() {
     <div className="min-h-screen bg-slate-50/50">
 
       {/* SECTION 1: HERO SECTION */}
-      <section className="relative overflow-hidden bg-[#F0FDFD] pt-20 pb-20 border-b border-[#00B5B5]/10">
+      <section className="relative overflow-hidden bg-[#F0FDFD] pt-10 pb-16 border-b border-[#00B5B5]/10">
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
@@ -1031,22 +898,10 @@ function SpecialtiesList() {
 
                       {/* Top badges bar */}
                       <div className="flex flex-wrap gap-2 mb-4 relative z-10">
-                        {doctor.rating && doctor.rating >= 4.8 && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/50 text-amber-700 text-[10px] font-black uppercase tracking-wider">
-                            <Sparkles size={10} className="fill-amber-500 text-amber-500" />
-                            AI Recommended
-                          </span>
-                        )}
                         {doctor.emergencyConsultation && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200/50 text-rose-700 text-[10px] font-black uppercase tracking-wider">
                             <PhoneCall size={10} />
                             Emergency Available
-                          </span>
-                        )}
-                        {doctor.insuranceAccepted && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/50 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
-                            <ShieldCheck size={10} />
-                            Insurance
                           </span>
                         )}
                       </div>
@@ -1057,7 +912,7 @@ function SpecialtiesList() {
                         <div className="relative shrink-0 mx-auto sm:mx-0">
                           <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-50 ring-4 ring-slate-100 shadow-md">
                             <img
-                              src={doctor.user.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&h=300&auto=format&fit=crop'}
+                              src={resolveImageUrl(doctor.user.avatar) || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&h=300&auto=format&fit=crop'}
                               alt={`Dr. ${doctor.user.name}`}
                               className="w-full h-full object-cover"
                               loading="lazy"
