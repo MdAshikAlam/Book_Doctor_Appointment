@@ -1,24 +1,27 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Users, 
   Search, 
   ShieldCheck, 
-  ShieldAlert,
-  Loader2,
-  CheckCircle2,
-  Mail,
-  Phone,
-  Building,
-  Calendar,
-  Lock,
-  PauseCircle,
-  PlayCircle,
-  KeyRound,
-  UserPlus
+  ShieldAlert, 
+  Loader2, 
+  CheckCircle2, 
+  Mail, 
+  Phone, 
+  Building, 
+  Calendar, 
+  Lock, 
+  PauseCircle, 
+  PlayCircle, 
+  KeyRound, 
+  UserPlus,
+  Edit,
+  Plus
 } from 'lucide-react';
-import { usersApi, authApi } from '@/lib/api';
+import { usersApi, authApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/BranchContext';
 import Button from '@/components/common/Button';
@@ -32,20 +35,54 @@ export default function ReceptionistsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRep, setSelectedRep] = useState(null);
+
+  const searchParams = useSearchParams();
+  const editUserId = searchParams.get('editUser');
+
+  useEffect(() => {
+    if (editUserId && receptionists.length > 0) {
+      const repToEdit = receptionists.find(r => r._id === editUserId);
+      if (repToEdit) {
+        // Clear query parameters to prevent modal reopening on page changes
+        const url = new URL(window.location.href);
+        url.searchParams.delete('editUser');
+        window.history.replaceState({}, '', url.pathname + url.search);
+        
+        handleOpenEditModal(repToEdit);
+      }
+    }
+  }, [editUserId, receptionists]);
   
   // Clinic branch context
   const { clinics, selectedClinicId } = useClinic();
   
-  // Add Receptionist State
+  // Add/Edit Receptionist State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingRep, setEditingRep] = useState(null);
   const [addFormData, setAddFormData] = useState({
     name: '',
     email: '',
     password: '',
     phone: '',
-    clinicId: ''
+    clinicId: '',
+    gender: '',
+    dob: '',
+    avatar: '',
+    shift: ''
   });
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const maxDobDate = (() => {
+    const today = new Date();
+    const maxYear = today.getFullYear() - 18;
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${maxYear}-${month}-${day}`;
+  })();
 
   // OTP Verification States
   const [otpSent, setOtpSent] = useState(false);
@@ -151,13 +188,20 @@ export default function ReceptionistsPage() {
   };
 
   const handleOpenAddModal = () => {
+    setEditingRep(null);
     setAddFormData({
       name: '',
       email: '',
       password: '',
       phone: '',
-      clinicId: selectedClinicId || ''
+      clinicId: selectedClinicId || '',
+      gender: '',
+      dob: '',
+      avatar: '',
+      shift: ''
     });
+    setSelectedFile(null);
+    setPreviewUrl('');
     setEmailVerified(false);
     setOtpSent(false);
     setOtpError(null);
@@ -166,29 +210,80 @@ export default function ReceptionistsPage() {
     setIsAddModalOpen(true);
   };
 
+  const handleOpenEditModal = (rep) => {
+    setEditingRep(rep);
+    setAddFormData({
+      name: rep.name || '',
+      email: rep.email || '',
+      password: '',
+      phone: rep.phone || '',
+      clinicId: rep.branchId || '',
+      gender: rep.gender || '',
+      dob: rep.dob ? new Date(rep.dob).toISOString().split('T')[0] : '',
+      avatar: rep.avatar || '',
+      shift: rep.shift || ''
+    });
+    setSelectedFile(null);
+    setPreviewUrl(rep.avatar || '');
+    setEmailVerified(true);
+    setOtpSent(false);
+    setOtpError(null);
+    setOtpSuccess(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setAddFormData(prev => ({ ...prev, avatar: '' }));
+    }
+  };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!emailVerified) {
       alert('Please verify the email address before proceeding.');
       return;
     }
-    if (!addFormData.password || addFormData.password.length < 8) {
+    if (!editingRep && (!addFormData.password || addFormData.password.length < 8)) {
       alert('Password must be at least 8 characters');
       return;
     }
     try {
       setIsCreating(true);
+      let currentAvatarUrl = addFormData.avatar;
+      if (selectedFile) {
+        setIsUploading(true);
+        const uploadData = new FormData();
+        uploadData.append('image', selectedFile);
+        const uploadRes = await doctorsApi.upload(uploadData);
+        currentAvatarUrl = uploadRes.data.url;
+        setIsUploading(false);
+      }
+
       const payload = {
         ...addFormData,
+        avatar: currentAvatarUrl,
         role: 'receptionist'
       };
-      await usersApi.createStaff(payload);
+
+      if (editingRep) {
+        if (!payload.password) delete payload.password;
+        await usersApi.update(editingRep._id, payload);
+        setSuccessMsg('Receptionist updated successfully!');
+      } else {
+        await usersApi.createStaff(payload);
+        setSuccessMsg('Receptionist added successfully!');
+      }
+
       setIsAddModalOpen(false);
-      setSuccessMsg('Receptionist added successfully!');
       fetchReceptionists();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
-      alert('Failed to add receptionist: ' + err.message);
+      alert('Failed to save receptionist: ' + err.message);
     } finally {
       setIsCreating(false);
     }
@@ -393,6 +488,13 @@ export default function ReceptionistsPage() {
                           </button>
                         )}
                         <button 
+                          onClick={() => handleOpenEditModal(rep)}
+                          className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all border border-slate-100"
+                          title="Edit Receptionist"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button 
                           onClick={() => { setSelectedRep(rep); setShowResetPasswordModal(true); }}
                           className="p-2 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all border border-slate-100"
                           title="Reset Password"
@@ -442,7 +544,7 @@ export default function ReceptionistsPage() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Add New Receptionist"
+        title={editingRep ? "Edit Receptionist Details" : "Add New Receptionist"}
         size="md"
       >
         <form onSubmit={handleAddSubmit} className="space-y-4 py-2">
@@ -554,12 +656,12 @@ export default function ReceptionistsPage() {
           })()}
 
           <Input 
-            label="Password" 
+            label={editingRep ? "Password (leave blank to keep current)" : "Password"} 
             placeholder="••••••••"
             type="password"
             value={addFormData.password}
             onChange={(e) => setAddFormData({...addFormData, password: e.target.value})}
-            required 
+            required={!editingRep} 
           />
           <Input 
             label="Phone Number" 
@@ -585,6 +687,65 @@ export default function ReceptionistsPage() {
               </select>
             </div>
           )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 ml-1">Gender</label>
+              <select 
+                value={addFormData.gender}
+                onChange={(e) => setAddFormData({...addFormData, gender: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input 
+              label="Date of Birth" 
+              type="date" 
+              value={addFormData.dob} 
+              onChange={(e) => setAddFormData({...addFormData, dob: e.target.value})}
+              max={maxDobDate}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 ml-1">Working Shift</label>
+              <select 
+                value={addFormData.shift}
+                onChange={(e) => setAddFormData({...addFormData, shift: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Shift</option>
+                <option value="Morning">Morning Shift</option>
+                <option value="Evening">Evening Shift</option>
+                <option value="Night">Night Shift</option>
+                <option value="Full Time">Full Time</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 ml-1">Profile Photo</label>
+              <div className="flex items-center gap-4">
+                {previewUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
+                    <img src={getFullImageUrl(previewUrl)} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <label className="flex-1">
+                  <div className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-650">
+                    <Plus size={16} /> {selectedFile ? selectedFile.name : (addFormData.avatar ? 'Change Photo' : 'Upload Photo')}
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold">Cancel</Button>
             <Button 
@@ -592,7 +753,7 @@ export default function ReceptionistsPage() {
               disabled={isCreating || !emailVerified}
               className="flex-1 h-12 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 disabled:opacity-50"
             >
-              {isCreating ? 'Adding...' : 'Add Receptionist'}
+              {isCreating ? 'Saving...' : editingRep ? 'Save Changes' : 'Add Receptionist'}
             </Button>
           </div>
         </form>

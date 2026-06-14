@@ -44,10 +44,7 @@ export const bookAppointment = async (req: Request, res: Response, next: NextFun
 
     // If receptionist is booking, they can specify a patient ID
     if (role === 'admin' || role === 'receptionist') {
-      if (!req.body.patient) {
-        throw new AppError('Please select a patient for this appointment', 400);
-      }
-      bookingData.patient = req.body.patient;
+      bookingData.patient = req.body.patient || userId;
     } else {
       // Regular patient booking their own appointment
       bookingData.patient = userId;
