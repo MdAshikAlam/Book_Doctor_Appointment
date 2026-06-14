@@ -84,6 +84,56 @@ export default function MyAppointmentsPage() {
     return age;
   };
 
+  const isAppointmentPast = (aptDateStr: string, slotStr: string) => {
+    const aptDate = new Date(aptDateStr);
+    const now = new Date();
+    
+    const aptDateOnly = new Date(aptDate);
+    aptDateOnly.setHours(0, 0, 0, 0);
+    const nowOnly = new Date(now);
+    nowOnly.setHours(0, 0, 0, 0);
+    
+    if (aptDateOnly < nowOnly) {
+      return true;
+    }
+    if (aptDateOnly > nowOnly) {
+      return false;
+    }
+    
+    try {
+      const timePart = slotStr.split("-")[1]?.trim() || slotStr.split("-")[0]?.trim() || "";
+      const matches = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (matches) {
+        let hours = parseInt(matches[1], 10);
+        const minutes = parseInt(matches[2], 10);
+        const ampm = matches[3];
+        if (ampm) {
+          if (ampm.toUpperCase() === "PM" && hours < 12) hours += 12;
+          if (ampm.toUpperCase() === "AM" && hours === 12) hours = 0;
+        }
+        const slotTime = new Date(now);
+        slotTime.setHours(hours, minutes, 0, 0);
+        return now > slotTime;
+      }
+    } catch (e) {
+      console.error("Error parsing slot time", e);
+    }
+    
+    return aptDate < now;
+  };
+
+  const getEffectiveStatus = (apt: Appointment) => {
+    const status = apt.status.toLowerCase();
+    if (status === 'completed' || status === 'visited' || status === 'cancelled' || status === 'missed') {
+      return status;
+    }
+    if (isAppointmentPast(apt.date, apt.slot)) {
+      return 'missed';
+    }
+    return status;
+  };
+
+
   const fetchAppointments = async () => {
     try {
       setLoading(true);
@@ -191,23 +241,28 @@ export default function MyAppointmentsPage() {
   today.setHours(0, 0, 0, 0);
 
   // Group appointments
-  const upcomingAppointments = appointments.filter(apt =>
-    new Date(apt.date) >= today &&
-    apt.status !== 'cancelled' &&
-    apt.status !== 'completed' &&
-    apt.status !== 'visited'
-  );
+  const upcomingAppointments = appointments.filter(apt => {
+    const status = getEffectiveStatus(apt);
+    return status !== 'cancelled' &&
+      status !== 'completed' &&
+      status !== 'visited' &&
+      status !== 'missed';
+  });
 
-  const pastAppointments = appointments.filter(apt =>
-    new Date(apt.date) < today ||
-    apt.status === 'cancelled' ||
-    apt.status === 'completed' ||
-    apt.status === 'visited'
-  );
+  const pastAppointments = appointments.filter(apt => {
+    const status = getEffectiveStatus(apt);
+    return status === 'cancelled' ||
+      status === 'completed' ||
+      status === 'visited' ||
+      status === 'missed';
+  });
 
   const upcomingCount = upcomingAppointments.length;
-  const completedCount = appointments.filter(a => a.status === 'completed' || a.status === 'visited').length;
-  const cancelledCount = appointments.filter(a => a.status === 'cancelled').length;
+  const completedCount = appointments.filter(a => {
+    const status = getEffectiveStatus(a);
+    return status === 'completed' || status === 'visited';
+  }).length;
+  const cancelledCount = appointments.filter(a => getEffectiveStatus(a) === 'cancelled').length;
 
   const uniqueClinics = new Set(appointments.map(a => a.clinic?._id || a.clinic?.name || (a.doctor?._id ? `clinic_${a.doctor._id}` : 'Default Clinic')).filter(Boolean));
   const uniqueDoctors = new Set(appointments.map(a => a.doctor?._id || a.doctor?.user?.name).filter(Boolean));
@@ -222,11 +277,25 @@ export default function MyAppointmentsPage() {
           Confirmed
         </span>
       );
-    } else if (formatted === 'completed' || formatted === 'visited') {
+    } else if (formatted === 'visited') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-teal-50 text-teal-650 border border-teal-100">
+          <span className="w-2 h-2 rounded-full bg-teal-500" />
+          Visited
+        </span>
+      );
+    } else if (formatted === 'completed') {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           Completed
+        </span>
+      );
+    } else if (formatted === 'missed') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-100">
+          <span className="w-2 h-2 rounded-full bg-rose-500" />
+          Missed
         </span>
       );
     } else if (formatted === 'cancelled') {
@@ -380,7 +449,7 @@ export default function MyAppointmentsPage() {
 
                         <div className="mt-2 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                           <div>
-                            {renderStatusBadge(apt.status)}
+                            {renderStatusBadge(getEffectiveStatus(apt))}
                           </div>
                           <div className="flex items-center gap-2.5 w-full sm:w-auto">
                             <button
@@ -471,7 +540,7 @@ export default function MyAppointmentsPage() {
                               <p className="text-sm font-black text-slate-800">₹{apt.doctor?.consultationFee || 500}</p>
                             </div>
                             <div className="mt-1.5">
-                              {renderStatusBadge(apt.status)}
+                              {renderStatusBadge(getEffectiveStatus(apt))}
                             </div>
                           </div>
                         </div>
@@ -620,7 +689,7 @@ export default function MyAppointmentsPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                  <div className="mt-1">{renderStatusBadge(selectedAppointment.status)}</div>
+                  <div className="mt-1">{renderStatusBadge(getEffectiveStatus(selectedAppointment))}</div>
                 </div>
               </div>
 

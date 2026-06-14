@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -73,8 +74,25 @@ export default function DoctorsPage() {
   const [viewingDoctor, setViewingDoctor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const canWrite = currentUser?.role === 'admin' || currentUser?.role === 'receptionist';
-  const canViewActions = canWrite || currentUser?.role === 'super_admin';
+  const searchParams = useSearchParams();
+  const editUserId = searchParams.get('editUser');
+
+  useEffect(() => {
+    if (editUserId && doctors.length > 0) {
+      const docToEdit = doctors.find(d => (d.user?._id || d.user) === editUserId);
+      if (docToEdit) {
+        // Clear query parameters to prevent modal reopening on page changes
+        const url = new URL(window.location.href);
+        url.searchParams.delete('editUser');
+        window.history.replaceState({}, '', url.pathname + url.search);
+        
+        handleOpenEditModal(docToEdit);
+      }
+    }
+  }, [editUserId, doctors]);
+
+  const canWrite = currentUser?.role === 'admin';
+  const canViewActions = canWrite || currentUser?.role === 'super_admin' || currentUser?.role === 'receptionist';
 
   const maxDobDate = (() => {
     const today = new Date();

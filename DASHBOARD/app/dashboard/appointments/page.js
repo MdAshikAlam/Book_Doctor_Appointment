@@ -68,6 +68,55 @@ export default function AppointmentsPage() {
     }
   };
 
+  const isAppointmentPast = (aptDateStr, slotStr) => {
+    const aptDate = new Date(aptDateStr);
+    const now = new Date();
+    
+    const aptDateOnly = new Date(aptDate);
+    aptDateOnly.setHours(0, 0, 0, 0);
+    const nowOnly = new Date(now);
+    nowOnly.setHours(0, 0, 0, 0);
+    
+    if (aptDateOnly < nowOnly) {
+      return true;
+    }
+    if (aptDateOnly > nowOnly) {
+      return false;
+    }
+    
+    try {
+      const timePart = slotStr.split("-")[1]?.trim() || slotStr.split("-")[0]?.trim() || "";
+      const matches = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (matches) {
+        let hours = parseInt(matches[1], 10);
+        const minutes = parseInt(matches[2], 10);
+        const ampm = matches[3];
+        if (ampm) {
+          if (ampm.toUpperCase() === "PM" && hours < 12) hours += 12;
+          if (ampm.toUpperCase() === "AM" && hours === 12) hours = 0;
+        }
+        const slotTime = new Date(now);
+        slotTime.setHours(hours, minutes, 0, 0);
+        return now > slotTime;
+      }
+    } catch (e) {
+      console.error("Error parsing slot time", e);
+    }
+    
+    return aptDate < now;
+  };
+
+  const getEffectiveStatus = (apt) => {
+    const status = apt.status.toLowerCase();
+    if (status === 'completed' || status === 'visited' || status === 'cancelled' || status === 'missed') {
+      return status;
+    }
+    if (isAppointmentPast(apt.date, apt.slot)) {
+      return 'missed';
+    }
+    return status;
+  };
+
   // New Modals State
   const [prescriptionModal, setPrescriptionModal] = useState(null);
   const [notesModal, setNotesModal] = useState(null);
@@ -192,18 +241,19 @@ export default function AppointmentsPage() {
   };
 
   const filteredAppointments = appointments.filter(app => {
-    if (app.status === 'cancelled' && filter !== 'cancelled') return false;
+    const status = getEffectiveStatus(app);
+    if (status === 'cancelled' && filter !== 'cancelled') return false;
     
     let matchesFilter = false;
     const appDate = new Date(app.date).toDateString();
     const today = new Date().toDateString();
 
     if (filter === 'upcoming') {
-      matchesFilter = ['booked', 'confirmed'].includes(app.status);
+      matchesFilter = ['booked', 'confirmed'].includes(status);
     } else if (filter === 'today') {
-      matchesFilter = appDate === today && ['booked', 'confirmed'].includes(app.status);
+      matchesFilter = appDate === today && ['booked', 'confirmed'].includes(status);
     } else {
-      matchesFilter = app.status === filter;
+      matchesFilter = status === filter;
     }
     const matchesSearch = 
       app.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -242,7 +292,7 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 border-b border-slate-100 pb-8">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Clinical Operations</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight whitespace-nowrap">Clinical Operations</h1>
           <p className="text-slate-400 mt-2 font-bold text-sm uppercase tracking-[0.1em]">
             {user?.role === 'doctor' ? 'Medical Consultation Desk' : 'Patient Management Center'}
           </p>
@@ -394,9 +444,9 @@ export default function AppointmentsPage() {
                       <div className="lg:w-80 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem] p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-4">
                         <div className={cn(
                           "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
-                          getStatusColor(app.status)
+                          getStatusColor(getEffectiveStatus(app))
                         )}>
-                          {app.status.replace('_', ' ')}
+                          {getEffectiveStatus(app).replace('_', ' ')}
                         </div>
                         
                         <div className="flex items-center gap-2">

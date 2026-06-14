@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export default function middleware(request) {
+export function proxy(request) {
   const { pathname } = request.nextUrl;
   console.log('Proxy Intercepting:', pathname);
   
@@ -13,5 +13,3 @@ export default function middleware(request) {
 export const config = {
   matcher: ['/dashboard/:path*', '/'],
 };
-
-

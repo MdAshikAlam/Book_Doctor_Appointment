@@ -28,9 +28,10 @@ import {
   ArrowRightLeft,
   AlertTriangle,
   RotateCcw,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
-import { usersApi, authApi } from '@/lib/api';
+import { usersApi, authApi, doctorsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/BranchContext';
 import { useRouter } from 'next/navigation';
@@ -68,7 +69,23 @@ export default function StaffManagementPage() {
     role: 'receptionist',
     phone: '',
     clinicId: '',
+    gender: '',
+    dob: '',
+    avatar: '',
+    shift: '',
   });
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const maxDobDate = (() => {
+    const today = new Date();
+    const maxYear = today.getFullYear() - 18;
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${maxYear}-${month}-${day}`;
+  })();
 
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showTransferDataModal, setShowTransferDataModal] = useState(false);
@@ -215,13 +232,29 @@ export default function StaffManagementPage() {
     setEditingUser(null);
     setFormData({ 
       name: '', email: '', password: '', 
-      role: currentUser?.role === 'super_admin' ? 'admin' : 'receptionist', 
+      role: (currentUser?.role === 'super_admin' || currentUser?.role === 'admin') ? 'admin' : 'receptionist', 
       phone: '',
-      clinicId: selectedClinicId || ''
+      clinicId: selectedClinicId || '',
+      gender: '',
+      dob: '',
+      avatar: '',
+      shift: '',
     });
+    setSelectedFile(null);
+    setPreviewUrl('');
     setEmailVerified(false);
     setOtpSent(false);
     setIsModalOpen(true);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setFormData(prev => ({ ...prev, avatar: '' }));
+    }
   };
 
   const handleOpenEditModal = (member) => {
@@ -233,7 +266,13 @@ export default function StaffManagementPage() {
       role: member.role || 'receptionist',
       phone: member.phone || '',
       clinicId: member.branchId || '',
+      gender: member.gender || '',
+      dob: member.dob ? new Date(member.dob).toISOString().split('T')[0] : '',
+      avatar: member.avatar || '',
+      shift: member.shift || '',
     });
+    setSelectedFile(null);
+    setPreviewUrl(member.avatar || '');
     setEmailVerified(true);
     setIsModalOpen(true);
   };
@@ -249,15 +288,26 @@ export default function StaffManagementPage() {
       return;
     }
     try {
+      let currentAvatarUrl = formData.avatar;
+      if (selectedFile) {
+        setIsUploading(true);
+        const uploadData = new FormData();
+        uploadData.append('image', selectedFile);
+        const uploadRes = await doctorsApi.upload(uploadData);
+        currentAvatarUrl = uploadRes.data.url;
+        setIsUploading(false);
+      }
+
+      const payload = { 
+        ...formData,
+        avatar: currentAvatarUrl
+      };
+
       if (editingUser) {
-        const payload = { ...formData };
         if (!payload.password) delete payload.password;
-        
         await usersApi.update(editingUser._id, payload);
       } else {
-        const payload = { ...formData };
         if (!payload.password) payload.password = 'Password123!';
-        
         await usersApi.createStaff(payload);
       }
       
@@ -599,15 +649,23 @@ export default function StaffManagementPage() {
                             >
                               <Eye size={18} />
                             </button>
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && member.role !== 'doctor' && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (member.role !== 'doctor' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
                               <button 
-                                onClick={() => handleOpenEditModal(member)}
+                                onClick={() => {
+                                  if (member.role === 'doctor') {
+                                    router.push(`/dashboard/doctors?editUser=${member._id}`);
+                                  } else if (member.role === 'receptionist') {
+                                    router.push(`/dashboard/receptionists?editUser=${member._id}`);
+                                  } else {
+                                    handleOpenEditModal(member);
+                                  }
+                                }}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-blue-600 transition-all"
                               >
                                 <Edit size={18} />
                               </button>
                             )}
-                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && member.role !== 'doctor' && currentUser?._id !== member._id && (
+                            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'receptionist') && (member.role !== 'doctor' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && currentUser?._id !== member._id && (
                               <button 
                                 onClick={() => setUserToDelete(member)}
                                 className="p-2 hover:bg-white hover:shadow-md rounded-xl text-slate-400 hover:text-red-500 transition-all"
@@ -799,8 +857,9 @@ export default function StaffManagementPage() {
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
                 className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
               >
-                {currentUser?.role === 'super_admin' && <option value="admin">Administrator</option>}
-                {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && <option value="receptionist">Receptionist</option>}
+                {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || editingUser?.role === 'admin') && <option value="admin">Administrator</option>}
+                {currentUser?.role === 'super_admin' && <option value="receptionist">Receptionist</option>}
+                {editingUser?.role === 'doctor' && <option value="doctor">Doctor</option>}
               </select>
             </div>
           </div>
@@ -831,6 +890,65 @@ export default function StaffManagementPage() {
               )}
 
               {/* Clinic selection dropdown removed as per request - using dashboard context */}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Gender</label>
+              <select 
+                value={formData.gender}
+                onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input 
+              label="Date of Birth" 
+              type="date" 
+              value={formData.dob} 
+              onChange={(e) => setFormData({...formData, dob: e.target.value})}
+              max={maxDobDate}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Working Shift</label>
+              <select 
+                value={formData.shift}
+                onChange={(e) => setFormData({...formData, shift: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+              >
+                <option value="">Select Shift</option>
+                <option value="Morning">Morning Shift</option>
+                <option value="Evening">Evening Shift</option>
+                <option value="Night">Night Shift</option>
+                <option value="Full Time">Full Time</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Profile Photo</label>
+              <div className="flex items-center gap-4">
+                {previewUrl && (
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
+                    <img src={getFullImageUrl(previewUrl)} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <label className="flex-1">
+                  <div className="w-full h-11 px-4 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600">
+                    <Plus size={16} /> {selectedFile ? selectedFile.name : (formData.avatar ? 'Change Photo' : 'Upload Photo')}
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
             </div>
           </div>
           <div className="flex gap-4 pt-4">
@@ -1172,6 +1290,7 @@ function AdminTree({
   handleSuspendUser, handleReactivateUser, 
   setEditingUser, setShowResetPasswordModal, setViewingUser
 }) {
+  const router = useRouter();
 
   return (
     <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-100/50 border border-slate-100 overflow-hidden">
@@ -1271,7 +1390,15 @@ function AdminTree({
                         </div>
                       )}
                       <button onClick={() => setViewingUser(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all" title="View Details"><Eye size={16}/></button>
-                      <button onClick={() => onEdit(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all" title="Edit Receptionist"><Edit size={16}/></button>
+                      <button 
+                        onClick={() => {
+                          router.push(`/dashboard/receptionists?editUser=${sub._id}`);
+                        }} 
+                        className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-all" 
+                        title="Edit Receptionist"
+                      >
+                        <Edit size={16}/>
+                      </button>
                       <button onClick={() => onDelete(sub)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-red-500 transition-all" title="Move to Trash"><Trash2 size={16}/></button>
                     </div>
 
@@ -1347,6 +1474,7 @@ function DoctorCard({
   setShowResetPasswordModal, setEditingUser,
   handleSuspendUser, handleReactivateUser, currentUser
 }) {
+  const router = useRouter();
 
 
   return (
@@ -1373,6 +1501,16 @@ function DoctorCard({
         >
           <Eye size={14} />
         </button>
+        {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+          <button 
+            type="button"
+            onClick={() => router.push(`/dashboard/doctors?editUser=${doctor.user?._id || doctor._id || doctor.id}`)}
+            className="p-1.5 hover:bg-slate-50 rounded-lg text-blue-600 transition-all"
+            title="Edit Doctor"
+          >
+            <Edit size={14} />
+          </button>
+        )}
         <button 
           onClick={() => { setEditingUser({ ...doctor, _id: doctor.user?._id || doctor._id }); setShowResetPasswordModal(true); }}
           className="p-1.5 hover:bg-slate-50 rounded-lg text-indigo-500 transition-all"

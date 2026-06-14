@@ -775,7 +775,7 @@ export default function ClinicsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Clinic Admin / Owner Actions */}
-                      {(user?.role === 'admin' || clinic.owner === user?._id) && (
+                      {user?.role === 'admin' && (
                         <>
                           <button 
                             onClick={() => handleEdit(clinic)}
