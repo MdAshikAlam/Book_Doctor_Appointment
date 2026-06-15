@@ -200,10 +200,14 @@ export const clinicsApi = {
   delete: (id) => apiCall(`/clinics/${id}`, {
     method: 'DELETE',
   }),
+  getHierarchyTree: () => apiCall('/clinics/hierarchy-tree'),
 };
 
 export const analyticsApi = {
-  getStats: () => apiCall('/analytics/dashboard-stats'),
+  getStats: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiCall(`/analytics/dashboard-stats${query ? `?${query}` : ''}`);
+  },
   getNotifications: () => apiCall('/analytics/notifications'),
   markNotified: (category) => apiCall('/analytics/mark-notified', {
     method: 'POST',

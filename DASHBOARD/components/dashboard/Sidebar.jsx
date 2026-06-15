@@ -57,6 +57,7 @@ const superAdminSections = [
     items: [
       { icon: Building2, label: 'Clinics', href: '/dashboard/clinics' },
       { icon: Stethoscope, label: 'Doctors', href: '/dashboard/doctors' },
+      { icon: GitBranch, label: 'Clinic Tree View', href: '/dashboard/clinic-tree' },
       { icon: Users, label: 'Patients', href: '/dashboard/patients', category: 'patients' }
     ]
   },
