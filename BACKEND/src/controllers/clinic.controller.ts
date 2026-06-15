@@ -8,6 +8,7 @@ import { AppError } from '../middlewares/error';
 import User, { UserRole } from '../models/User';
 
 import Clinic from '../models/Clinic';
+import Doctor from '../models/Doctor';
 
 export const getClinics = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -264,3 +265,128 @@ export const deleteClinic = async (req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 };
+
+export const getClinicHierarchyTree = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const admins = await User.find({ role: UserRole.ADMIN, status: { $ne: 'deleted' } }).select('name email phone status createdAt');
+    const clinics = await Clinic.find({ isDeleted: false }).select('clinicName owner clinicStatus address city state phone email doctors');
+    
+    // Find all doctors and populate their user details
+    const doctors = await Doctor.find().populate('user', 'name email phone status avatar');
+    
+    // Find all receptionists
+    const receptionists = await User.find({ role: UserRole.RECEPTIONIST, status: { $ne: 'deleted' } }).select('name email phone status branchId parentAdmin');
+
+    // Build the tree
+    const tree = admins.map(admin => {
+      // Find clinics belonging to this admin
+      const adminClinics = clinics.filter(clinic => clinic.owner && clinic.owner.toString() === admin._id.toString());
+      
+      const clinicsWithStaff = adminClinics.map(clinic => {
+        // Find doctors associated with this clinic
+        const clinicDoctors = doctors.filter(doc => 
+          (doc.branchId && doc.branchId.toString() === clinic._id.toString()) || 
+          (doc.clinic && doc.clinic.toString() === clinic._id.toString()) ||
+          (clinic.doctors && clinic.doctors.some((dId: any) => dId.toString() === doc._id.toString()))
+        );
+
+        // Find receptionists associated with this clinic
+        const clinicReceptionists = receptionists.filter(recep => 
+          recep.branchId && recep.branchId.toString() === clinic._id.toString()
+        );
+
+        return {
+          _id: clinic._id,
+          clinicName: clinic.clinicName,
+          clinicStatus: clinic.clinicStatus,
+          address: clinic.address,
+          city: clinic.city,
+          state: clinic.state,
+          phone: clinic.phone,
+          email: clinic.email,
+          doctors: clinicDoctors.map(doc => ({
+            _id: doc._id,
+            name: (doc.user as any)?.name || 'Unknown Doctor',
+            email: (doc.user as any)?.email || '',
+            phone: (doc.user as any)?.phone || '',
+            specialty: doc.specialty,
+            status: doc.status,
+            avatar: (doc.user as any)?.avatar || null
+          })),
+          receptionists: clinicReceptionists.map(recep => ({
+            _id: recep._id,
+            name: recep.name,
+            email: recep.email,
+            phone: recep.phone || '',
+            status: recep.status
+          }))
+        };
+      });
+
+      return {
+        admin: {
+          _id: admin._id,
+          name: admin.name,
+          email: admin.email,
+          phone: admin.phone || '',
+          status: admin.status,
+          createdAt: (admin as any).createdAt
+        },
+        clinics: clinicsWithStaff
+      };
+    });
+
+    // Handle Unassigned Clinics
+    const unassignedClinics = clinics.filter(clinic => 
+      !clinic.owner || !admins.some(admin => admin._id.toString() === clinic.owner.toString())
+    );
+
+    const unassignedClinicsWithStaff = unassignedClinics.map(clinic => {
+      const clinicDoctors = doctors.filter(doc => 
+        (doc.branchId && doc.branchId.toString() === clinic._id.toString()) || 
+        (doc.clinic && doc.clinic.toString() === clinic._id.toString())
+      );
+      const clinicReceptionists = receptionists.filter(recep => 
+        recep.branchId && recep.branchId.toString() === clinic._id.toString()
+      );
+
+      return {
+        _id: clinic._id,
+        clinicName: clinic.clinicName,
+        clinicStatus: clinic.clinicStatus,
+        address: clinic.address,
+        city: clinic.city,
+        state: clinic.state,
+        phone: clinic.phone,
+        email: clinic.email,
+        doctors: clinicDoctors.map(doc => ({
+          _id: doc._id,
+          name: (doc.user as any)?.name || 'Unknown Doctor',
+          email: (doc.user as any)?.email || '',
+          phone: (doc.user as any)?.phone || '',
+          specialty: doc.specialty,
+          status: doc.status,
+          avatar: (doc.user as any)?.avatar || null
+        })),
+        receptionists: clinicReceptionists.map(recep => ({
+          _id: recep._id,
+          name: recep.name,
+          email: recep.email,
+          phone: recep.phone || '',
+          status: recep.status
+        }))
+      };
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: { 
+        tree,
+        unassignedClinics: unassignedClinicsWithStaff
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

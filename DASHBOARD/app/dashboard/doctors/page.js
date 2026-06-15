@@ -1181,7 +1181,7 @@ export default function DoctorsPage() {
                   className="w-full h-10 px-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none disabled:opacity-50"
                   value={formData.state}
                   onChange={handleStateChange}
-                  disabled={isFetchingStates}
+                  disabled={isFetchingStates || !!selectedClinic}
                 >
                   <option value="">{isFetchingStates ? 'Loading...' : 'Select State'}</option>
                   {statesList.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1198,7 +1198,7 @@ export default function DoctorsPage() {
                     className="flex h-10 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    disabled={!formData.state || isFetchingDistricts}
+                    disabled={!formData.state || isFetchingDistricts || !!selectedClinic}
                   />
                   <datalist id="district-options">
                     {districtsList.map(district => <option key={district} value={district} />)}
@@ -1212,6 +1212,7 @@ export default function DoctorsPage() {
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               required
+              disabled={!!selectedClinic}
             />
           </div>
 

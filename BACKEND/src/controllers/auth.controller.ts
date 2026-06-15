@@ -174,20 +174,31 @@ export const sendOTP = async (req: Request, res: Response, next: NextFunction) =
       isDashboard: z.boolean().optional()
     }).parse(req.body);
     
+    const emailVal = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: emailVal });
+    
+    if (existingUser) {
+      if (isDashboard) {
+        throw new AppError('Email already in use.', 400);
+      }
+      if (existingUser.passwordSet) {
+        throw new AppError('Email already registered.', 400);
+      }
+    }
+
     // For the registration flow (not dashboard): if user already verified but no password set,
     // skip resending OTP and return already_verified so frontend can redirect to set-password.
-    if (!isDashboard) {
-      const user = await User.findOne({ email: email.toLowerCase().trim() });
-      if (user && user.emailVerified && !user.passwordSet) {
+    if (!isDashboard && existingUser) {
+      if (existingUser.emailVerified && !existingUser.passwordSet) {
         return res.status(200).json({
           status: 'already_verified',
           message: 'Email already verified.',
           data: {
-            fullName: user.fullName || user.name || '',
-            phoneNumber: user.phone || '',
-            clinicName: user.clinicName || '',
-            city: user.city || '',
-            state: user.state || ''
+            fullName: existingUser.fullName || existingUser.name || '',
+            phoneNumber: existingUser.phone || '',
+            clinicName: existingUser.clinicName || '',
+            city: existingUser.city || '',
+            state: existingUser.state || ''
           }
         });
       }

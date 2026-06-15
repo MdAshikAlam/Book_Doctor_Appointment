@@ -26,6 +26,7 @@ const router = Router();
  */
 router.get('/', optionalProtect, branchHandler, clinicController.getClinics);
 router.get('/pending', protect, restrictTo(UserRole.SUPER_ADMIN), clinicController.getPendingClinics);
+router.get('/hierarchy-tree', protect, restrictTo(UserRole.SUPER_ADMIN), clinicController.getClinicHierarchyTree);
 router.patch('/:id/status', protect, restrictTo(UserRole.SUPER_ADMIN), clinicController.updateClinicStatus);
 router.get('/:id', optionalProtect, branchHandler, clinicController.getClinic);
 

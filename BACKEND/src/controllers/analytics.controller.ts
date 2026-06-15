@@ -233,7 +233,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         User.countDocuments({ role: UserRole.ADMIN, status: 'approved', isDeleted: { $ne: true } }),
         Doctor.countDocuments({ status: 'verified' }),
         User.countDocuments({ role: UserRole.RECEPTIONIST, status: 'approved', isDeleted: { $ne: true } }),
-        Patient.countDocuments({ isDeleted: false }),
+        User.countDocuments({ role: UserRole.PATIENT, isDeleted: { $ne: true } }),
         
         Appointment.countDocuments({ date: { $gte: filterStart, $lte: filterEnd } }),
         Appointment.countDocuments({ status: 'confirmed', date: { $gte: filterStart, $lte: filterEnd } }),
