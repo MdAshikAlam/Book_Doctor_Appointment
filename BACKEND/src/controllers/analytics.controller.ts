@@ -8,9 +8,11 @@ import Clinic from '../models/Clinic';
 import Contact from '../models/Contact';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import { AppError } from '../middlewares/error';
+import { checkAndAutoUpdateMissedAppointments } from '../services/appointment.service';
 
 export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await checkAndAutoUpdateMissedAppointments();
     const currentUser = (req as any).user;
     const range = (req.query.range as string) || 'today';
     const dateQuery = req.query.date as string;
@@ -223,7 +225,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       const [
         pendingClinics, pendingDoctors,
         activeClinics, activeAdmins, activeDoctors, activeReceptionists, registeredPatients,
-        bookedToday, confirmedToday, completedToday, cancelledToday, noShowToday,
+        bookedToday, checkedInToday, completedToday, cancelledToday, noShowToday,
         platformRevenueAgg, totalAppointmentsCount, contactsCount
       ] = await Promise.all([
         Clinic.countDocuments({ clinicStatus: 'pending', isDeleted: false }),
@@ -236,13 +238,13 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         User.countDocuments({ role: UserRole.PATIENT, isDeleted: { $ne: true } }),
         
         Appointment.countDocuments({ date: { $gte: filterStart, $lte: filterEnd } }),
-        Appointment.countDocuments({ status: 'confirmed', date: { $gte: filterStart, $lte: filterEnd } }),
-        Appointment.countDocuments({ status: { $in: ['completed', 'visited'] }, date: { $gte: filterStart, $lte: filterEnd } }),
+        Appointment.countDocuments({ status: 'checked_in', date: { $gte: filterStart, $lte: filterEnd } }),
+        Appointment.countDocuments({ status: { $in: ['completed', 'follow_up'] }, date: { $gte: filterStart, $lte: filterEnd } }),
         Appointment.countDocuments({ status: 'cancelled', date: { $gte: filterStart, $lte: filterEnd } }),
-        Appointment.countDocuments({ status: 'no_show', date: { $gte: filterStart, $lte: filterEnd } }),
+        Appointment.countDocuments({ status: 'patient_missed', date: { $gte: filterStart, $lte: filterEnd } }),
         
         Appointment.aggregate([
-          { $match: { status: { $in: ['completed', 'visited'] } } },
+          { $match: { status: { $in: ['completed', 'follow_up'] } } },
           { $lookup: { from: 'doctors', localField: 'doctor', foreignField: '_id', as: 'doc' } },
           { $unwind: '$doc' },
           { $group: { _id: null, total: { $sum: '$doc.consultationFee' } } }
@@ -284,7 +286,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         },
         appointmentMetrics: {
           bookedToday,
-          confirmedToday,
+          confirmedToday: checkedInToday,
           completedToday,
           cancelledToday,
           noShowToday
@@ -323,24 +325,33 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       const [
         todayAptsActive, todayAptsHistorical,
-        checkedInAptsActive, checkedInAptsHistorical,
+        totalAptsActive, totalAptsHistorical,
         completedAptsActive, completedAptsHistorical,
-        missedAptsActive, missedAptsHistorical,
-        upcomingAptsActive, historicalApts
+        cancelledAptsActive, cancelledAptsHistorical,
+        noShowAptsActive, noShowAptsHistorical,
+        activeDoctorsCount, activeReceptionistsCount,
+        upcomingAptsActive, historicalApts,
+        avgWaitAgg
       ] = await Promise.all([
         Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } }),
         Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } }),
 
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'checked_in' }),
-        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'checked_in' }),
+        Appointment.countDocuments({ branchId: branchObjId }),
+        Patient.countDocuments({ branchId: branchObjId }),
 
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited'] } }),
-        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited'] } }),
+        Appointment.countDocuments({ branchId: branchObjId, status: { $in: ['completed', 'follow_up'] } }),
+        Patient.countDocuments({ branchId: branchObjId, status: { $in: ['completed', 'visited', 'follow_up'] } }),
 
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'missed' }),
-        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'missed' }),
+        Appointment.countDocuments({ branchId: branchObjId, status: 'cancelled' }),
+        Patient.countDocuments({ branchId: branchObjId, status: 'cancelled' }),
 
-        Appointment.find({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['booked', 'confirmed', 'checked_in'] } })
+        Appointment.countDocuments({ branchId: branchObjId, status: 'patient_missed' }),
+        Patient.countDocuments({ branchId: branchObjId, status: 'patient_missed' }),
+
+        Doctor.countDocuments({ status: 'verified', branchId: branchObjId }),
+        User.countDocuments({ role: UserRole.RECEPTIONIST, status: 'approved', branchId: branchObjId, isDeleted: { $ne: true } }),
+
+        Appointment.find({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['booked', 'checked_in', 'waiting'] } })
           .populate('patient', 'name')
           .populate({ path: 'doctor', populate: { path: 'user', select: 'name' } })
           .sort('date')
@@ -348,8 +359,33 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
         Patient.find({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } })
           .sort('date')
-          .limit(10)
+          .limit(10),
+
+        Appointment.aggregate([
+          {
+            $match: {
+              branchId: branchObjId,
+              date: { $gte: filterStart, $lte: filterEnd },
+              consultationStartedAt: { $exists: true, $ne: null },
+              waitingSince: { $exists: true, $ne: null }
+            }
+          },
+          {
+            $project: {
+              waitingDuration: { $subtract: ["$consultationStartedAt", "$waitingSince"] }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              avgWait: { $avg: "$waitingDuration" }
+            }
+          }
+        ])
       ]);
+
+      const avgWaitingTimeMs = avgWaitAgg[0]?.avgWait || 0;
+      const avgWaitingTimeMins = Math.round(avgWaitingTimeMs / (60 * 1000));
 
       const mergedUpcomingApts = [
         ...upcomingAptsActive.map(apt => ({
@@ -371,10 +407,14 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       resultData = {
         hasClinics: true,
         stats: [
-          { title: `${dateLabel} Appointments`, value: (todayAptsActive + todayAptsHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'blue' },
-          { title: 'Checked-In Patients', value: (checkedInAptsActive + checkedInAptsHistorical).toLocaleString(), icon: 'Users', color: 'cyan' },
-          { title: 'Completed Consultations', value: (completedAptsActive + completedAptsHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'green' },
-          { title: 'Missed Appointments', value: (missedAptsActive + missedAptsHistorical).toLocaleString(), icon: 'XCircle', color: 'red' },
+          { title: "Total Appointments", value: (totalAptsActive + totalAptsHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'indigo' },
+          { title: "Today's Appointments", value: (todayAptsActive + todayAptsHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'blue' },
+          { title: "Completed Visits", value: (completedAptsActive + completedAptsHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'green' },
+          { title: "Cancelled Appointments", value: (cancelledAptsActive + cancelledAptsHistorical).toLocaleString(), icon: 'XCircle', color: 'red' },
+          { title: "Patient Missed", value: (noShowAptsActive + noShowAptsHistorical).toLocaleString(), icon: 'XCircle', color: 'orange' },
+          { title: "Active Doctors", value: activeDoctorsCount.toLocaleString(), icon: 'Stethoscope', color: 'teal' },
+          { title: "Active Receptionists", value: activeReceptionistsCount.toLocaleString(), icon: 'Users', color: 'cyan' },
+          { title: "Average Waiting Time", value: `${avgWaitingTimeMins} Min`, icon: 'Clock', color: 'amber' }
         ],
         appointmentChartData: chartData,
         upcomingAppointments: mergedUpcomingApts
@@ -385,14 +425,14 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       const PatientModel = (await import('../models/Patient')).default;
 
       const [
-        pendingDraftsActive, pendingDraftsHistorical,
+        waitingActive, waitingHistorical,
         todayPatientsActive, todayPatientsHistorical,
         completedAptsActive, completedAptsHistorical,
         followUpsActive, followUpsHistorical,
         scheduleActive, historicalPatients
       ] = await Promise.all([
-        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'draft_prepared' }),
-        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'draft_prepared' }),
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
+        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
 
         Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } }),
         PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } }),
@@ -430,7 +470,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       resultData = {
         stats: [
-          { title: 'Pending Draft Reviews', value: (pendingDraftsActive + pendingDraftsHistorical).toLocaleString(), icon: 'Clock', color: 'amber' },
+          { title: 'Waiting Patients', value: (waitingActive + waitingHistorical).toLocaleString(), icon: 'Clock', color: 'amber' },
           { title: `${dateLabel} Patients`, value: (todayPatientsActive + todayPatientsHistorical).toLocaleString(), icon: 'Users', color: 'blue' },
           { title: `${dateLabel} Completed`, value: (completedAptsActive + completedAptsHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'green' },
           { title: `${dateLabel} Follow-Ups`, value: (followUpsActive + followUpsHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'indigo' },
@@ -442,23 +482,23 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
     } else if (currentUser.role === UserRole.RECEPTIONIST) {
       // 4. Receptionist Dashboard
       const [
-        draftActive, draftHistorical,
         checkedInActive, checkedInHistorical,
+        waitingActive, waitingHistorical,
         followUpActive, followUpHistorical,
-        reportsActive, reportsHistorical,
+        todayPatientsActive, todayPatientsHistorical,
         queueActive, queueHistorical
       ] = await Promise.all([
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'draft_prepared' }),
-        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'draft_prepared' }),
-
         Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'checked_in' }),
         Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'checked_in' }),
+
+        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
+        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
 
         Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'follow_up' }),
         Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, status: 'follow_up' }),
 
-        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, "reports.0": { $exists: true } }),
-        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd }, "reports.0": { $exists: true } }),
+        Appointment.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } }),
+        Patient.countDocuments({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } }),
 
         Appointment.find({ branchId: branchObjId, date: { $gte: filterStart, $lte: filterEnd } })
           .populate('patient', 'name')
@@ -488,10 +528,10 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       resultData = {
         stats: [
-          { title: 'Draft Consultations', value: (draftActive + draftHistorical).toLocaleString(), icon: 'Clock', color: 'amber' },
-          { title: `${dateLabel} Checked-In`, value: (checkedInActive + checkedInHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'cyan' },
-          { title: `${dateLabel} Follow-Ups`, value: (followUpActive + followUpHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'purple' },
-          { title: `${dateLabel} Reports`, value: (reportsActive + reportsHistorical).toLocaleString(), icon: 'Users', color: 'blue' }
+          { title: 'Checked-In Patients', value: (checkedInActive + checkedInHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'cyan' },
+          { title: 'Waiting Queue', value: (waitingActive + waitingHistorical).toLocaleString(), icon: 'Clock', color: 'amber' },
+          { title: 'Follow-Up Visits', value: (followUpActive + followUpHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'purple' },
+          { title: 'Today\'s Total Bookings', value: (todayPatientsActive + todayPatientsHistorical).toLocaleString(), icon: 'Users', color: 'blue' }
         ],
         appointmentChartData: chartData,
         queue: mergedQueue
@@ -510,6 +550,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
 export const getNotificationCounts = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await checkAndAutoUpdateMissedAppointments();
     const user = await User.findById((req as any).user.id);
     if (!user) {
       return res.status(404).json({ status: 'fail', message: 'User not found' });

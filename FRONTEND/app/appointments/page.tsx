@@ -126,6 +126,20 @@ function AppointmentsForm() {
     };
   }, [showAuthModal, googleLogin]);
 
+  // Prefill query parameters immediately to avoid input delays
+  useEffect(() => {
+    const queryDate = searchParams.get("date") || "";
+    const querySlot = searchParams.get("slot") || "";
+    
+    if (queryDate || querySlot) {
+      setFormData(prev => ({
+        ...prev,
+        appointmentDate: queryDate || prev.appointmentDate,
+        appointmentTime: querySlot || prev.appointmentTime
+      }));
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const doctorId = searchParams.get("doctorId");
     if (doctorId) {

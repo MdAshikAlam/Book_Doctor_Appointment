@@ -645,11 +645,18 @@ export const updateDoctorStatus = async (id: string, status: 'submitted' | 'veri
       rejectionReason: status === 'rejected' ? rejectionReason : undefined
     },
     { new: true, runValidators: true }
-  ).populate('user', 'name email');
+  );
 
   if (!doctor) {
     throw new AppError('Doctor not found', 404);
   }
-  return doctor;
+
+  if (doctor.user) {
+    const User = mongoose.model('User');
+    const userStatus = status === 'verified' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending');
+    await User.findByIdAndUpdate(doctor.user, { status: userStatus });
+  }
+
+  return await doctor.populate('user', 'name email');
 };
 // Trigger reload to clear query cache
