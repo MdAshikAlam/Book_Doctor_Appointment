@@ -3,22 +3,13 @@ import { encrypt, decrypt } from '../utils/encryption';
 
 export enum AppointmentStatus {
   BOOKED = 'booked',
-  CONFIRMED = 'confirmed',
   CHECKED_IN = 'checked_in',
-  DRAFT_PREPARED = 'draft_prepared',
-  COMPLETED = 'completed',
-  PRESCRIPTION_ADDED = 'prescription_added',
-  FOLLOW_UP = 'follow_up',
-  MISSED = 'missed',
-  CANCELLED = 'cancelled',
-  // Legacy support for migrations if any
-  PENDING = 'pending',
   WAITING = 'waiting',
   IN_CONSULTATION = 'in_consultation',
-  ADMITTED = 'admitted',
-  DISCHARGED = 'discharged',
-  VISITED = 'visited',
-  REGISTERED = 'registered'
+  COMPLETED = 'completed',
+  FOLLOW_UP = 'follow_up',
+  PATIENT_MISSED = 'patient_missed',
+  CANCELLED = 'cancelled'
 }
 
 export interface IPrescription {
@@ -100,6 +91,12 @@ export interface IAppointment extends Document {
   doctorApprovedBy?: mongoose.Types.ObjectId;
   doctorApprovedAt?: Date;
   medicalRecordLocked?: boolean;
+  queueNumber?: number;
+  waitingSince?: Date;
+  calledAt?: Date;
+  consultationStartedAt?: Date;
+  consultationCompletedAt?: Date;
+  checkInTime?: Date;
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -113,7 +110,7 @@ const appointmentSchema = new Schema<IAppointment>(
     status: {
       type: String,
       enum: Object.values(AppointmentStatus),
-      default: AppointmentStatus.CONFIRMED,
+      default: AppointmentStatus.BOOKED,
     },
     reason: { type: String, required: true },
     paymentStatus: {
@@ -184,7 +181,13 @@ const appointmentSchema = new Schema<IAppointment>(
     draftPreparedAt: { type: Date },
     doctorApprovedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     doctorApprovedAt: { type: Date },
-    medicalRecordLocked: { type: Boolean, default: false }
+    medicalRecordLocked: { type: Boolean, default: false },
+    queueNumber: { type: Number },
+    waitingSince: { type: Date },
+    calledAt: { type: Date },
+    consultationStartedAt: { type: Date },
+    consultationCompletedAt: { type: Date },
+    checkInTime: { type: Date }
   },
   { 
     timestamps: true,

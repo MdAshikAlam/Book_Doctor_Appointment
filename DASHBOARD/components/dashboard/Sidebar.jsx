@@ -217,7 +217,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
             </span>
             {showBadge && (
               <span className="flex items-center justify-center bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full px-1 animate-pulse">
-                {notification.total}
+                {notification.new}
               </span>
             )}
           </div>
@@ -225,11 +225,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         {(isCollapsed && !isMobileOpen) && (
           <>
             {showBadge && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse" />
             )}
             <div className="absolute left-14 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
               {item.label}
-              {showBadge && ` (${notification.total})`}
+              {showBadge && ` (${notification.new})`}
             </div>
           </>
         )}

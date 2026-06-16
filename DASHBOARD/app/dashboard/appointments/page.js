@@ -32,7 +32,9 @@ import {
   FileUp,
   Hospital,
   LogOut,
-  Trash2
+  Trash2,
+  Play,
+  Users
 } from 'lucide-react';
 import { appointmentsApi, doctorsApi, analyticsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -107,15 +109,61 @@ export default function AppointmentsPage() {
   };
 
   const getEffectiveStatus = (apt) => {
-    const status = apt.status.toLowerCase();
-    if (status === 'completed' || status === 'visited' || status === 'cancelled' || status === 'missed') {
-      return status;
-    }
-    if (isAppointmentPast(apt.date, apt.slot)) {
-      return 'missed';
-    }
-    return status;
+    return apt.status?.toLowerCase() || 'booked';
   };
+
+  // New states for quick filters
+  const [quickFilter, setQuickFilter] = useState('all');
+  const [selectedDoctor, setSelectedDoctor] = useState('all');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const getRoleTabs = useCallback(() => {
+    const role = user?.role || 'receptionist';
+    if (role === 'doctor') {
+      return [
+        { id: 'checked_in', label: 'Checked In' },
+        { id: 'in_consultation', label: 'In Consultation' },
+        { id: 'follow_up', label: 'Follow-Up Required' },
+        { id: 'completed', label: 'Completed' }
+      ];
+    } else if (role === 'admin') {
+      return [
+        { id: 'all', label: 'All Appointments' },
+        { id: 'today', label: 'Today' },
+        { id: 'completed', label: 'Completed' },
+        { id: 'cancelled', label: 'Cancelled' },
+        { id: 'patient_missed', label: 'Patient Missed' },
+        { id: 'reports', label: 'Reports' }
+      ];
+    } else {
+      return [
+        { id: 'today', label: 'Today' },
+        { id: 'booked', label: 'Booked' },
+        { id: 'checked_in', label: 'Checked In' },
+        { id: 'waiting', label: 'Waiting Queue' },
+        { id: 'completed', label: 'Completed' },
+        { id: 'patient_missed', label: 'Patient Missed' },
+        { id: 'cancelled', label: 'Cancelled' }
+      ];
+    }
+  }, [user]);
+
+  const tabs = getRoleTabs();
+
+  // Reset default filter tab based on role when user loads
+  useEffect(() => {
+    if (user?.role) {
+      const defaultTab = getRoleTabs()[0]?.id || 'today';
+      setFilter(searchParams.get('filter') || defaultTab);
+    }
+  }, [user, getRoleTabs, searchParams]);
+
+  // Extract unique doctors and specialties dynamically for filters
+  const uniqueDoctors = Array.from(new Set(appointments.map(a => a.doctor?._id).filter(Boolean)))
+    .map(id => appointments.find(a => a.doctor?._id === id)?.doctor);
+  const uniqueSpecialties = Array.from(new Set(appointments.map(a => a.doctor?.specialty).filter(Boolean)));
 
   // New Modals State
   const [prescriptionModal, setPrescriptionModal] = useState(null);
@@ -184,17 +232,10 @@ export default function AppointmentsPage() {
 
   const handleStatusUpdate = async (id, status, extraData = {}) => {
     try {
-      let targetStatus = status;
-      if (
-        (user?.role === 'receptionist' || user?.role === 'admin') &&
-        (status === 'booked' || status === 'confirmed' || status === 'checked_in' || status === 'waiting' || status === 'in_consultation' || status === 'draft_prepared')
-      ) {
-        if (extraData.prescriptions || extraData.consultationNotes || extraData.reports || extraData.followUp) {
-          targetStatus = 'draft_prepared';
-        }
-      }
-      await appointmentsApi.updateStatus(id, { status: targetStatus, ...extraData });
-      if (status === 'completed' || status === 'discharged') {
+      const currentApp = appointments.find(a => a._id === id);
+      const isTransitioning = currentApp && currentApp.status !== status;
+      await appointmentsApi.updateStatus(id, { status, ...extraData });
+      if (isTransitioning && (status === 'completed' || status === 'follow_up')) {
         router.push('/dashboard/patients');
       } else {
         fetchAppointments();
@@ -209,6 +250,19 @@ export default function AppointmentsPage() {
       setActiveMenu(null);
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleCallNextPatient = async () => {
+    try {
+      setLoading(true);
+      await appointmentsApi.callNext();
+      fetchAppointments();
+      alert('Next patient called successfully.');
+    } catch (err) {
+      alert(err.message || 'Failed to call next patient');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -240,44 +294,95 @@ export default function AppointmentsPage() {
     }
   };
 
+  const getTabCount = (tabId) => {
+    return appointments.filter(app => {
+      const status = app.status?.toLowerCase();
+      const appDate = new Date(app.date).toDateString();
+      const today = new Date().toDateString();
+      
+      if (tabId === 'all') return true;
+      if (tabId === 'today') return appDate === today;
+      if (tabId === 'reports') return true;
+      return status === tabId;
+    }).length;
+  };
+
   const filteredAppointments = appointments.filter(app => {
     const status = getEffectiveStatus(app);
-    if (status === 'cancelled' && filter !== 'cancelled') return false;
     
     let matchesFilter = false;
     const appDate = new Date(app.date).toDateString();
     const today = new Date().toDateString();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowString = tomorrow.toDateString();
 
-    if (filter === 'upcoming') {
-      matchesFilter = ['booked', 'confirmed'].includes(status);
+    if (filter === 'all') {
+      matchesFilter = true;
     } else if (filter === 'today') {
-      matchesFilter = appDate === today && ['booked', 'confirmed'].includes(status);
+      matchesFilter = appDate === today;
+    } else if (filter === 'reports') {
+      matchesFilter = true;
     } else {
       matchesFilter = status === filter;
     }
+
+    // Quick Filters (Today, Tomorrow, This Week, Doctor, Department/Specialty, Status)
+    let matchesQuickFilter = true;
+    if (quickFilter === 'today') {
+      matchesQuickFilter = appDate === today;
+    } else if (quickFilter === 'tomorrow') {
+      matchesQuickFilter = appDate === tomorrowString;
+    } else if (quickFilter === 'week') {
+      const dateVal = new Date(app.date);
+      const now = new Date();
+      const oneWeekFromNow = new Date();
+      oneWeekFromNow.setDate(now.getDate() + 7);
+      matchesQuickFilter = dateVal >= now && dateVal <= oneWeekFromNow;
+    }
+
+    if (selectedDoctor !== 'all' && app.doctor?._id !== selectedDoctor) {
+      matchesQuickFilter = false;
+    }
+    if (selectedSpecialty !== 'all' && app.doctor?.specialty?.toLowerCase() !== selectedSpecialty.toLowerCase()) {
+      matchesQuickFilter = false;
+    }
+    if (selectedStatus !== 'all' && status !== selectedStatus.toLowerCase()) {
+      matchesQuickFilter = false;
+    }
+
     const matchesSearch = 
       app.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.doctor?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.reason?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+      app.phone?.includes(searchTerm) ||
+      app._id?.toString().includes(searchTerm) ||
+      app.id?.toString().includes(searchTerm);
+
+    return matchesFilter && matchesQuickFilter && matchesSearch;
   });
 
+  const canEditAppointmentDetails = (app) => {
+    if (!app) return false;
+    if (app.status === 'in_consultation') return true;
+    if (['completed', 'follow_up'].includes(app.status)) {
+      const completedTime = app.consultationCompletedAt || app.updatedAt || app.date;
+      const elapsedMs = new Date() - new Date(completedTime);
+      const elapsedHours = elapsedMs / (1000 * 60 * 60);
+      return elapsedHours < 1;
+    }
+    return false;
+  };
+
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'booked': return 'text-slate-600 bg-slate-100 border-slate-200';
-      case 'confirmed': return 'text-blue-600 bg-blue-50 border-blue-100';
+    switch (status?.toLowerCase()) {
+      case 'booked': return 'text-blue-600 bg-blue-50 border-blue-100';
       case 'checked_in': return 'text-cyan-600 bg-cyan-50 border-cyan-100';
-      case 'completed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-      case 'prescription_added': return 'text-teal-600 bg-teal-50 border-teal-100';
-      case 'follow_up': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
-      case 'missed': return 'text-red-600 bg-red-50 border-red-100';
-      case 'cancelled': return 'text-rose-800 bg-rose-100 border-rose-200';
-      // Legacy support
-      case 'registered': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
       case 'waiting': return 'text-amber-600 bg-amber-50 border-amber-100';
       case 'in_consultation': return 'text-purple-600 bg-purple-50 border-purple-100';
-      case 'pending': return 'text-amber-600 bg-amber-50 border-amber-100';
+      case 'completed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      case 'follow_up': return 'text-teal-600 bg-teal-50 border-teal-100';
+      case 'patient_missed': return 'text-red-600 bg-red-50 border-red-100';
+      case 'cancelled': return 'text-slate-600 bg-slate-100 border-slate-200';
       default: return 'text-slate-600 bg-slate-50 border-slate-100';
     }
   };
@@ -288,84 +393,176 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 border-b border-slate-100 pb-8">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight whitespace-nowrap">Clinical Operations</h1>
-          <p className="text-slate-400 mt-2 font-bold text-sm uppercase tracking-[0.1em]">
-            {user?.role === 'doctor' ? 'Medical Consultation Desk' : 'Patient Management Center'}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Sticky Header & Controls Wrapper */}
+      <div className="sticky top-16 z-20 bg-slate-50/95 backdrop-blur-sm pb-4 pt-2 -mx-4 px-4 xl:-mx-8 xl:px-8 space-y-4 border-b border-slate-100">
+        {/* Header */}
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-2">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap">Clinical Operations</h1>
+            <p className="text-slate-400 mt-1 font-bold text-xs uppercase tracking-[0.1em]">
+            {user?.role === 'doctor' ? 'Medical Consultation Desk' : user?.role === 'admin' ? 'Clinic Administration Desk' : 'Front Desk Queue'}
           </p>
         </div>
         <div className="w-full xl:w-auto flex items-center gap-2 overflow-hidden">
           <button 
             onClick={() => scroll('left')}
-            className="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+            className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
             title="Scroll Left"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           </button>
 
           <div 
             ref={tabsRef}
-            className="flex-1 bg-slate-100/50 p-1.5 rounded-[1.5rem] flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
+            className="flex-1 bg-slate-100/50 p-1 rounded-xl flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
           >
-            {['upcoming', 'today', 'checked_in', 'draft_prepared', 'follow_up', 'completed', 'missed', 'cancelled'].map((f) => (
+            {tabs.map((tab) => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
+                key={tab.id}
+                onClick={() => setFilter(tab.id)}
                 className={cn(
-                  "px-6 py-2.5 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
-                  filter === f 
+                  "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
+                  filter === tab.id 
                     ? "bg-white text-slate-900 shadow-[0_4px_12px_rgba(0,0,0,0.08)] scale-[1.02]" 
                     : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
                 )}
               >
-                {f === 'missed' ? 'Missed Appointments' : 
-                 f === 'follow_up' ? 'Follow-Up Visits' : 
-                 f === 'draft_prepared' ? 'Draft Prepared' : 
-                 f.replace('_', ' ')}
+                {tab.label} ({getTabCount(tab.id)})
               </button>
             ))}
           </div>
 
           <button 
             onClick={() => scroll('right')}
-            className="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+            className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
             title="Scroll Right"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
       {/* Search & Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="relative flex-1 group">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search by patient name, ID, or condition..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
-              />
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+              <div className="relative flex-1 group">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Search by patient name, mobile number, or appointment ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-11 pl-11 pr-3 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+                />
+              </div>
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "h-11 w-11 flex items-center justify-center rounded-2xl border transition-all",
+                  showFilters ? "bg-slate-900 border-slate-900 text-white" : "border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                )}
+                title="Filters"
+              >
+                <Filter size={18} />
+              </button>
             </div>
-            <button className="h-12 w-12 flex items-center justify-center rounded-2xl border border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all">
-              <Filter size={20} />
-            </button>
+          </div>
+          <div className="bg-blue-600 rounded-2xl p-3 text-white flex items-center justify-between shadow-lg shadow-blue-100/50">
+            <div>
+              <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">Active Cases</p>
+              <p className="text-xl font-black">{filteredAppointments.length}</p>
+            </div>
+            <Activity size={24} className="text-blue-400 opacity-50" />
           </div>
         </div>
-        <div className="bg-blue-600 rounded-3xl p-4 text-white flex items-center justify-between shadow-lg shadow-blue-100">
-          <div>
-            <p className="text-xs font-bold text-blue-100 uppercase">Active Cases</p>
-            <p className="text-2xl font-black">{filteredAppointments.length}</p>
-          </div>
-          <Activity size={32} className="text-blue-400 opacity-50" />
-        </div>
+
+        {/* Collapsible Filters Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Date Range</label>
+                  <select 
+                    value={quickFilter} 
+                    onChange={(e) => setQuickFilter(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                  >
+                    <option value="all">All Dates</option>
+                    <option value="today">Today Only</option>
+                    <option value="tomorrow">Tomorrow Only</option>
+                    <option value="week">This Week</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Doctor</label>
+                  <select 
+                    value={selectedDoctor} 
+                    onChange={(e) => setSelectedDoctor(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                  >
+                    <option value="all">All Doctors</option>
+                    {uniqueDoctors.map(doc => (
+                      <option key={doc?._id} value={doc?._id}>Dr. {doc?.user?.name || 'Expert'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Specialty</label>
+                  <select 
+                    value={selectedSpecialty} 
+                    onChange={(e) => setSelectedSpecialty(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                  >
+                    <option value="all">All Specialties</option>
+                    {uniqueSpecialties.map(spec => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Status Override</label>
+                  <select 
+                    value={selectedStatus} 
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="booked">Booked</option>
+                    <option value="checked_in">Checked In</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="in_consultation">In Consultation</option>
+                    <option value="completed">Completed</option>
+                    <option value="follow_up">Follow Up</option>
+                    <option value="patient_missed">Patient Missed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+      </div>
+
+      {user?.role === 'doctor' && filter === 'waiting' && filteredAppointments.length > 0 && (
+        <div className="mb-6">
+          <button
+            onClick={handleCallNextPatient}
+            className="w-full flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
+          >
+            <Play size={20} className="fill-white text-white" /> Call Next Patient from Queue
+          </button>
+        </div>
+      )}
 
       {/* Main List */}
       <div className="space-y-4">
@@ -392,24 +589,24 @@ export default function AppointmentsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   key={app._id}
-                  className="bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 group"
+                  className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 group"
                 >
-                  <div className="p-1">
+                  <div className="p-0.5">
                     <div className="flex flex-col lg:flex-row lg:items-stretch">
                       {/* Date Block */}
-                      <div className="lg:w-32 rounded-t-[2rem] lg:rounded-tr-none lg:rounded-l-[2rem] bg-slate-50/50 flex flex-col items-center justify-center p-6 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
-                        <p className="text-3xl font-black text-slate-900 mt-1">{new Date(app.date).getDate()}</p>
-                        <div className="h-1 w-6 bg-blue-600 rounded-full mt-2" />
+                      <div className="lg:w-20 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl bg-slate-50/50 flex flex-col items-center justify-center p-3 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors shrink-0">
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
+                        <p className="text-xl font-extrabold text-slate-900 mt-0.5">{new Date(app.date).getDate()}</p>
+                        <div className="h-0.5 w-4 bg-blue-600 rounded-full mt-1" />
                       </div>
 
                       {/* Main Info Area */}
-                      <div className="flex-1 p-6 lg:p-8 flex flex-col md:flex-row md:items-center gap-8">
+                      <div className="flex-1 p-3 lg:p-4 flex flex-col md:flex-row md:items-center gap-4 lg:gap-6">
                         {/* Time & Reason */}
-                        <div className="md:w-48 space-y-2">
+                        <div className="md:w-36 space-y-1 shrink-0">
                           <div className="flex items-center gap-2 text-slate-900">
-                            <Clock size={16} className="text-blue-600" />
-                            <span className="text-base font-black tracking-tight">{app.slot}</span>
+                            <Clock size={14} className="text-blue-600" />
+                            <span className="text-sm font-extrabold tracking-tight">{app.slot}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-slate-200" />
@@ -418,44 +615,70 @@ export default function AppointmentsPage() {
                         </div>
 
                         {/* Participants */}
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-                              <User size={24} />
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all shrink-0">
+                              <User size={16} />
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Patient</p>
-                              <p className="text-sm font-black text-slate-900 truncate">{app.fullName || app.patient?.name}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Patient</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold text-slate-900 truncate">{app.fullName || app.patient?.name}</p>
+                                <button 
+                                  onClick={() => setViewingAppointment(app)}
+                                  className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm shrink-0"
+                                  title="View Patient Profile"
+                                >
+                                  <Eye size={12} />
+                                </button>
+                              </div>
+                              {app.status === 'waiting' && app.queuePosition && (
+                                <div className="mt-1 flex flex-col gap-0.5 text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50/50 p-1.5 rounded-lg border border-orange-100/50">
+                                  <div>Queue Position: #{app.queuePosition}</div>
+                                  {app.waitingSince && <div>Waiting Since: {new Date(app.waitingSince).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
+                                  {app.estimatedWaitTime !== undefined && <div>Estimated Wait: {app.estimatedWaitTime} Minutes</div>}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all">
-                              <Stethoscope size={24} />
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all shrink-0">
+                              <Stethoscope size={16} />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{app.doctor?.specialty || 'Physician'}</p>
-                              <p className="text-sm font-black text-slate-900 truncate">Dr. {app.doctor?.user?.name || 'Expert'}</p>
+                              <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{app.doctor?.specialty || 'Physician'}</p>
+                              <p className="text-xs font-bold text-slate-900 truncate">Dr. {app.doctor?.user?.name || 'Expert'}</p>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Status & Actions */}
-                      <div className="lg:w-80 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem] p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-4">
+                      <div className="lg:w-48 rounded-b-2xl lg:rounded-bl-none lg:rounded-r-2xl p-3 lg:p-4 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-3 shrink-0">
                         <div className={cn(
-                          "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
+                          "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
                           getStatusColor(getEffectiveStatus(app))
                         )}>
                           {getEffectiveStatus(app).replace('_', ' ')}
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          {user?.role === 'doctor' && app.status === 'checked_in' && (
+                            <button 
+                              onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
+                              className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all shadow-sm"
+                              title="Start Consultation"
+                            >
+                              <CheckCircle2 size={15} />
+                            </button>
+                          )}
+
                           <button 
                             onClick={() => setViewingAppointment(app)}
-                            className="w-11 h-11 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                            className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
                             title="Patient Profile"
                           >
-                            <Eye size={20} />
+                            <Eye size={15} />
                           </button>
 
                           <div className="relative">
@@ -465,11 +688,11 @@ export default function AppointmentsPage() {
                                 setActiveMenu(activeMenu === app._id ? null : app._id);
                               }}
                               className={cn(
-                                "w-11 h-11 rounded-2xl transition-all border flex items-center justify-center",
+                                "w-8 h-8 rounded-xl transition-all border flex items-center justify-center",
                                 activeMenu === app._id ? "bg-slate-900 text-white border-slate-900 shadow-lg" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
                               )}
                             >
-                              <MoreVertical size={20} />
+                              <MoreVertical size={15} />
                             </button>
 
                           <AnimatePresence>
@@ -494,102 +717,139 @@ export default function AppointmentsPage() {
                                     
                                     {user?.role === 'doctor' && (
                                       <>
-                                        <MenuButton 
-                                          icon={<ClipboardList size={18} />} 
-                                          label="Add Diagnosis" 
-                                          onClick={() => { setNotesModal(app); setActiveMenu(null); }} 
-                                        />
-                                        <MenuButton 
-                                          icon={<Pill size={18} />} 
-                                          label="Add Prescription" 
-                                          onClick={() => { setPrescriptionModal(app); setActiveMenu(null); }} 
-                                        />
-                                        <MenuButton 
-                                          icon={<FileUp size={18} />} 
-                                          label="Upload Report" 
-                                          onClick={() => { setReportModal(app); setActiveMenu(null); }} 
-                                        />
-                                        <MenuButton 
-                                          icon={<Calendar size={18} />} 
-                                          label="Schedule Follow-up" 
-                                          onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
-                                        />
-                                                                                 <MenuButton 
-                                           icon={<Calendar size={18} />} 
-                                           label="Reschedule Appointment" 
-                                           onClick={() => {
-                                             setReschedulingAppointment(app);
-                                             setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
-                                             setActiveMenu(null);
-                                           }} 
-                                         />
-                                         <div className="h-px bg-slate-50 my-2" />
-                                        <MenuButton 
-                                          icon={<CheckCircle2 size={18} />} 
-                                          label="Complete Consultation" 
-                                          color="text-emerald-600"
-                                          onClick={() => { setCompletingAppointment(app); setActiveMenu(null); }} 
-                                        />
+                                        {app.status === 'checked_in' && (
+                                          <MenuButton 
+                                            icon={<Play size={18} />} 
+                                            label="Start Consultation" 
+                                            color="text-blue-600"
+                                            onClick={() => handleStatusUpdate(app._id, 'in_consultation')} 
+                                          />
+                                        )}
+                                        {canEditAppointmentDetails(app) && (
+                                           <>
+                                             <MenuButton 
+                                               icon={<ClipboardList size={18} />} 
+                                               label={app.consultationNotes ? "Edit Consultation Notes" : "Add Consultation Notes"} 
+                                               onClick={() => {
+                                                 setNotesModal(app);
+                                                 setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                                 setActiveMenu(null);
+                                               }} 
+                                             />
+                                             <MenuButton 
+                                               icon={<Pill size={18} />} 
+                                               label={app.prescriptions && app.prescriptions.length > 0 ? "Edit Prescription" : "Create Prescription"} 
+                                               onClick={() => {
+                                                 setPrescriptionModal(app);
+                                                 setPrescriptionForm(app.prescriptions && app.prescriptions.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+                                                 setActiveMenu(null);
+                                               }} 
+                                             />
+                                             <MenuButton 
+                                               icon={<FileUp size={18} />} 
+                                               label="Upload Report" 
+                                               onClick={() => { setReportModal(app); setActiveMenu(null); }} 
+                                             />
+                                             {app.status === 'in_consultation' && (
+                                               <>
+                                                 <MenuButton 
+                                                   icon={<Calendar size={18} />} 
+                                                   label="Mark Follow-up Required" 
+                                                   onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
+                                                 />
+                                                 <div className="h-px bg-slate-50 my-2" />
+                                                 <MenuButton 
+                                                   icon={<CheckCircle2 size={18} />} 
+                                                   label="Complete Consultation" 
+                                                   color="text-emerald-600"
+                                                   onClick={() => { setCompletingAppointment(app); setActiveMenu(null); }} 
+                                                 />
+                                               </>
+                                             )}
+                                           </>
+                                         )}
                                       </>
                                     )}
 
                                     {(user?.role === 'admin' || user?.role === 'receptionist') && (
                                       <>
-                                        <MenuButton 
-                                          icon={<Calendar size={18} />} 
-                                          label="Reschedule Appointment" 
-                                          onClick={() => {
-                                            setReschedulingAppointment(app);
-                                            setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
-                                            setActiveMenu(null);
-                                          }} 
-                                        />
-                                        {app.status !== 'checked_in' && (
+                                        {['booked', 'checked_in', 'waiting'].includes(app.status) && (
                                           <MenuButton 
-                                            icon={<User size={18} />} 
-                                            label="Check-In Patient" 
-                                            color="text-cyan-600"
-                                            onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                            icon={<Calendar size={18} />} 
+                                            label="Reschedule Appointment" 
+                                            onClick={() => {
+                                              setReschedulingAppointment(app);
+                                              setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
+                                              setActiveMenu(null);
+                                            }} 
                                           />
                                         )}
-                                        {(app.clinic?.receptionAssistantMode === true || app.doctor?.clinic?.receptionAssistantMode === true || app.doctor?.branchId?.receptionAssistantMode === true) && (
+                                        {app.status === 'booked' && (
                                           <>
-                                            <div className="h-px bg-slate-50 my-1" />
                                             <MenuButton 
-                                              icon={<ClipboardList size={18} />} 
-                                              label="Draft Diagnosis" 
-                                              onClick={() => { setNotesModal(app); setActiveMenu(null); }} 
+                                              icon={<User size={18} />} 
+                                              label="Check-In Patient" 
+                                              color="text-cyan-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
                                             />
                                             <MenuButton 
-                                              icon={<Pill size={18} />} 
-                                              label="Draft Prescription" 
-                                              onClick={() => { setPrescriptionModal(app); setActiveMenu(null); }} 
+                                              icon={<CheckCircle2 size={18} />} 
+                                              label="Move to Waiting Queue" 
+                                              color="text-amber-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'waiting')} 
                                             />
                                             <MenuButton 
-                                              icon={<FileUp size={18} />} 
-                                              label="Upload Report" 
-                                              onClick={() => { setReportModal(app); setActiveMenu(null); }} 
+                                              icon={<XCircle size={18} />} 
+                                              label="Mark Patient Missed" 
+                                              color="text-orange-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
                                             />
                                             <MenuButton 
-                                              icon={<Calendar size={18} />} 
-                                              label="Schedule Follow-up" 
-                                              onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
+                                              icon={<XCircle size={18} />} 
+                                              label="Cancel Appointment" 
+                                              color="text-red-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
                                             />
-                                            <div className="h-px bg-slate-50 my-1" />
                                           </>
                                         )}
-                                        <MenuButton 
-                                          icon={<XCircle size={18} />} 
-                                          label="Mark as Missed" 
-                                          color="text-orange-600"
-                                          onClick={() => handleStatusUpdate(app._id, 'missed')} 
-                                        />
-                                        <MenuButton 
-                                          icon={<XCircle size={18} />} 
-                                          label="Cancel Appointment" 
-                                          color="text-red-600"
-                                          onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
-                                        />
+                                        {app.status === 'checked_in' && (
+                                          <>
+                                            <MenuButton 
+                                              icon={<CheckCircle2 size={18} />} 
+                                              label="Move to Waiting Queue" 
+                                              color="text-cyan-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'waiting')} 
+                                            />
+                                            <MenuButton 
+                                              icon={<XCircle size={18} />} 
+                                              label="Mark Patient Missed" 
+                                              color="text-orange-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
+                                            />
+                                            <MenuButton 
+                                              icon={<XCircle size={18} />} 
+                                              label="Cancel Appointment" 
+                                              color="text-red-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
+                                            />
+                                          </>
+                                        )}
+                                        {app.status === 'waiting' && (
+                                          <>
+                                            <MenuButton 
+                                              icon={<CheckCircle2 size={18} />} 
+                                              label="Check" 
+                                              color="text-cyan-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                            />
+                                            <MenuButton 
+                                              icon={<XCircle size={18} />} 
+                                              label="Cancel Appointment" 
+                                              color="text-red-600"
+                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
+                                            />
+                                          </>
+                                        )}
                                       </>
                                     )}
                                   </div>
@@ -925,6 +1185,135 @@ export default function AppointmentsPage() {
                       {viewingAppointment.diagnosis && <p><span className="text-emerald-600 opacity-70">Diagnosis:</span> {viewingAppointment.diagnosis}</p>}
                       {viewingAppointment.prescription && <p><span className="text-emerald-600 opacity-70">Prescription:</span> {viewingAppointment.prescription}</p>}
                     </div>
+                  </div>
+                )}
+
+                {/* Current Consultation Notes */}
+                {(viewingAppointment.consultationNotes || canEditAppointmentDetails(viewingAppointment)) && (
+                  <div className="p-6 rounded-[2rem] bg-blue-50/50 border border-blue-100 relative group">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <ClipboardList size={14} /> Consultation Notes
+                      </h4>
+                      {canEditAppointmentDetails(viewingAppointment) && (
+                        <button 
+                          onClick={() => {
+                            setNotesModal(viewingAppointment);
+                            setNotesForm(viewingAppointment.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                            setViewingAppointment(null);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-sm shadow-blue-100"
+                        >
+                          {viewingAppointment.consultationNotes ? 'Edit Notes' : 'Add Notes'}
+                        </button>
+                      )}
+                    </div>
+                    {viewingAppointment.consultationNotes ? (
+                      <div className="space-y-3 text-sm font-bold text-slate-700">
+                        {viewingAppointment.consultationNotes.symptoms && (
+                          <p><span className="text-blue-600 opacity-70 block text-[10px] uppercase tracking-wider mb-0.5">Symptoms</span> {viewingAppointment.consultationNotes.symptoms}</p>
+                        )}
+                        {viewingAppointment.consultationNotes.diagnosis && (
+                          <p><span className="text-blue-600 opacity-70 block text-[10px] uppercase tracking-wider mb-0.5">Diagnosis</span> {viewingAppointment.consultationNotes.diagnosis}</p>
+                        )}
+                        {viewingAppointment.consultationNotes.observations && (
+                          <p><span className="text-blue-600 opacity-70 block text-[10px] uppercase tracking-wider mb-0.5">Observations</span> {viewingAppointment.consultationNotes.observations}</p>
+                        )}
+                        {viewingAppointment.consultationNotes.advice && (
+                          <p><span className="text-blue-600 opacity-70 block text-[10px] uppercase tracking-wider mb-0.5">Advice</span> {viewingAppointment.consultationNotes.advice}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold text-slate-400 italic">No consultation notes added yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Prescriptions */}
+                {(viewingAppointment.prescriptions?.length > 0 || canEditAppointmentDetails(viewingAppointment)) && (
+                  <div className="p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 relative group">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Pill size={14} /> Prescribed Medicines
+                      </h4>
+                      {canEditAppointmentDetails(viewingAppointment) && (
+                        <button 
+                          onClick={() => {
+                            setPrescriptionModal(viewingAppointment);
+                            setPrescriptionForm(viewingAppointment.prescriptions?.length > 0 ? viewingAppointment.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+                            setViewingAppointment(null);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-sm shadow-indigo-100"
+                        >
+                          {viewingAppointment.prescriptions?.length > 0 ? 'Edit Prescription' : 'Create Prescription'}
+                        </button>
+                      )}
+                    </div>
+                    {viewingAppointment.prescriptions?.length > 0 ? (
+                      <div className="space-y-4">
+                        {viewingAppointment.prescriptions.map((med, idx) => (
+                          <div key={idx} className="p-4 rounded-2xl bg-white border border-indigo-50 flex flex-col md:flex-row md:items-center justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-black text-slate-900">{med.medicine}</p>
+                              <p className="text-xs text-slate-500 font-bold mt-0.5">{med.dosage} • {med.timing} • {med.days} Days</p>
+                            </div>
+                            {med.notes && (
+                              <div className="text-xs bg-slate-50 px-3 py-1.5 rounded-lg text-slate-600 font-bold border border-slate-100">
+                                {med.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold text-slate-400 italic">No prescription created yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Uploaded Reports */}
+                {(viewingAppointment.reports?.length > 0 || canEditAppointmentDetails(viewingAppointment)) && (
+                  <div className="p-6 rounded-[2rem] bg-purple-50/50 border border-purple-100 relative group">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-[11px] font-black text-purple-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <FileUp size={14} /> Uploaded Medical Reports
+                      </h4>
+                      {canEditAppointmentDetails(viewingAppointment) && (
+                        <button 
+                          onClick={() => {
+                            setReportModal(viewingAppointment);
+                            setViewingAppointment(null);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-sm shadow-purple-100"
+                        >
+                          Upload Report
+                        </button>
+                      )}
+                    </div>
+                    {viewingAppointment.reports?.length > 0 ? (
+                      <div className="space-y-3">
+                        {viewingAppointment.reports.map((rep, idx) => (
+                          <div key={idx} className="p-4 rounded-2xl bg-white border border-purple-50 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-black text-slate-900">{rep.reportName}</p>
+                              <p className="text-[10px] text-purple-500 font-black uppercase tracking-wider mt-0.5">{rep.reportType}</p>
+                            </div>
+                            {rep.reportUrl && (
+                              <a 
+                                href={getFullImageUrl(rep.reportUrl)} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-black shadow-md shadow-purple-100 hover:bg-purple-700 transition-all"
+                              >
+                                View Report
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold text-slate-400 italic">No reports uploaded yet.</p>
+                    )}
                   </div>
                 )}
 

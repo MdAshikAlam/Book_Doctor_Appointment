@@ -121,6 +121,12 @@ export const updateDoctorStatus = async (req: Request, res: Response, next: Next
       return next(new AppError('No doctor found with that ID', 404));
     }
 
+    if (doctor.user) {
+      const User = mongoose.model('User');
+      const userStatus = status === 'verified' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending');
+      await User.findByIdAndUpdate(doctor.user, { status: userStatus });
+    }
+
     res.status(200).json({
       status: 'success',
       data: { doctor }

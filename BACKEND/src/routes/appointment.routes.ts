@@ -105,5 +105,6 @@ router.get('/my', appointmentController.getMyAppointments);
  */
 router.patch('/:id/status', appointmentController.updateStatus);
 router.patch('/:id/reschedule', appointmentController.rescheduleAppointment);
+router.post('/call-next', appointmentController.callNextPatient);
 
 export default router;

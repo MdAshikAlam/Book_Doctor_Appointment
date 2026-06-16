@@ -133,3 +133,15 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response, nex
     next(error);
   }
 };
+
+export const callNextPatient = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const appointment = await appointmentService.callNextPatient(req.user!.id);
+    res.status(200).json({
+      status: 'success',
+      data: { appointment }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

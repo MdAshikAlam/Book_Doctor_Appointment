@@ -127,6 +127,9 @@ export const appointmentsApi = {
     method: 'PATCH',
     body: JSON.stringify(data),
   }),
+  callNext: () => apiCall('/appointments/call-next', {
+    method: 'POST',
+  }),
 };
 
 export const usersApi = {

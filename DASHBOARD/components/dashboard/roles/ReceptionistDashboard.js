@@ -55,11 +55,16 @@ export default function ReceptionistDashboard({ data, selectedDate, onDateSelect
                     render: (row) => (
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
                         row.status === 'booked' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                        row.status === 'checked_in' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        row.status === 'missed' ? 'bg-red-50 text-red-600 border-red-100' :
-                        'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        row.status === 'checked_in' ? 'bg-cyan-50 text-cyan-600 border-cyan-100' :
+                        row.status === 'waiting' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        row.status === 'in_consultation' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                        row.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        row.status === 'follow_up' ? 'bg-teal-50 text-teal-600 border-teal-100' :
+                        row.status === 'patient_missed' ? 'bg-red-50 text-red-600 border-red-100' :
+                        row.status === 'cancelled' ? 'bg-slate-50 text-slate-600 border-slate-100' :
+                        'bg-slate-50 text-slate-600 border-slate-100'
                       }`}>
-                        {row.status}
+                        {row.status === 'waiting' ? 'Waiting Queue' : row.status === 'patient_missed' ? 'Patient Missed' : row.status?.replace('_', ' ')}
                       </span>
                     )
                   },
