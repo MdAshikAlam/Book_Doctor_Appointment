@@ -71,7 +71,7 @@ export default function About() {
       </section>
 
       {/* SECTION 2: OUR STORY */}
-      <Section className="bg-white border-b border-slate-100">
+      <Section className="bg-white border-b border-slate-100 !pt-4 lg:!pt-6">
         <Container className="max-w-6xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
