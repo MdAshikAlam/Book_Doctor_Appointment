@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Bell, Menu, LogOut, User, Settings as SettingsIcon, HelpCircle, Stethoscope } from 'lucide-react';
 import { clsx } from "clsx";
@@ -17,6 +17,7 @@ const Navbar = ({ onMenuClick }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState({});
+  const profileMenuRef = useRef(null);
 
   const fetchNotifications = async () => {
     try {
@@ -34,6 +35,18 @@ const Navbar = ({ onMenuClick }) => {
       return () => clearInterval(interval);
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const hasNewNotifications = Object.values(notifications).some(n => n && n.new > 0);
 
@@ -81,7 +94,7 @@ const Navbar = ({ onMenuClick }) => {
           <div className="w-px h-6 bg-border mx-2"></div>
 
           {/* User Profile */}
-          <div className="relative">
+          <div className="relative" ref={profileMenuRef}>
             <button 
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-3 p-1 rounded-xl hover:bg-slate-100 transition-colors"
@@ -97,36 +110,45 @@ const Navbar = ({ onMenuClick }) => {
 
             {/* Dropdown Menu */}
             {showProfileMenu && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setShowProfileMenu(false)}
-                ></div>
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-border py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="px-4 py-3 border-b border-border mb-1">
-                    <p className="text-sm font-semibold text-slate-900">{user?.name}</p>
-                    <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                  </div>
-                  <Link href="/dashboard/profile" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-                    <User size={16} /> View Profile
-                  </Link>
-                  <Link href="/dashboard/profile/edit" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-                    <SettingsIcon size={16} /> Edit Profile
-                  </Link>
-                  <Link href="/" className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
-                    <HelpCircle size={16} /> Help Center
-                  </Link>
-                  
-                  <div className="h-px bg-border my-1"></div>
-                  
-                  <button 
-                    onClick={logout}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut size={16} /> Logout
-                  </button>
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-border py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-border mb-1">
+                  <p className="text-sm font-semibold text-slate-900">{user?.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                 </div>
-              </>
+                <Link 
+                  href="/dashboard/profile" 
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                >
+                  <User size={16} /> View Profile
+                </Link>
+                <Link 
+                  href="/dashboard/profile/edit" 
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                >
+                  <SettingsIcon size={16} /> Edit Profile
+                </Link>
+                <Link 
+                  href="/" 
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                >
+                  <HelpCircle size={16} /> Help Center
+                </Link>
+                
+                <div className="h-px bg-border my-1"></div>
+                
+                <button 
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    logout();
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
             )}
           </div>
         </div>
