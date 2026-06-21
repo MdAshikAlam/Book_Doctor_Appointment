@@ -20,26 +20,26 @@ const LinkedinIcon = () => (
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 pt-16 pb-8">
+    <footer className="bg-gray-50 border-t border-gray-200 pt-4 pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
 
           {/* Brand Info */}
-          <div className="space-y-6 lg:col-span-2">
-            <Link href="/" className="flex items-center space-x-2">
+          <div className="space-y-3 lg:col-span-2">
+            <Link href="/" className="flex items-center space-x-2 -mt-10 -mb-8">
               <Image
                 src="/logoAndIcon/logo.png"
                 alt="BookMyDoctor"
                 width={350}
                 height={100}
-                className="h-16 md:h-20 w-auto object-contain"
+                className="h-24 md:h-28 w-auto object-contain"
               />
             </Link>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-sm font-semibold">
+            <p className="text-gray-500 text-sm leading-relaxed max-w-sm font-semibold pl-7">
               BookMyDoctor helps patients discover trusted doctors and clinics nearby while making healthcare access simpler, faster, and more transparent.
               We connect patients with healthcare providers through an easy-to-use appointment booking platform.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 pl-7">
               <a href="#" className="text-gray-400 hover:text-primary transition-colors">
                 <FacebookIcon />
               </a>
@@ -101,7 +101,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <p className="text-gray-400 text-xs text-center md:text-left font-bold">
+          <p className="text-gray-400 text-xs text-center md:text-left font-bold pl-7">
             &copy; {new Date().getFullYear()} BookMyDoctor India. Proudly built for digital healthcare accessibility.
           </p>
           <div className="flex items-center text-xs text-gray-400 font-bold">
