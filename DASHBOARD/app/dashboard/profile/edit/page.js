@@ -42,6 +42,7 @@ export default function EditProfilePage() {
     licenseNumber: '',
     consultationFee: '',
     clinic: '',
+    bio: '',
   });
 
   const [clinics, setClinics] = useState([]);
@@ -51,6 +52,14 @@ export default function EditProfilePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        avatar: user.avatar || '',
+      });
+    }
     const fetchData = async () => {
       try {
         const clinicsRes = await clinicsApi.getAll();
@@ -65,6 +74,7 @@ export default function EditProfilePage() {
             licenseNumber: doc.licenseNumber || '',
             consultationFee: doc.consultationFee?.toString() || '',
             clinic: doc.clinic?._id || '',
+            bio: doc.bio || '',
           });
         }
       } catch (err) {
@@ -113,6 +123,7 @@ export default function EditProfilePage() {
           licenseNumber: doctorData.licenseNumber,
           consultationFee: Number(doctorData.consultationFee),
           clinic: doctorData.clinic || undefined,
+          bio: doctorData.bio,
         };
       }
 
@@ -194,7 +205,12 @@ export default function EditProfilePage() {
                     type="text" 
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium"
+                    readOnly={user?.role === 'doctor'}
+                    className={`w-full h-12 px-4 rounded-2xl border-2 border-transparent transition-all outline-none font-medium ${
+                      user?.role === 'doctor'
+                        ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200'
+                        : 'bg-slate-50 focus:bg-white focus:border-blue-600'
+                    }`}
                   />
                 </div>
                 <div className="space-y-2">
@@ -203,7 +219,12 @@ export default function EditProfilePage() {
                     type="email" 
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium"
+                    readOnly={user?.role === 'doctor'}
+                    className={`w-full h-12 px-4 rounded-2xl border-2 border-transparent transition-all outline-none font-medium ${
+                      user?.role === 'doctor'
+                        ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200'
+                        : 'bg-slate-50 focus:bg-white focus:border-blue-600'
+                    }`}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -230,7 +251,12 @@ export default function EditProfilePage() {
                       type="text" 
                       value={doctorData.specialty}
                       onChange={(e) => setDoctorData({...doctorData, specialty: e.target.value})}
-                      className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium"
+                      readOnly={user?.role === 'doctor'}
+                      className={`w-full h-12 px-4 rounded-2xl border-2 border-transparent transition-all outline-none font-medium ${
+                        user?.role === 'doctor'
+                          ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200'
+                          : 'bg-slate-50 focus:bg-white focus:border-blue-600'
+                      }`}
                     />
                   </div>
                   <div className="space-y-2">
@@ -248,7 +274,12 @@ export default function EditProfilePage() {
                       type="text" 
                       value={doctorData.licenseNumber}
                       onChange={(e) => setDoctorData({...doctorData, licenseNumber: e.target.value})}
-                      className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium"
+                      readOnly={user?.role === 'doctor'}
+                      className={`w-full h-12 px-4 rounded-2xl border-2 border-transparent transition-all outline-none font-medium ${
+                        user?.role === 'doctor'
+                          ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200'
+                          : 'bg-slate-50 focus:bg-white focus:border-blue-600'
+                      }`}
                     />
                   </div>
                   <div className="space-y-2">
@@ -277,6 +308,16 @@ export default function EditProfilePage() {
                         ))}
                       </select>
                     </div>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Bio / About Me</label>
+                    <textarea 
+                      value={doctorData.bio}
+                      onChange={(e) => setDoctorData({...doctorData, bio: e.target.value})}
+                      rows={4}
+                      className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium resize-none"
+                      placeholder="Write a brief bio about your medical experience, qualifications, and patient care philosophy..."
+                    />
                   </div>
                 </div>
               </div>
