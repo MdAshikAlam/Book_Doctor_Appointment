@@ -263,6 +263,18 @@ export const adminUpdateDoctor = async (req: Request, res: Response, next: NextF
     const id = req.params.id as string;
     const validatedData = adminDoctorUpdateSchema.parse(req.body);
 
+    const userRole = (req as any).user?.role;
+    if (userRole === UserRole.DOCTOR) {
+      if (validatedData.userData) {
+        delete validatedData.userData.name;
+        delete validatedData.userData.email;
+      }
+      if (validatedData.profileData) {
+        delete (validatedData.profileData as any).specialty;
+        delete (validatedData.profileData as any).licenseNumber;
+      }
+    }
+
     const doctor = await doctorService.getDoctorById(id);
     const userId = (doctor.user as any)._id;
 

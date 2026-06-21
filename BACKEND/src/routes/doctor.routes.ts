@@ -44,26 +44,7 @@ router.get('/', optionalProtect, branchHandler, doctorController.getDoctors);
  */
 router.get('/pending', protect, restrictTo(UserRole.SUPER_ADMIN), doctorController.getPendingDoctors);
 router.patch('/:id/status', protect, restrictTo(UserRole.SUPER_ADMIN), doctorController.updateDoctorStatus);
-router.get('/:id', doctorController.getDoctor);
 
-/**
- * @swagger
- * /doctors/profile:
- *   post:
- *     summary: Create or update doctor profile
- *     tags: [Doctors]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Doctor'
- *     responses:
- *       201:
- *         description: Profile created/updated
- */
 router.get(
   '/me',
   protect,
@@ -71,6 +52,8 @@ router.get(
   restrictTo(UserRole.DOCTOR),
   doctorController.getMyProfile
 );
+
+router.get('/:id', doctorController.getDoctor);
 
 router.post(
   '/profile',
@@ -92,7 +75,7 @@ router.patch(
   '/:id',
   protect,
   branchHandler,
-  restrictTo(UserRole.ADMIN),
+  restrictTo(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR),
   checkDoctorOwnership,
   doctorController.adminUpdateDoctor
 );
