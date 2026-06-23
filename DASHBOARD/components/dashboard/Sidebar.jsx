@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -12,6 +12,7 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
+  ChevronDown,
   Stethoscope,
   Shield,
   Building2,
@@ -27,11 +28,16 @@ import {
   CheckCircle2,
   X,
   IndianRupee,
-  Bell
+  Bell,
+  Clock,
+  Video,
+  MessageSquare,
+  ClipboardList
 } from 'lucide-react';
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAuth } from '@/context/AuthContext';
+import { analyticsApi } from '@/lib/api';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -130,28 +136,24 @@ const receptionistSections = [
 
 const doctorSections = [
   {
-    title: 'Consultation',
+    title: 'Practice Management',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: CalendarCheck, label: 'Today Appointments', href: '/dashboard/appointments?filter=today', category: 'appointments' },
-      { icon: CheckCircle2, label: 'Completed Consultations', href: '/dashboard/appointments?filter=completed' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
-      { icon: CalendarCheck, label: 'Follow-Ups', href: '/dashboard/appointments?filter=follow_up' },
-    ]
-  },
-  {
-    title: 'Account',
-    items: [
-      { icon: UserRound, label: 'Profile Settings', href: '/dashboard/profile' },
+      { icon: Clock, label: "Today's Queue", href: '/dashboard/queue' },
+      { icon: Users, label: 'Patients', href: '/dashboard/patients', category: 'patients' },
+      { icon: ClipboardList, label: 'Consultations', href: '/dashboard/consultations' },
+      { icon: FileCheck, label: 'Prescriptions', href: '/dashboard/prescriptions' },
+      { icon: CalendarCheck, label: 'Follow-Ups', href: '/dashboard/follow-ups' },
+      { icon: Clock, label: 'Schedule', href: '/dashboard/schedule' },
+      { icon: Flag, label: 'Reports', href: '/dashboard/reports' },
+      { icon: Settings, label: 'Settings', href: '/dashboard/settings' }
     ]
   }
 ];
 
-import { useEffect } from 'react';
-import { analyticsApi } from '@/lib/api';
-
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [notifications, setNotifications] = useState({});
+  const [expandedMenus, setExpandedMenus] = useState({});
   const pathname = usePathname();
   const { user } = useAuth();
 
@@ -167,7 +169,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
   useEffect(() => {
     if (user?.role && ['super_admin', 'admin', 'receptionist', 'doctor'].includes(user.role)) {
       fetchNotifications();
-      // Polling for new notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
@@ -189,6 +190,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
+  };
+
+  const toggleMenu = (label) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
   };
 
   const renderLink = (item, idx) => {
@@ -237,11 +245,74 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     );
   };
 
+  const renderItem = (item, idx) => {
+    if (item.subItems) {
+      const isExpanded = !!expandedMenus[item.label];
+      const hasActiveSubItem = item.subItems.some(sub => pathname === sub.href);
+      const Icon = item.icon;
+
+      return (
+        <div key={`parent-${item.label}-${idx}`} className="space-y-1">
+          <button
+            onClick={() => toggleMenu(item.label)}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group relative",
+              hasActiveSubItem && !isExpanded
+                ? "bg-primary/10 text-primary" 
+                : "text-slate-500 hover:bg-slate-50 hover:text-primary"
+            )}
+          >
+            <Icon size={20} className={cn("shrink-0", hasActiveSubItem ? "text-primary" : "group-hover:scale-110 transition-transform")} />
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="font-medium text-sm text-left leading-tight">
+                  {item.label}
+                </span>
+                <ChevronDown 
+                  size={16} 
+                  className={cn("transition-transform duration-200 shrink-0", isExpanded ? "rotate-180" : "")} 
+                />
+              </div>
+            )}
+            {(isCollapsed && !isMobileOpen) && (
+              <div className="absolute left-14 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                {item.label}
+              </div>
+            )}
+          </button>
+          
+          {isExpanded && (!isCollapsed || isMobileOpen) && (
+            <div className="pl-6 space-y-1 border-l border-slate-100 ml-5 mt-1 animate-in slide-in-from-top-1 duration-200">
+              {item.subItems.map((sub, sIdx) => {
+                const isSubActive = pathname === sub.href;
+                return (
+                  <Link
+                    key={`sub-${sub.label}-${sIdx}`}
+                    href={sub.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold",
+                      isSubActive 
+                        ? "text-primary bg-slate-55" 
+                        : "text-slate-400 hover:text-slate-650 hover:bg-slate-50/50"
+                    )}
+                  >
+                    <span>{sub.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return renderLink(item, idx);
+  };
+
   return (
     <aside 
       className={cn(
         "fixed left-0 top-0 h-screen bg-sidebar border-r border-border transition-all duration-300 z-40 sidebar-shadow flex flex-col",
-        // Width on desktop vs mobile
         isCollapsed ? "md:w-20" : "md:w-64",
         isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
       )}
@@ -261,12 +332,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         {isMobileOpen && (
           <button 
             onClick={() => setIsMobileOpen(false)}
-            className="md:hidden p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="md:hidden p-1 text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <X size={20} />
           </button>
         )}
       </div>
+
       {/* Navigation Links */}
       <nav className={cn("flex-1 overflow-y-auto p-4 custom-scrollbar", isCollapsed && "pt-6")}>
         {user?.role === 'super_admin' ? (
@@ -279,7 +351,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                   </p>
                 )}
                 <div className="space-y-1">
-                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                  {section.items.map((item, iIdx) => renderItem(item, iIdx))}
                 </div>
               </div>
             ))}
@@ -294,7 +366,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                   </p>
                 )}
                 <div className="space-y-1">
-                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                  {section.items.map((item, iIdx) => renderItem(item, iIdx))}
                 </div>
               </div>
             ))}
@@ -309,7 +381,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                   </p>
                 )}
                 <div className="space-y-1">
-                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                  {section.items.map((item, iIdx) => renderItem(item, iIdx))}
                 </div>
               </div>
             ))}
@@ -324,7 +396,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                   </p>
                 )}
                 <div className="space-y-1">
-                  {section.items.map((item, iIdx) => renderLink(item, iIdx))}
+                  {section.items.map((item, iIdx) => renderItem(item, iIdx))}
                 </div>
               </div>
             ))}

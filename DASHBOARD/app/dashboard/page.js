@@ -25,6 +25,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import { useAuth } from '@/context/AuthContext';
 import { apiCall } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 const statsData = [
   { title: 'Total Patients', value: '42,908', icon: Users, growth: 12.5, isIncrease: true, color: 'blue' },
@@ -127,6 +128,14 @@ import ReceptionistDashboard from '@/components/dashboard/roles/ReceptionistDash
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user?.role === 'doctor') {
+      router.push('/dashboard/queue');
+    }
+  }, [user, router]);
+
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
