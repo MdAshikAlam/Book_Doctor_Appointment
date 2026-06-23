@@ -1,496 +1,104 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  CalendarCheck, 
-  DollarSign, 
-  Download, 
-  Filter, 
-  Loader2, 
-  Calendar,
-  Building2,
-  Stethoscope,
-  ChevronRight,
-  Sparkles,
-  FileCheck2,
-  ArrowUpRight,
-  TrendingDown
-} from 'lucide-react';
+import React, { useState } from 'react';
 import Card from '@/components/common/Card';
-import Button from '@/components/common/Button';
+import { Flag, TrendingUp, Users, ClipboardList, FileCheck, Clock, Download } from 'lucide-react';
 import Chart from '@/components/dashboard/Chart';
-import Table from '@/components/dashboard/Table';
-import { motion, AnimatePresence } from 'framer-motion';
-import { appointmentsApi } from '@/lib/api';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
-
-// Mock report data to populate the premium visual dashboard stats
-const appointmentVolumeData = [
-  { name: 'Mon', count: 12 },
-  { name: 'Tue', count: 19 },
+const consultationVolumeData = [
+  { name: 'Mon', count: 8 },
+  { name: 'Tue', count: 12 },
   { name: 'Wed', count: 15 },
-  { name: 'Thu', count: 22 },
-  { name: 'Fri', count: 30 },
-  { name: 'Sat', count: 18 },
-  { name: 'Sun', count: 10 }
-];
-
-const clinicRevenueData = [
-  { name: 'General Medicine', count: 3400 },
-  { name: 'Cardiology', count: 5200 },
-  { name: 'Pediatrics', count: 2800 },
-  { name: 'Orthopedics', count: 4100 },
-  { name: 'Dermatology', count: 3100 },
-  { name: 'Neurology', count: 6000 }
-];
-
-const performanceMetrics = [
-  {
-    id: 'total-revenue-card',
-    title: 'Total Revenue Generated',
-    value: '$24,600',
-    change: '+14.2%',
-    isPositive: true,
-    subtitle: 'from last week',
-    color: 'bg-emerald-500/10 text-emerald-600 border-emerald-100',
-    icon: DollarSign
-  },
-  {
-    id: 'total-consultations-card',
-    title: 'Total Consultations',
-    value: '458 Visits',
-    change: '+8.4%',
-    isPositive: true,
-    subtitle: 'vs standard average',
-    color: 'bg-blue-500/10 text-blue-600 border-blue-100',
-    icon: CalendarCheck
-  },
-  {
-    id: 'new-patients-card',
-    title: 'New Registered Patients',
-    value: '186 Patients',
-    change: '-2.1%',
-    isPositive: false,
-    subtitle: 'from last month',
-    color: 'bg-indigo-500/10 text-indigo-600 border-indigo-100',
-    icon: Users
-  },
-  {
-    id: 'consultation-efficiency-card',
-    title: 'Consultation Efficiency',
-    value: '94.8%',
-    change: '+3.6%',
-    isPositive: true,
-    subtitle: 'checked-in conversion',
-    color: 'bg-amber-500/10 text-amber-600 border-amber-100',
-    icon: BarChart3
-  }
+  { name: 'Thu', count: 10 },
+  { name: 'Fri', count: 18 },
+  { name: 'Sat', count: 6 },
+  { name: 'Sun', count: 2 }
 ];
 
 export default function ReportsPage() {
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reportType, setReportType] = useState('all');
-  const [loadingReportId, setLoadingReportId] = useState(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const res = await appointmentsApi.getMy();
-        setAppointments(res.data.appointments || []);
-      } catch (err) {
-        console.error('Failed to fetch reports/appointments:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
-  }, []);
-
-  // Compute dynamic stats from database appointments
-  const totalRevenue = appointments
-    .filter(app => ['completed', 'visited', 'prescription_added', 'discharged'].includes(app.status))
-    .reduce((acc, app) => acc + (app.doctor?.consultationFee || 500), 0);
-
-  const totalConsultations = appointments
-    .filter(app => ['completed', 'visited', 'prescription_added', 'follow_up', 'discharged'].includes(app.status)).length;
-
-  const uniquePatients = new Set(appointments.map(app => app.patient?._id || app.patient || app.phone)).size;
-
-  const completedOrCheckedIn = appointments
-    .filter(app => ['checked_in', 'completed', 'visited', 'prescription_added', 'follow_up', 'discharged'].includes(app.status)).length;
-  const efficiency = appointments.length > 0 ? ((completedOrCheckedIn / appointments.length) * 100).toFixed(1) : '0';
-
-  // Compute dynamic chart data
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const volumeByDay = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
-  appointments.forEach(app => {
-    const dayName = daysOfWeek[new Date(app.date).getDay()];
-    volumeByDay[dayName]++;
-  });
-  const appointmentVolumeData = daysOfWeek.map(day => ({
-    name: day,
-    count: volumeByDay[day]
-  }));
-
-  const specialtyRevenue = {};
-  appointments.forEach(app => {
-    const specialty = app.doctor?.specialty || 'General Medicine';
-    const fee = app.doctor?.consultationFee || 500;
-    if (['completed', 'visited', 'prescription_added', 'discharged'].includes(app.status)) {
-      specialtyRevenue[specialty] = (specialtyRevenue[specialty] || 0) + fee;
-    }
-  });
-
-  const clinicRevenueData = Object.keys(specialtyRevenue).map(spec => ({
-    name: spec,
-    count: specialtyRevenue[spec]
-  }));
-
-  // If no specialty revenue records, fallback to specialty appointment counts for visual plotting
-  if (clinicRevenueData.length === 0) {
-    const specialtyCounts = {};
-    appointments.forEach(app => {
-      const specialty = app.doctor?.specialty || 'General Medicine';
-      specialtyCounts[specialty] = (specialtyCounts[specialty] || 0) + 1;
-    });
-    Object.keys(specialtyCounts).forEach(spec => {
-      clinicRevenueData.push({
-        name: spec,
-        count: specialtyCounts[spec] * 500
-      });
-    });
-  }
-
-  const performanceMetrics = [
-    {
-      id: 'total-revenue-card',
-      title: 'Total Revenue Generated',
-      value: `₹${totalRevenue.toLocaleString()}`,
-      change: '+14.2%',
-      isPositive: true,
-      subtitle: 'from completed consultations',
-      color: 'bg-emerald-500/10 text-emerald-600 border-emerald-100',
-      icon: DollarSign
-    },
-    {
-      id: 'total-consultations-card',
-      title: 'Total Consultations',
-      value: `${totalConsultations} Visits`,
-      change: '+8.4%',
-      isPositive: true,
-      subtitle: 'completed & follow-ups',
-      color: 'bg-blue-500/10 text-blue-600 border-blue-100',
-      icon: CalendarCheck
-    },
-    {
-      id: 'new-patients-card',
-      title: 'Active Patients',
-      value: `${uniquePatients} Patients`,
-      change: '+4.2%',
-      isPositive: true,
-      subtitle: 'unique patients served',
-      color: 'bg-indigo-500/10 text-indigo-600 border-indigo-100',
-      icon: Users
-    },
-    {
-      id: 'consultation-efficiency-card',
-      title: 'Consultation Efficiency',
-      value: `${efficiency}%`,
-      change: '+3.6%',
-      isPositive: true,
-      subtitle: 'checked-in ratio',
-      color: 'bg-amber-500/10 text-amber-600 border-amber-100',
-      icon: BarChart3
-    }
-  ];
-
-  const handleDownload = (report) => {
-    setLoadingReportId(report.id);
-    if (report.url) {
-      const fullUrl = report.url.startsWith('http') ? report.url : `${BACKEND_URL}${report.url}`;
-      window.open(fullUrl, '_blank');
-      setLoadingReportId(null);
-      triggerNotification(`Successfully opened "${report.name}"!`);
-    } else {
-      setLoadingReportId(null);
-      triggerNotification('Report file link not available.');
-    }
-  };
-
-  const handleExportAll = () => {
-    setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
-      triggerNotification('Successfully exported clinical performance dashboard to CSV/XLSX!');
-    }, 2000);
-  };
-
-  const triggerNotification = (message) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 4000);
-  };
-
-  const reportsList = [];
-  appointments.forEach(app => {
-    if (app.reports && app.reports.length > 0) {
-      app.reports.forEach(rep => {
-        reportsList.push({
-          id: rep._id || rep.id || Math.random().toString(),
-          name: rep.reportName || 'Medical Report',
-          type: rep.reportType || 'Clinical Operations',
-          branch: app.clinic?.clinicName || app.clinic?.name || 'Clinic Branch',
-          date: rep.uploadedAt ? new Date(rep.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown',
-          size: 'N/A',
-          status: 'Generated',
-          url: rep.reportUrl,
-          patientName: app.fullName || app.patient?.name || 'Patient'
-        });
-      });
-    }
-  });
-
-  const filteredReports = reportsList.filter(report => {
-    if (reportType === 'all') return true;
-    return report.type.toLowerCase().includes(reportType.toLowerCase()) || 
-           report.name.toLowerCase().includes(reportType.toLowerCase());
-  });
-
-  const columns = [
-    {
-      header: 'Report Title',
-      accessor: 'name',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
-            <Sparkles size={18} />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{row.name}</p>
-            <p className="text-xs text-slate-400 font-semibold">{row.type} • Patient: {row.patientName}</p>
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Clinic / Branch Scope',
-      accessor: 'branch',
-      render: (row) => (
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-          <Building2 size={14} className="text-slate-400" />
-          {row.branch}
-        </div>
-      )
-    },
-    {
-      header: 'Generated On',
-      accessor: 'date',
-      render: (row) => (
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <Calendar size={14} className="text-slate-400" />
-          {row.date}
-        </div>
-      )
-    },
-    {
-      header: 'Size',
-      accessor: 'size',
-      render: (row) => (
-        <span className="text-xs font-mono font-bold bg-slate-50 text-slate-600 px-2 py-1 rounded-lg border border-slate-100">
-          {row.size}
-        </span>
-      )
-    },
-    {
-      header: 'Status',
-      accessor: 'status',
-      render: (row) => (
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-          row.status === 'Generated' 
-            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-            : 'bg-slate-100 text-slate-500 border-slate-200'
-        }`}>
-          {row.status}
-        </span>
-      )
-    },
-    {
-      header: 'Actions',
-      accessor: 'id',
-      render: (row) => (
-        <Button
-          id={`download-report-btn-${row.id}`}
-          onClick={() => handleDownload(row)}
-          variant="outline"
-          size="sm"
-          className="h-10 rounded-xl font-bold flex items-center gap-2 text-xs group"
-          disabled={loadingReportId !== null}
-        >
-          {loadingReportId === row.id ? (
-            <Loader2 size={14} className="animate-spin text-primary" />
-          ) : (
-            <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
-          )}
-          Download Report
-        </Button>
-      )
-    }
-  ];
+  const [reportRange, setReportRange] = useState('Today');
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {successMessage && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 font-bold text-sm"
-          >
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <FileCheck2 size={16} />
-            </div>
-            <span>{successMessage}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      
+      {/* Title */}
+      <div className="flex items-center justify-between bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            Clinical & Revenue Analytics
-          </h1>
-          <p className="text-slate-500 mt-1 font-medium">Analyze and generate comprehensive reports for clinic operations and finances.</p>
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Practice Metrics</p>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">Clinical Reports & Insights</h1>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Button 
-            id="export-dashboard-btn"
-            onClick={handleExportAll}
-            disabled={isExporting}
-            className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-2"
+        <div>
+          <button 
+            onClick={() => alert("Downloading full performance report...")}
+            className="h-11 px-5 bg-slate-900 hover:bg-slate-950 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2"
           >
-            {isExporting ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Download size={18} />
-            )}
-            Export Analytics Dashboard
-          </Button>
+            <Download size={16} /> Download CSV
+          </button>
         </div>
       </div>
 
-      {/* Grid: Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {performanceMetrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <motion.div
-              whileHover={{ y: -4 }}
-              key={metric.id}
-              className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden"
-            >
-              <div className="flex items-start justify-between">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${metric.color}`}>
-                  <Icon size={22} />
-                </div>
-                <div className={`flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-lg border ${
-                  metric.isPositive 
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                    : 'bg-rose-50 text-rose-600 border-rose-100'
-                }`}>
-                  {metric.isPositive ? <ArrowUpRight size={14} /> : <TrendingDown size={14} />}
-                  {metric.change}
-                </div>
-              </div>
-              <div className="mt-5">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{metric.title}</p>
-                <h3 className="text-2xl font-black text-slate-900 mt-1">{metric.value}</h3>
-                <p className="text-slate-400 text-[11px] font-semibold mt-2">{metric.subtitle}</p>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Grid: Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card 
-          className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white p-6"
-          title="Daily Appointment Volume"
-          subtitle="Frequency of patient bookings throughout the week"
-        >
-          <div className="mt-4">
-            <Chart type="line" data={appointmentVolumeData} dataKey="count" color="#2563eb" />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient Volume</span>
+            <Users size={18} className="text-blue-500" />
           </div>
-        </Card>
-
-        <Card 
-          className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white p-6"
-          title="Clinical Specialties Revenue"
-          subtitle="Comparative revenue generation by clinic specialty"
-        >
-          <div className="mt-4">
-            <Chart type="bar" data={clinicRevenueData} dataKey="count" color="#8b5cf6" />
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Clinical Reports Table Section */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6 space-y-6">
-        {/* Filter Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6">
-          <div>
-            <h3 className="text-lg font-bold text-slate-950">Detailed Logs & Reports</h3>
-            <p className="text-sm text-slate-400 font-medium">Select a category to view and download specific clinical logs.</p>
-          </div>
-          <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto overflow-x-auto">
-            {[
-              { id: 'all', label: 'All Reports' },
-              { id: 'clinical', label: 'Clinical' },
-              { id: 'financial', label: 'Financial' },
-              { id: 'patient', label: 'Patient Logs' }
-            ].map((tab) => (
-              <button
-                id={`report-tab-btn-${tab.id}`}
-                key={tab.id}
-                onClick={() => setReportType(tab.id)}
-                className={`flex-1 sm:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  reportType === tab.id
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Dynamic Table component */}
-        <div className="overflow-hidden rounded-3xl border border-slate-100 min-h-[200px] flex flex-col justify-center">
-          {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center text-center">
-              <Loader2 size={32} className="animate-spin text-primary mb-2" />
-              <p className="text-slate-400 font-medium text-xs">Loading database records...</p>
+          <div className="grid grid-cols-2 gap-4 divide-x">
+            <div>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Today's Patients</p>
+              <p className="text-xl font-black text-slate-800">18</p>
             </div>
-          ) : (
-            <Table 
-              columns={columns}
-              data={filteredReports}
-              emptyMessage="No clinical or financial reports found matching your selection."
-            />
-          )}
+            <div className="pl-4">
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Monthly Patients</p>
+              <p className="text-xl font-black text-slate-800">342</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Consultations</span>
+            <ClipboardList size={18} className="text-indigo-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 divide-x">
+            <div>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Consultation Count</p>
+              <p className="text-xl font-black text-slate-800">420</p>
+            </div>
+            <div className="pl-4">
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Follow-Up Rate</p>
+              <p className="text-xl font-black text-slate-800">15.4%</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Care Stats</span>
+            <FileCheck size={18} className="text-emerald-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 divide-x">
+            <div>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Prescriptions</p>
+              <p className="text-xl font-black text-slate-800">386</p>
+            </div>
+            <div className="pl-4">
+              <p className="text-[9px] text-slate-400 font-semibold uppercase">Avg Duration</p>
+              <p className="text-xl font-black text-slate-800">12 min</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Chart */}
+      <Card title="Consultation Flow History" subtitle="Weekly overview of completed clinical visits">
+        <Chart type="line" data={consultationVolumeData} dataKey="count" color="#10b981" />
+      </Card>
+
     </div>
   );
 }
