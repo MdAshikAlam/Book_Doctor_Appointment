@@ -9,7 +9,7 @@ import {
   Phone, UserCheck, Stethoscope, Video, MessageSquare,
   AlertCircle, ChevronRight, Eye, Calendar,
   FileText, ShieldAlert, Plus, RefreshCw, X, Download,
-  Printer
+  Printer, History
 } from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
