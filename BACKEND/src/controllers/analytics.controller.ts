@@ -425,23 +425,27 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       const PatientModel = (await import('../models/Patient')).default;
 
       const [
-        waitingActive, waitingHistorical,
         todayPatientsActive, todayPatientsHistorical,
-        completedAptsActive, completedAptsHistorical,
-        followUpsActive, followUpsHistorical,
+        checkedInActive,
+        inConsultationActive,
+        completedActive, completedHistorical,
+        cancelledActive,
+        noShowActive,
         scheduleActive, historicalPatients
       ] = await Promise.all([
-        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
-        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'waiting' }),
-
         Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } }),
         PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } }),
 
-        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited'] } }),
-        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited'] } }),
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'checked_in' }),
 
-        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'follow_up' }),
-        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'follow_up' }),
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'in_consultation' }),
+
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited'] } }),
+        PatientModel.countDocuments({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: { $in: ['completed', 'visited', 'follow_up'] } }),
+
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'cancelled' }),
+
+        Appointment.countDocuments({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd }, status: 'patient_missed' }),
 
         Appointment.find({ doctor: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } })
           .populate('patient', 'name phone')
@@ -450,6 +454,9 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         PatientModel.find({ doctorId: doctorProfileId, date: { $gte: filterStart, $lte: filterEnd } })
           .sort('timeSlot')
       ]);
+
+      const totalPatients = todayPatientsActive + todayPatientsHistorical;
+      const completed = completedActive + completedHistorical;
 
       const mergedSchedule = [
         ...scheduleActive.map(apt => ({
@@ -470,10 +477,12 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
       resultData = {
         stats: [
-          { title: 'Waiting Patients', value: (waitingActive + waitingHistorical).toLocaleString(), icon: 'Clock', color: 'amber' },
-          { title: `${dateLabel} Patients`, value: (todayPatientsActive + todayPatientsHistorical).toLocaleString(), icon: 'Users', color: 'blue' },
-          { title: `${dateLabel} Completed`, value: (completedAptsActive + completedAptsHistorical).toLocaleString(), icon: 'CheckCircle2', color: 'green' },
-          { title: `${dateLabel} Follow-Ups`, value: (followUpsActive + followUpsHistorical).toLocaleString(), icon: 'CalendarCheck', color: 'indigo' },
+          { title: 'Total Patients Today', value: totalPatients.toLocaleString(), icon: 'Users', color: 'blue' },
+          { title: 'Ready for Consultation (Checked-In)', value: checkedInActive.toLocaleString(), icon: 'UserCheck', color: 'cyan' },
+          { title: 'Currently in Consultation', value: inConsultationActive.toLocaleString(), icon: 'Stethoscope', color: 'purple' },
+          { title: 'Consultations Completed', value: completed.toLocaleString(), icon: 'CheckCircle2', color: 'green' },
+          { title: 'Cancelled', value: cancelledActive.toLocaleString(), icon: 'XCircle', color: 'red' },
+          { title: 'No Show', value: noShowActive.toLocaleString(), icon: 'AlertCircle', color: 'orange' }
         ],
         appointmentChartData: chartData,
         schedule: mergedSchedule

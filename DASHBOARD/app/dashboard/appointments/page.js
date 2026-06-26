@@ -553,16 +553,7 @@ export default function AppointmentsPage() {
       </div>
       </div>
 
-      {user?.role === 'doctor' && filter === 'waiting' && filteredAppointments.length > 0 && (
-        <div className="mb-6">
-          <button
-            onClick={handleCallNextPatient}
-            className="w-full flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
-          >
-            <Play size={20} className="fill-white text-white" /> Call Next Patient from Queue
-          </button>
-        </div>
-      )}
+
 
       {/* Main List */}
       <div className="space-y-4">
@@ -838,7 +829,7 @@ export default function AppointmentsPage() {
                                           <>
                                             <MenuButton 
                                               icon={<CheckCircle2 size={18} />} 
-                                              label="Check" 
+                                              label="Check-In Patient" 
                                               color="text-cyan-600"
                                               onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
                                             />

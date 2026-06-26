@@ -163,7 +163,17 @@ export const getMyAppointments = async (userId: string, role: string, branchId?:
     filter.patient = userId;
   } else if (role === 'doctor') {
     const doctor = await Doctor.findOne({ user: userId });
-    if (doctor) filter.doctor = doctor._id;
+    if (doctor) {
+      filter.doctor = doctor._id;
+      filter.status = { 
+        $in: [
+          AppointmentStatus.CHECKED_IN, 
+          AppointmentStatus.IN_CONSULTATION, 
+          AppointmentStatus.COMPLETED, 
+          AppointmentStatus.FOLLOW_UP
+        ] 
+      };
+    }
   }
   
   // 1. Fetch current appointments

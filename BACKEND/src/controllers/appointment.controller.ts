@@ -136,6 +136,10 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response, nex
 
 export const callNextPatient = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const { role } = (req as any).user;
+    if (role === 'doctor') {
+      throw new AppError('Doctors are not authorized to manage the queue.', 403);
+    }
     const appointment = await appointmentService.callNextPatient(req.user!.id);
     res.status(200).json({
       status: 'success',
