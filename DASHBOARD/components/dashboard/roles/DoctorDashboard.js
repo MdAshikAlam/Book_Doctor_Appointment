@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Users, CalendarCheck, CheckCircle2, Clock, 
   Play, ClipboardList, Upload, CheckCircle, 
@@ -9,12 +10,23 @@ import {
   Phone, UserCheck, Stethoscope, Video, MessageSquare,
   AlertCircle, ChevronRight, Eye, Calendar, CalendarDays,
   FileText, ShieldAlert, Plus, RefreshCw, X, Download,
-  Building, Hospital, Briefcase, Sparkles, Printer
+  Building, Hospital, Briefcase, Sparkles, Printer, XCircle
 } from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Chart from '../Chart';
 import CalendarWidget from '../CalendarWidget';
+
+const iconMap = {
+  'Users': Users,
+  'UserCheck': UserCheck,
+  'Stethoscope': Stethoscope,
+  'CheckCircle2': CheckCircle2,
+  'XCircle': XCircle,
+  'AlertCircle': AlertCircle,
+  'Clock': Clock,
+  'CalendarCheck': CalendarCheck
+};
 
 // Initial Mock Patients list with rich metadata for queue workflow
 const initialPatients = [
@@ -157,11 +169,13 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
     setPrescriptionMedicines([]);
     setSelectedTemplate('');
   };
+  const statsList = data?.stats || [];
+  const activePatients = (data?.schedule || []).filter(p => ['checked_in', 'in_consultation'].includes(p.status));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* Top Header Actions with Environment Mode Switcher */}
+      {/* Top Header Actions */}
       <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
@@ -170,50 +184,30 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
           </div>
           <h2 className="text-2xl font-black text-slate-900 mt-1">Practice Control Desk</h2>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-            <button
-              onClick={() => setEnvironment('single')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${environment === 'single' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              <Briefcase size={14} /> Single Doctor
-            </button>
-            <button
-              onClick={() => setEnvironment('multi')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${environment === 'multi' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              <Building size={14} /> Multi-Doctor Clinic
-            </button>
-            <button
-              onClick={() => setEnvironment('hospital')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${environment === 'hospital' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              <Hospital size={14} /> Hospital
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 3. Top KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {getEnvironmentStats().map((stat, idx) => {
-          const Icon = stat.icon;
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {statsList.map((stat, idx) => {
+          const Icon = iconMap[stat.icon] || Users;
           const colorStyles = 
-            stat.color === 'amber' ? 'bg-amber-500/10 text-amber-600 border-amber-200/50' :
+            stat.color === 'blue' ? 'bg-blue-500/10 text-blue-600 border-blue-200/50' :
             stat.color === 'cyan' ? 'bg-cyan-500/10 text-cyan-600 border-cyan-200/50' :
             stat.color === 'purple' ? 'bg-purple-500/10 text-purple-600 border-purple-200/50' :
-            'bg-emerald-500/10 text-emerald-600 border-emerald-200/50';
+            stat.color === 'green' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50' :
+            stat.color === 'red' ? 'bg-rose-500/10 text-rose-600 border-rose-200/50' :
+            stat.color === 'orange' ? 'bg-amber-500/10 text-amber-600 border-amber-200/50' :
+            'bg-slate-500/10 text-slate-600 border-slate-200/50';
 
           return (
-            <div key={idx} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between group hover:-translate-y-1 transition-all duration-300">
-              <div className="space-y-2">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.title}</p>
-                <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+            <div key={idx} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col justify-between gap-4 group hover:-translate-y-1 transition-all duration-300">
+              <div className="flex items-center justify-between w-full">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">{stat.title}</p>
+                <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${colorStyles}`}>
+                  <Icon size={16} />
+                </div>
               </div>
-              <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${colorStyles}`}>
-                <Icon size={22} />
-              </div>
+              <p className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</p>
             </div>
           );
         })}
@@ -227,172 +221,54 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
           
           {/* Queue-Based Workflow Workstation */}
           <Card 
-            title="Real-Time Patient Visit Queue" 
-            subtitle="Manage patient transitions through clinic check-in stages"
+            title="Today's Checked-In Patients" 
+            subtitle="Patients currently ready or in consultation"
             action={
-              <div className="relative group">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Filter by name/token..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-150 rounded-xl text-xs font-semibold focus:bg-white transition-all outline-none"
-                />
-              </div>
+              <Link href="/dashboard/appointments">
+                <Button variant="outline" size="sm" className="h-9 px-4 text-xs font-black">
+                  Open Today's Patients
+                </Button>
+              </Link>
             }
           >
-            {/* Workflow Stage Buttons */}
-            <div className="flex gap-1.5 overflow-x-auto pb-4 no-scrollbar border-b border-slate-50">
-              {['all', 'waiting', 'checked_in', 'in_consultation', 'follow_up', 'completed'].map((stage) => (
-                <button
-                  key={stage}
-                  onClick={() => setActiveWorkflowStage(stage)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 whitespace-nowrap border ${
-                    activeWorkflowStage === stage 
-                      ? 'bg-primary border-primary text-white shadow-sm' 
-                      : 'bg-white border-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  {stage.replace('_', ' ')} ({stage === 'all' ? patients.length : patients.filter(p => p.status === stage).length})
-                </button>
-              ))}
-            </div>
-
             {/* Queue Cards list */}
-            <div className="space-y-4 pt-4 min-h-[400px]">
-              {filteredPatients.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
+            <div className="space-y-4 pt-4 min-h-[300px]">
+              {activePatients.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-350 mb-4">
                     <Users size={28} />
                   </div>
-                  <h4 className="text-sm font-bold text-slate-800">Queue is clear</h4>
-                  <p className="text-xs text-slate-400 mt-1 max-w-[240px]">No active patients match the selected stage filter.</p>
+                  <h4 className="text-sm font-bold text-slate-805">No active patients ready</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-[240px]">Waiting for reception to check in assigned patients.</p>
                 </div>
               ) : (
-                filteredPatients.map((patient) => (
+                activePatients.map((patient) => (
                   <div 
                     key={patient.id} 
-                    className="p-5 rounded-2xl border border-slate-200/60 hover:border-slate-350 hover:shadow-md transition-all duration-350 bg-white space-y-4 relative group"
+                    className="p-5 rounded-2xl border border-slate-200/60 hover:border-slate-350 hover:shadow-md transition-all duration-350 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
-                    
-                    {/* Token & Patient main info */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-white font-black text-xs uppercase tracking-wider">{patient.token}</span>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-950">{patient.name}</h4>
-                          <p className="text-[10px] font-medium text-slate-400">{patient.age} Yrs &bull; {patient.gender} &bull; {patient.phone}</p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm">
+                        {patient.timeSlot}
                       </div>
-
-                      {/* Right top Badge */}
-                      <div className="flex items-center gap-2 self-start sm:self-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                          patient.type === 'Telehealth' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-teal-50 text-teal-600 border-teal-150'
-                        }`}>
-                          {patient.type}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border uppercase ${
-                          patient.status === 'waiting' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                          patient.status === 'checked_in' ? 'bg-cyan-50 text-cyan-600 border-cyan-150' : 
-                          patient.status === 'in_consultation' ? 'bg-purple-50 text-purple-650 border-purple-150' : 
-                          patient.status === 'follow_up' ? 'bg-rose-50 text-rose-600 border-rose-150' : 
-                          'bg-emerald-50 text-emerald-600 border-emerald-150'
-                        }`}>
-                          {patient.status.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Visit description and wait details */}
-                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
                       <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Chief Complaint</span>
-                        <span className="font-semibold text-slate-700">{patient.reason}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Wait time</span>
-                        <span className="font-black text-slate-800 flex items-center justify-end gap-1">
-                          <Clock size={12} className="text-amber-500" /> {patient.waitTime}
-                        </span>
+                        <h4 className="text-sm font-bold text-slate-950">{patient.patientName}</h4>
+                        <p className="text-[10px] font-medium text-slate-450">{patient.type}</p>
                       </div>
                     </div>
-
-                    {/* Quick actions panel */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      
-                      <button
-                        onClick={() => setSelectedPatientForProfile(patient)}
-                        className="h-9 px-3 rounded-xl border border-slate-200 hover:border-slate-900 text-slate-700 hover:text-slate-900 font-bold text-xs transition-colors flex items-center gap-1.5"
-                        title="View Profile Timeline"
-                      >
-                        <Eye size={14} /> Profile
-                      </button>
-
-                      {patient.status === 'waiting' && (
-                        <button
-                          onClick={() => handleTransition(patient.id, 'checked_in')}
-                          className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                        >
-                          <UserCheck size={14} /> Check In
-                        </button>
-                      )}
-
-                      {patient.status === 'checked_in' && (
-                        <button
-                          onClick={() => handleTransition(patient.id, 'in_consultation')}
-                          className="h-9 px-3 rounded-xl bg-purple-650 hover:bg-purple-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                        >
-                          <Stethoscope size={14} /> Start Consultation
-                        </button>
-                      )}
-
-                      {patient.status === 'in_consultation' && (
-                        <>
-                          <button
-                            onClick={() => setPrescriptionWriterPatient(patient)}
-                            className="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                          >
-                            <FilePlus size={14} /> Write Prescription
-                          </button>
-                          <button
-                            onClick={() => handleTransition(patient.id, 'follow_up')}
-                            className="h-9 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                          >
-                            <Clock size={14} /> Follow-Up Required
-                          </button>
-                        </>
-                      )}
-
-                      {['in_consultation', 'follow_up'].includes(patient.status) && (
-                        <button
-                          onClick={() => handleTransition(patient.id, 'completed')}
-                          className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
-                        >
-                          <CheckCircle size={14} /> Complete Visit
-                        </button>
-                      )}
-
-                      {patient.status === 'completed' && (
-                        <span className="text-[10px] font-black uppercase text-emerald-600 flex items-center gap-1">
-                          <CheckCircle size={14} /> Care visit completed today
-                        </span>
-                      )}
-
-                      {['waiting', 'checked_in'].includes(patient.status) && (
-                        <button
-                          onClick={() => {
-                            const newDate = prompt("Enter new reschedule date (YYYY-MM-DD):", "2026-06-25");
-                            if (newDate) alert(`Patient rescheduled to ${newDate}`);
-                          }}
-                          className="h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 ml-auto"
-                        >
-                          <RefreshCw size={12} /> Reschedule
-                        </button>
-                      )}
+                    
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                        patient.status === 'in_consultation' ? 'bg-purple-50 text-purple-650 border-purple-150' : 'bg-cyan-50 text-cyan-600 border-cyan-150'
+                      }`}>
+                        {patient.status.replace('_', ' ')}
+                      </span>
+                      <Link href={`/dashboard/appointments?filter=${patient.status}`}>
+                        <Button className="h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs flex items-center gap-1">
+                          Open Console <ArrowRight size={14} />
+                        </Button>
+                      </Link>
                     </div>
-
                   </div>
                 ))
               )}
@@ -407,22 +283,22 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today's Patients</p>
-                <p className="text-xl font-black text-slate-800">{productivity.patientsToday}</p>
+                <p className="text-xl font-black text-slate-800">{(data?.stats?.[0]?.value) || '0'}</p>
                 <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5"><TrendingUp size={10} /> +8% vs. yesterday</span>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg Consultation Time</p>
-                <p className="text-xl font-black text-slate-800">{productivity.avgTime}</p>
+                <p className="text-xl font-black text-slate-800">12 min</p>
                 <span className="text-[10px] text-slate-400 font-medium">Optimal: 15 min</span>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Follow-Up Rate</p>
-                <p className="text-xl font-black text-slate-800">{productivity.followUpRate}</p>
+                <p className="text-xl font-black text-slate-800">15%</p>
                 <span className="text-[10px] text-indigo-600 font-bold">Consistent Care</span>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Revenue Today</p>
-                <p className="text-xl font-black text-slate-800">{productivity.revenue}</p>
+                <p className="text-xl font-black text-slate-800">₹1,200</p>
                 <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5"><TrendingUp size={10} /> +12% target</span>
               </div>
             </div>

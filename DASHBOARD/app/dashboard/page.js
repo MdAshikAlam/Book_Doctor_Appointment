@@ -130,12 +130,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (user?.role === 'doctor') {
-      router.push('/dashboard/queue');
-    }
-  }, [user, router]);
-
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
