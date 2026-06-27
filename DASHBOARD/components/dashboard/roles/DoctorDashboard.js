@@ -16,6 +16,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Chart from '../Chart';
 import CalendarWidget from '../CalendarWidget';
+import { appointmentsApi } from '@/lib/api';
 
 const iconMap = {
   'Users': Users,
@@ -169,8 +170,40 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
     setPrescriptionMedicines([]);
     setSelectedTemplate('');
   };
-  const statsList = data?.stats || [];
-  const activePatients = (data?.schedule || []).filter(p => ['checked_in', 'in_consultation'].includes(p.status));
+
+  const [allAppointments, setAllAppointments] = useState([]);
+  
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const res = await appointmentsApi.getMy();
+        setAllAppointments(res.data.appointments || []);
+      } catch (err) {
+        console.error("Failed to fetch all appointments for stats", err);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  const todayStr = new Date().toDateString();
+  const todayApts = allAppointments.filter(a => new Date(a.date).toDateString() === todayStr);
+
+  const statsList = [
+    { title: "Today's Appointments", value: todayApts.length, icon: 'Users', color: 'blue' },
+    { title: "Checked-In", value: todayApts.filter(a => a.status === 'checked_in').length, icon: 'UserCheck', color: 'cyan' },
+    { title: "In Consultation", value: todayApts.filter(a => a.status === 'in_consultation').length, icon: 'Stethoscope', color: 'purple' },
+    { title: "Completed Today", value: todayApts.filter(a => a.status === 'completed' || a.status === 'visited').length, icon: 'CheckCircle2', color: 'green' },
+    { title: "Upcoming Today", value: todayApts.filter(a => a.status === 'booked' || a.status === 'confirmed').length, icon: 'Clock', color: 'amber' },
+    { title: "Pending Follow-Ups", value: allAppointments.filter(a => a.status === 'follow_up').length, icon: 'CalendarCheck', color: 'indigo' }
+  ];
+
+  const activePatients = todayApts.filter(p => ['checked_in', 'in_consultation'].includes(p.status)).map(p => ({
+    id: p._id,
+    patientName: p.fullName || p.patient?.name || 'Unknown Patient',
+    timeSlot: p.slot,
+    type: p.appointmentType || 'Consultation',
+    status: p.status
+  }));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

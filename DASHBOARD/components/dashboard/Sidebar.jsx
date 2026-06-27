@@ -139,9 +139,7 @@ const doctorSections = [
     title: 'Practice Management',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: Users, label: "Today's Patients", href: '/dashboard/appointments', category: 'appointments' },
-      { icon: ClipboardList, label: 'Consultations', href: '/dashboard/consultations' },
-      { icon: FileCheck, label: 'Prescriptions', href: '/dashboard/prescriptions' },
+      { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', category: 'appointments' },
       { icon: CalendarCheck, label: 'Follow-Ups', href: '/dashboard/follow-ups' },
       { icon: Clock, label: 'Schedule', href: '/dashboard/schedule' },
       { icon: Flag, label: 'Reports', href: '/dashboard/reports' },

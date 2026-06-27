@@ -53,11 +53,17 @@ export default function AppointmentsPage() {
   const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState(searchParams.get('filter') || 'upcoming'); 
+  const [filter, setFilter] = useState('today'); 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingAppointment, setViewingAppointment] = useState(null);
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
+  
+  // Doctor workflow states
+  const [todaySubFilter, setTodaySubFilter] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [selectedAppType, setSelectedAppType] = useState('all');
+  const [scheduleFollowUp, setScheduleFollowUp] = useState(false);
 
   const tabsRef = React.useRef(null);
   const scroll = (direction) => {
@@ -123,10 +129,11 @@ export default function AppointmentsPage() {
     const role = user?.role || 'receptionist';
     if (role === 'doctor') {
       return [
-        { id: 'checked_in', label: 'Checked In' },
-        { id: 'in_consultation', label: 'In Consultation' },
-        { id: 'follow_up', label: 'Follow-Up Required' },
-        { id: 'completed', label: 'Completed' }
+        { id: 'today', label: 'Today' },
+        { id: 'upcoming', label: 'Upcoming' },
+        { id: 'completed', label: 'Completed' },
+        { id: 'patient_missed', label: 'Patient Missed' },
+        { id: 'cancelled', label: 'Cancelled' }
       ];
     } else if (role === 'admin') {
       return [
@@ -234,12 +241,21 @@ export default function AppointmentsPage() {
     try {
       const currentApp = appointments.find(a => a._id === id);
       const isTransitioning = currentApp && currentApp.status !== status;
-      await appointmentsApi.updateStatus(id, { status, ...extraData });
-      if (isTransitioning && (status === 'completed' || status === 'follow_up')) {
+      
+      // Merge current local state if complete transition is being called
+      let mergedData = { ...extraData };
+      if (status === 'in_consultation' && !currentApp.consultationStartedAt) {
+        mergedData.consultationStartedAt = new Date();
+      }
+
+      await appointmentsApi.updateStatus(id, { status, ...mergedData });
+      
+      if (user?.role !== 'doctor' && isTransitioning && (status === 'completed' || status === 'follow_up')) {
         router.push('/dashboard/patients');
       } else {
         fetchAppointments();
       }
+      
       // Close all modals
       setPrescriptionModal(null);
       setNotesModal(null);
@@ -300,6 +316,28 @@ export default function AppointmentsPage() {
       const appDate = new Date(app.date).toDateString();
       const today = new Date().toDateString();
       
+      if (user?.role === 'doctor') {
+        if (tabId === 'today') {
+          return appDate === today && status !== 'cancelled';
+        }
+        if (tabId === 'upcoming') {
+          const appDateTime = new Date(app.date);
+          const todayDateObj = new Date();
+          todayDateObj.setHours(0,0,0,0);
+          return appDateTime >= todayDateObj && appDate !== today && status !== 'cancelled' && status !== 'completed' && status !== 'visited';
+        }
+        if (tabId === 'completed') {
+          return status === 'completed' || status === 'visited' || status === 'follow_up';
+        }
+        if (tabId === 'patient_missed') {
+          return status === 'patient_missed';
+        }
+        if (tabId === 'cancelled') {
+          return status === 'cancelled';
+        }
+        return false;
+      }
+
       if (tabId === 'all') return true;
       if (tabId === 'today') return appDate === today;
       if (tabId === 'reports') return true;
@@ -309,46 +347,91 @@ export default function AppointmentsPage() {
 
   const filteredAppointments = appointments.filter(app => {
     const status = getEffectiveStatus(app);
-    
-    let matchesFilter = false;
     const appDate = new Date(app.date).toDateString();
     const today = new Date().toDateString();
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowString = tomorrow.toDateString();
 
-    if (filter === 'all') {
-      matchesFilter = true;
-    } else if (filter === 'today') {
-      matchesFilter = appDate === today;
-    } else if (filter === 'reports') {
-      matchesFilter = true;
+    let matchesFilter = false;
+
+    if (user?.role === 'doctor') {
+      if (filter === 'today') {
+        matchesFilter = (appDate === today) && (status !== 'cancelled');
+        if (matchesFilter) {
+          if (todaySubFilter === 'checked_in') {
+            matchesFilter = status === 'checked_in';
+          } else if (todaySubFilter === 'in_consultation') {
+            matchesFilter = status === 'in_consultation';
+          } else if (todaySubFilter === 'completed') {
+            matchesFilter = (status === 'completed' || status === 'visited' || status === 'follow_up');
+          }
+        }
+      } else if (filter === 'upcoming') {
+        const appDateTime = new Date(app.date);
+        const todayDateObj = new Date();
+        todayDateObj.setHours(0,0,0,0);
+        matchesFilter = (appDateTime >= todayDateObj && appDate !== today) && (status !== 'cancelled' && status !== 'completed' && status !== 'visited');
+      } else if (filter === 'completed') {
+        matchesFilter = (status === 'completed' || status === 'visited' || status === 'follow_up');
+      } else if (filter === 'patient_missed') {
+        matchesFilter = (status === 'patient_missed');
+      } else if (filter === 'cancelled') {
+        matchesFilter = (status === 'cancelled');
+      }
     } else {
-      matchesFilter = status === filter;
+      if (filter === 'all') {
+        matchesFilter = true;
+      } else if (filter === 'today') {
+        matchesFilter = appDate === today;
+      } else if (filter === 'reports') {
+        matchesFilter = true;
+      } else {
+        matchesFilter = status === filter;
+      }
     }
 
     // Quick Filters (Today, Tomorrow, This Week, Doctor, Department/Specialty, Status)
     let matchesQuickFilter = true;
-    if (quickFilter === 'today') {
-      matchesQuickFilter = appDate === today;
-    } else if (quickFilter === 'tomorrow') {
-      matchesQuickFilter = appDate === tomorrowString;
-    } else if (quickFilter === 'week') {
-      const dateVal = new Date(app.date);
-      const now = new Date();
-      const oneWeekFromNow = new Date();
-      oneWeekFromNow.setDate(now.getDate() + 7);
-      matchesQuickFilter = dateVal >= now && dateVal <= oneWeekFromNow;
-    }
+    if (user?.role !== 'doctor') {
+      if (quickFilter === 'today') {
+        matchesQuickFilter = appDate === today;
+      } else if (quickFilter === 'tomorrow') {
+        matchesQuickFilter = appDate === tomorrowString;
+      } else if (quickFilter === 'week') {
+        const dateVal = new Date(app.date);
+        const now = new Date();
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(now.getDate() + 7);
+        matchesQuickFilter = dateVal >= now && dateVal <= oneWeekFromNow;
+      }
 
-    if (selectedDoctor !== 'all' && app.doctor?._id !== selectedDoctor) {
-      matchesQuickFilter = false;
-    }
-    if (selectedSpecialty !== 'all' && app.doctor?.specialty?.toLowerCase() !== selectedSpecialty.toLowerCase()) {
-      matchesQuickFilter = false;
-    }
-    if (selectedStatus !== 'all' && status !== selectedStatus.toLowerCase()) {
-      matchesQuickFilter = false;
+      if (selectedDoctor !== 'all' && app.doctor?._id !== selectedDoctor) {
+        matchesQuickFilter = false;
+      }
+      if (selectedSpecialty !== 'all' && app.doctor?.specialty?.toLowerCase() !== selectedSpecialty.toLowerCase()) {
+        matchesQuickFilter = false;
+      }
+      if (selectedStatus !== 'all' && status !== selectedStatus.toLowerCase()) {
+        matchesQuickFilter = false;
+      }
+    } else {
+      // Doctor priority/type/status overrides
+      if (selectedStatus !== 'all' && status !== selectedStatus.toLowerCase()) {
+        matchesQuickFilter = false;
+      }
+      const isEmergency = app.reason?.toLowerCase().includes('emergency') || app.reason?.toLowerCase().includes('urgent') || app.priority === 'high' || app.isEmergency;
+      if (selectedPriority === 'emergency' && !isEmergency) {
+        matchesQuickFilter = false;
+      } else if (selectedPriority === 'normal' && isEmergency) {
+        matchesQuickFilter = false;
+      }
+      if (selectedAppType !== 'all') {
+        const type = app.appointmentType || 'Consultation';
+        if (type.toLowerCase() !== selectedAppType.toLowerCase()) {
+          matchesQuickFilter = false;
+        }
+      }
     }
 
     const matchesSearch = 
@@ -356,7 +439,9 @@ export default function AppointmentsPage() {
       app.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.phone?.includes(searchTerm) ||
       app._id?.toString().includes(searchTerm) ||
-      app.id?.toString().includes(searchTerm);
+      app.id?.toString().includes(searchTerm) ||
+      app.tokenNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (app.uhid && app.uhid.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesFilter && matchesQuickFilter && matchesSearch;
   });
@@ -392,6 +477,26 @@ export default function AppointmentsPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const getWaitingDuration = (app) => {
+    const since = app.waitingSince || app.checkedInAt || app.checkInTime || app.updatedAt;
+    if (!since) return '0 min';
+    const diffMs = new Date() - new Date(since);
+    const diffMins = Math.max(0, Math.floor(diffMs / 60000));
+    return `${diffMins} min`;
+  };
+
+  const getAge = (dob) => {
+    if (!dob) return 'N/A';
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Sticky Header & Controls Wrapper */}
@@ -401,159 +506,223 @@ export default function AppointmentsPage() {
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap">Clinical Operations</h1>
             <p className="text-slate-400 mt-1 font-bold text-xs uppercase tracking-[0.1em]">
-            {user?.role === 'doctor' ? 'Medical Consultation Desk' : user?.role === 'admin' ? 'Clinic Administration Desk' : 'Front Desk Queue'}
-          </p>
-        </div>
-        <div className="w-full xl:w-auto flex items-center gap-2 overflow-hidden">
-          <button 
-            onClick={() => scroll('left')}
-            className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
-            title="Scroll Left"
-          >
-            <ChevronLeft size={14} />
-          </button>
-
-          <div 
-            ref={tabsRef}
-            className="flex-1 bg-slate-100/50 p-1 rounded-xl flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilter(tab.id)}
-                className={cn(
-                  "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
-                  filter === tab.id 
-                    ? "bg-white text-slate-900 shadow-[0_4px_12px_rgba(0,0,0,0.08)] scale-[1.02]" 
-                    : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
-                )}
-              >
-                {tab.label} ({getTabCount(tab.id)})
-              </button>
-            ))}
+              {user?.role === 'doctor' ? 'Medical Consultation Desk' : user?.role === 'admin' ? 'Clinic Administration Desk' : 'Front Desk Queue'}
+            </p>
           </div>
-
-          <button 
-            onClick={() => scroll('right')}
-            className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
-            title="Scroll Right"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Stats */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-              <div className="relative flex-1 group">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search by patient name, mobile number, or appointment ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-11 pr-3 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
-                />
-              </div>
-              <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className={cn(
-                  "h-11 w-11 flex items-center justify-center rounded-2xl border transition-all",
-                  showFilters ? "bg-slate-900 border-slate-900 text-white" : "border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                )}
-                title="Filters"
-              >
-                <Filter size={18} />
-              </button>
-            </div>
-          </div>
-          <div className="bg-blue-600 rounded-2xl p-3 text-white flex items-center justify-between shadow-lg shadow-blue-100/50">
-            <div>
-              <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">Active Cases</p>
-              <p className="text-xl font-black">{filteredAppointments.length}</p>
-            </div>
-            <Activity size={24} className="text-blue-400 opacity-50" />
-          </div>
-        </div>
-
-        {/* Collapsible Filters Panel */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+          <div className="w-full xl:w-auto flex items-center gap-2 overflow-hidden">
+            <button 
+              onClick={() => scroll('left')}
+              className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+              title="Scroll Left"
             >
-              <div className="bg-white p-6 rounded-3xl border border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Date Range</label>
-                  <select 
-                    value={quickFilter} 
-                    onChange={(e) => setQuickFilter(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
-                  >
-                    <option value="all">All Dates</option>
-                    <option value="today">Today Only</option>
-                    <option value="tomorrow">Tomorrow Only</option>
-                    <option value="week">This Week</option>
-                  </select>
+              <ChevronLeft size={14} />
+            </button>
+
+            <div 
+              ref={tabsRef}
+              className="flex-1 bg-slate-100/50 p-1 rounded-xl flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={cn(
+                    "px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
+                    filter === tab.id 
+                      ? "bg-white text-slate-900 shadow-[0_4px_12px_rgba(0,0,0,0.08)] scale-[1.02]" 
+                      : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+                  )}
+                >
+                  {tab.label} ({getTabCount(tab.id)})
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => scroll('right')}
+              className="w-7 h-7 shrink-0 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+              title="Scroll Right"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Doctor Nested Sub-Filters for Today */}
+        {user?.role === 'doctor' && filter === 'today' && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            {['all', 'checked_in', 'completed'].map((sub) => {
+              const label = sub === 'all' ? 'All' : sub === 'checked_in' ? 'Checked-In' : 'Completed Today';
+              return (
+                <button
+                  key={sub}
+                  onClick={() => setTodaySubFilter(sub)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all",
+                    todaySubFilter === sub 
+                      ? "bg-blue-600 text-white shadow-sm" 
+                      : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Search & Stats */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3">
+              <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div className="relative flex-1 group">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by patient name, mobile, appointment ID, token or UHID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full h-11 pl-11 pr-3 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-medium text-sm"
+                  />
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Doctor</label>
-                  <select 
-                    value={selectedDoctor} 
-                    onChange={(e) => setSelectedDoctor(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
-                  >
-                    <option value="all">All Doctors</option>
-                    {uniqueDoctors.map(doc => (
-                      <option key={doc?._id} value={doc?._id}>Dr. {doc?.user?.name || 'Expert'}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Specialty</label>
-                  <select 
-                    value={selectedSpecialty} 
-                    onChange={(e) => setSelectedSpecialty(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
-                  >
-                    <option value="all">All Specialties</option>
-                    {uniqueSpecialties.map(spec => (
-                      <option key={spec} value={spec}>{spec}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Status Override</label>
-                  <select 
-                    value={selectedStatus} 
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
-                  >
-                    <option value="all">All Statuses</option>
-                    <option value="booked">Booked</option>
-                    <option value="checked_in">Checked In</option>
-                    <option value="waiting">Waiting</option>
-                    <option value="in_consultation">In Consultation</option>
-                    <option value="completed">Completed</option>
-                    <option value="follow_up">Follow Up</option>
-                    <option value="patient_missed">Patient Missed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    "h-11 w-11 flex items-center justify-center rounded-2xl border transition-all",
+                    showFilters ? "bg-slate-900 border-slate-900 text-white" : "border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                  )}
+                  title="Filters"
+                >
+                  <Filter size={18} />
+                </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      </div>
+            </div>
+            
+            {user?.role !== 'doctor' && (
+              <div className="bg-blue-600 rounded-2xl p-3 text-white flex items-center justify-between shadow-lg shadow-blue-100/50">
+                <div>
+                  <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">Active Cases</p>
+                  <p className="text-xl font-black">{filteredAppointments.length}</p>
+                </div>
+                <Activity size={24} className="text-blue-400 opacity-50" />
+              </div>
+            )}
+            
+            {user?.role === 'doctor' && (
+              <div className="bg-blue-600 rounded-2xl p-3 text-white flex items-center justify-between shadow-lg shadow-blue-100/50">
+                <div>
+                  <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">List Count</p>
+                  <p className="text-xl font-black">{filteredAppointments.length}</p>
+                </div>
+                <Activity size={24} className="text-blue-400 opacity-50" />
+              </div>
+            )}
+          </div>
 
-
+          {/* Collapsible Filters Panel */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {user?.role !== 'doctor' ? (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Date Range</label>
+                        <select 
+                          value={quickFilter} 
+                          onChange={(e) => setQuickFilter(e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                        >
+                          <option value="all">All Dates</option>
+                          <option value="today">Today Only</option>
+                          <option value="tomorrow">Tomorrow Only</option>
+                          <option value="week">This Week</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Doctor</label>
+                        <select 
+                          value={selectedDoctor} 
+                          onChange={(e) => setSelectedDoctor(e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                        >
+                          <option value="all">All Doctors</option>
+                          {uniqueDoctors.map(doc => (
+                            <option key={doc?._id} value={doc?._id}>Dr. {doc?.user?.name || 'Expert'}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Specialty</label>
+                        <select 
+                          value={selectedSpecialty} 
+                          onChange={(e) => setSelectedSpecialty(e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                        >
+                          <option value="all">All Specialties</option>
+                          {uniqueSpecialties.map(spec => (
+                            <option key={spec} value={spec}>{spec}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Priority</label>
+                        <select 
+                          value={selectedPriority} 
+                          onChange={(e) => setSelectedPriority(e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                        >
+                          <option value="all">All Priorities</option>
+                          <option value="emergency">Emergency / Urgent</option>
+                          <option value="normal">Normal</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Appointment Type</label>
+                        <select 
+                          value={selectedAppType} 
+                          onChange={(e) => setSelectedAppType(e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                        >
+                          <option value="all">All Types</option>
+                          <option value="In-Person">In-Person</option>
+                          <option value="Telehealth">Telehealth</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Status Override</label>
+                    <select 
+                      value={selectedStatus} 
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="w-full h-12 px-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 border-2 transition-all outline-none font-bold text-xs"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="booked">Booked</option>
+                      <option value="checked_in">Checked In</option>
+                      <option value="waiting">Waiting</option>
+                      <option value="completed">Completed</option>
+                      <option value="follow_up">Follow Up</option>
+                      <option value="patient_missed">Patient Missed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       {/* Main List */}
       <div className="space-y-4">
@@ -573,288 +742,351 @@ export default function AppointmentsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             <AnimatePresence mode='popLayout'>
-              {filteredAppointments.map((app) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  key={app._id}
-                  className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 group"
-                >
-                  <div className="p-0.5">
-                    <div className="flex flex-col lg:flex-row lg:items-stretch">
-                      {/* Date Block */}
-                      <div className="lg:w-20 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl bg-slate-50/50 flex flex-col items-center justify-center p-3 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors shrink-0">
-                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">{new Date(app.date).toLocaleDateString('en-US', { month: 'short' })}</p>
-                        <p className="text-xl font-extrabold text-slate-900 mt-0.5">{new Date(app.date).getDate()}</p>
-                        <div className="h-0.5 w-4 bg-blue-600 rounded-full mt-1" />
-                      </div>
+              {filteredAppointments.map((app) => {
+                const status = getEffectiveStatus(app);
+                const isEmergency = app.reason?.toLowerCase().includes('emergency') || app.reason?.toLowerCase().includes('urgent') || app.priority === 'high' || app.isEmergency;
+                
+                return (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    key={app._id}
+                    className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-500 group"
+                  >
+                    <div className="p-0.5">
+                      <div className="flex flex-col lg:flex-row lg:items-stretch">
+                        {/* Time & Token Block */}
+                        <div className="lg:w-28 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl bg-slate-50/50 flex flex-col items-center justify-center p-3 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors shrink-0">
+                          <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">{app.slot}</p>
+                          {isEmergency && (
+                            <span className="mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-black bg-red-100 text-red-700 animate-pulse uppercase tracking-wider">
+                              EMERGENCY
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Main Info Area */}
-                      <div className="flex-1 p-3 lg:p-4 flex flex-col md:flex-row md:items-center gap-4 lg:gap-6">
-                        {/* Time & Reason */}
-                        <div className="md:w-36 space-y-1 shrink-0">
-                          <div className="flex items-center gap-2 text-slate-900">
-                            <Clock size={14} className="text-blue-600" />
-                            <span className="text-sm font-extrabold tracking-tight">{app.slot}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-slate-200" />
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest truncate max-w-[140px]">{app.reason || 'General Checkup'}</p>
+                        {/* Main Patient Metadata Area */}
+                        <div className="flex-1 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-extrabold text-slate-900">{app.fullName || app.patient?.name}</h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 pt-1.5 text-xs text-slate-500 font-semibold">
+                              <div><span className="text-slate-400">Age/Gender:</span> {getAge(app.dob)} yrs / {app.gender}</div>
+                              <div><span className="text-slate-400">Phone:</span> {app.phone}</div>
+                              <div><span className="text-slate-400">Type:</span> {app.appointmentType || 'In-Person'}</div>
+                              <div><span className="text-slate-400">Doctor:</span> Dr. {app.doctor?.user?.name || 'Expert'}</div>
+                            </div>
+
+                            {app.reason && (
+                              <div className="mt-2 text-xs font-medium text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <span className="font-extrabold text-slate-700">Chief Complaint:</span> {app.reason}
+                              </div>
+                            )}
+
+                            {/* Check-In Details */}
+                            {['checked_in', 'in_consultation', 'completed'].includes(status) && (
+                              <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                <div>Check-in: {app.checkedInAt || app.checkInTime ? new Date(app.checkedInAt || app.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
+                                {status === 'checked_in' && (
+                                  <div className="text-cyan-600">Waiting: {getWaitingDuration(app)}</div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Participants */}
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all shrink-0">
-                              <User size={16} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Patient</p>
-                              <div className="flex items-center gap-2">
-                                <p className="text-xs font-bold text-slate-900 truncate">{app.fullName || app.patient?.name}</p>
+                        {/* Status & Actions Area */}
+                        <div className="lg:w-56 rounded-b-2xl lg:rounded-bl-none lg:rounded-r-2xl p-4 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-3 shrink-0">
+                          <div className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
+                            getStatusColor(status)
+                          )}>
+                            {status.replace('_', ' ')}
+                          </div>
+
+                          {/* Contextual Action Buttons */}
+                          <div className="flex flex-wrap items-center gap-1.5 justify-center mt-2 w-full">
+                            {user?.role === 'doctor' ? (
+                              <>
+                                <div className="flex items-center gap-1.5 justify-end w-full">
+                                  {status === 'checked_in' && (
+                                    <button
+                                      onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
+                                      className="flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
+                                    >
+                                      Start Consultation
+                                    </button>
+                                  )}
+
+                                  {status === 'in_consultation' && (
+                                    <button
+                                      onClick={() => {
+                                        setCompletingAppointment(app);
+                                        setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                      }}
+                                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
+                                    >
+                                      Complete Consultation
+                                    </button>
+                                  )}
+
+                                  <div className="relative">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenu(activeMenu === app._id ? null : app._id);
+                                      }}
+                                      className={cn(
+                                        "w-8 h-8 rounded-xl transition-all border flex items-center justify-center bg-white text-slate-400 border-slate-200 hover:bg-slate-50",
+                                        activeMenu === app._id ? "bg-slate-900 text-white border-slate-900 shadow-lg" : ""
+                                      )}
+                                    >
+                                      <MoreVertical size={15} />
+                                    </button>
+
+                                    <AnimatePresence>
+                                      {activeMenu === app._id && (
+                                        <>
+                                          <div 
+                                            className="fixed inset-0 z-10" 
+                                            onClick={() => setActiveMenu(null)}
+                                          />
+                                          <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden"
+                                          >
+                                            <div className="p-2">
+                                              {status === 'checked_in' && (
+                                                <MenuButton 
+                                                  icon={<Play size={18} />} 
+                                                  label="Start Consultation" 
+                                                  onClick={() => { handleStatusUpdate(app._id, 'in_consultation'); setActiveMenu(null); }} 
+                                                />
+                                              )}
+
+                                              {status === 'in_consultation' && (
+                                                <>
+                                                  <MenuButton 
+                                                    icon={<FileText size={18} />} 
+                                                    label={app.consultationNotes ? 'Continue Consultation' : 'Diagnosis / Notes'} 
+                                                    onClick={() => {
+                                                      setNotesModal(app);
+                                                      setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                                      setActiveMenu(null);
+                                                    }} 
+                                                  />
+                                                  <MenuButton 
+                                                    icon={<Pill size={18} />} 
+                                                    label="Prescription" 
+                                                    onClick={() => {
+                                                      setPrescriptionModal(app);
+                                                      setPrescriptionForm(app.prescriptions?.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+                                                      setActiveMenu(null);
+                                                    }} 
+                                                  />
+                                                  <MenuButton 
+                                                    icon={<CheckCircle2 size={18} />} 
+                                                    label="Complete Consultation" 
+                                                    color="text-emerald-650"
+                                                    onClick={() => {
+                                                      setCompletingAppointment(app);
+                                                      setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                                      setActiveMenu(null);
+                                                    }} 
+                                                  />
+                                                </>
+                                              )}
+
+                                              {(status === 'completed' || status === 'visited' || status === 'follow_up') && (
+                                                <>
+                                                  <MenuButton 
+                                                    icon={<Eye size={18} />} 
+                                                    label="View Summary" 
+                                                    onClick={() => { setViewingAppointment(app); setActiveMenu(null); }} 
+                                                  />
+                                                  <MenuButton 
+                                                    icon={<FileText size={18} />} 
+                                                    label="Print Prescription" 
+                                                    onClick={() => { alert("Simulating Print Prescription..."); setActiveMenu(null); }} 
+                                                  />
+                                                  <MenuButton 
+                                                    icon={<MessageSquare size={18} />} 
+                                                    label="Share Prescription" 
+                                                    onClick={() => { alert("Prescription Shared successfully via WhatsApp / SMS"); setActiveMenu(null); }} 
+                                                  />
+                                                  <MenuButton 
+                                                    icon={<CalendarCheck size={18} />} 
+                                                    label="Schedule Follow-Up" 
+                                                    color="text-blue-600"
+                                                    onClick={() => {
+                                                      setFollowUpModal(app);
+                                                      setFollowUpForm({ date: '', notes: '' });
+                                                      setActiveMenu(null);
+                                                    }} 
+                                                  />
+                                                </>
+                                              )}
+
+                                              {status === 'cancelled' && (
+                                                <MenuButton 
+                                                  icon={<Eye size={18} />} 
+                                                  label="View Details" 
+                                                  onClick={() => { setViewingAppointment(app); setActiveMenu(null); }} 
+                                                />
+                                              )}
+                                            </div>
+                                          </motion.div>
+                                        </>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              // Other roles default buttons
+                              <>
                                 <button 
                                   onClick={() => setViewingAppointment(app)}
-                                  className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm shrink-0"
-                                  title="View Patient Profile"
+                                  className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                                  title="Patient Profile"
                                 >
-                                  <Eye size={12} />
+                                  <Eye size={15} />
                                 </button>
-                              </div>
-                              {app.status === 'waiting' && app.queuePosition && (
-                                <div className="mt-1 flex flex-col gap-0.5 text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50/50 p-1.5 rounded-lg border border-orange-100/50">
-                                  <div>Queue Position: #{app.queuePosition}</div>
-                                  {app.waitingSince && <div>Waiting Since: {new Date(app.waitingSince).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
-                                  {app.estimatedWaitTime !== undefined && <div>Estimated Wait: {app.estimatedWaitTime} Minutes</div>}
+                                <div className="relative">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveMenu(activeMenu === app._id ? null : app._id);
+                                    }}
+                                    className={cn(
+                                      "w-8 h-8 rounded-xl transition-all border flex items-center justify-center",
+                                      activeMenu === app._id ? "bg-slate-900 text-white border-slate-900 shadow-lg" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
+                                    )}
+                                  >
+                                    <MoreVertical size={15} />
+                                  </button>
+
+                                  <AnimatePresence>
+                                    {activeMenu === app._id && (
+                                      <>
+                                        <div 
+                                          className="fixed inset-0 z-10" 
+                                          onClick={() => setActiveMenu(null)}
+                                        />
+                                        <motion.div
+                                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                          className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden"
+                                        >
+                                          <div className="p-2">
+                                            <MenuButton 
+                                              icon={<Eye size={18} />} 
+                                              label="View Patient Profile" 
+                                              onClick={() => { setViewingAppointment(app); setActiveMenu(null); }} 
+                                            />
+                                            {(user?.role === 'admin' || user?.role === 'receptionist') && (
+                                              <>
+                                                {['booked', 'checked_in', 'waiting'].includes(status) && (
+                                                  <MenuButton 
+                                                    icon={<Calendar size={18} />} 
+                                                    label="Reschedule Appointment" 
+                                                    onClick={() => {
+                                                      setReschedulingAppointment(app);
+                                                      setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
+                                                      setActiveMenu(null);
+                                                    }} 
+                                                  />
+                                                )}
+                                                {status === 'booked' && (
+                                                  <>
+                                                    <MenuButton 
+                                                      icon={<User size={18} />} 
+                                                      label="Check-In Patient" 
+                                                      color="text-cyan-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<CheckCircle2 size={18} />} 
+                                                      label="Move to Waiting Queue" 
+                                                      color="text-amber-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'waiting')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<XCircle size={18} />} 
+                                                      label="Mark Patient Missed" 
+                                                      color="text-orange-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<XCircle size={18} />} 
+                                                      label="Cancel Appointment" 
+                                                      color="text-red-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
+                                                    />
+                                                  </>
+                                                )}
+                                                {status === 'checked_in' && (
+                                                  <>
+                                                    <MenuButton 
+                                                      icon={<CheckCircle2 size={18} />} 
+                                                      label="Move to Waiting Queue" 
+                                                      color="text-cyan-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'waiting')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<XCircle size={18} />} 
+                                                      label="Mark Patient Missed" 
+                                                      color="text-orange-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<XCircle size={18} />} 
+                                                      label="Cancel Appointment" 
+                                                      color="text-red-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
+                                                    />
+                                                  </>
+                                                )}
+                                                {status === 'waiting' && (
+                                                  <>
+                                                    <MenuButton 
+                                                      icon={<CheckCircle2 size={18} />} 
+                                                      label="Check-In Patient" 
+                                                      color="text-cyan-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
+                                                    />
+                                                    <MenuButton 
+                                                      icon={<XCircle size={18} />} 
+                                                      label="Cancel Appointment" 
+                                                      color="text-red-600"
+                                                      onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
+                                                    />
+                                                  </>
+                                                )}
+                                              </>
+                                            )}
+                                          </div>
+                                        </motion.div>
+                                      </>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all shrink-0">
-                              <Stethoscope size={16} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{app.doctor?.specialty || 'Physician'}</p>
-                              <p className="text-xs font-bold text-slate-900 truncate">Dr. {app.doctor?.user?.name || 'Expert'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Status & Actions */}
-                      <div className="lg:w-48 rounded-b-2xl lg:rounded-bl-none lg:rounded-r-2xl p-3 lg:p-4 border-t lg:border-t-0 lg:border-l border-slate-100 bg-slate-50/30 flex items-center justify-between lg:flex-col lg:justify-center lg:gap-3 shrink-0">
-                        <div className={cn(
-                          "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all",
-                          getStatusColor(getEffectiveStatus(app))
-                        )}>
-                          {getEffectiveStatus(app).replace('_', ' ')}
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5">
-                          {user?.role === 'doctor' && app.status === 'checked_in' && (
-                            <button 
-                              onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
-                              className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all shadow-sm"
-                              title="Start Consultation"
-                            >
-                              <CheckCircle2 size={15} />
-                            </button>
-                          )}
-
-                          <button 
-                            onClick={() => setViewingAppointment(app)}
-                            className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
-                            title="Patient Profile"
-                          >
-                            <Eye size={15} />
-                          </button>
-
-                          <div className="relative">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenu(activeMenu === app._id ? null : app._id);
-                              }}
-                              className={cn(
-                                "w-8 h-8 rounded-xl transition-all border flex items-center justify-center",
-                                activeMenu === app._id ? "bg-slate-900 text-white border-slate-900 shadow-lg" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
-                              )}
-                            >
-                              <MoreVertical size={15} />
-                            </button>
-
-                          <AnimatePresence>
-                            {activeMenu === app._id && (
-                              <>
-                                <div 
-                                  className="fixed inset-0 z-10" 
-                                  onClick={() => setActiveMenu(null)}
-                                />
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden"
-                                >
-                                  <div className="p-2">
-                                    <MenuButton 
-                                      icon={<Eye size={18} />} 
-                                      label="View Patient Profile" 
-                                      onClick={() => { setViewingAppointment(app); setActiveMenu(null); }} 
-                                    />
-                                    
-                                    {user?.role === 'doctor' && (
-                                      <>
-                                        {app.status === 'checked_in' && (
-                                          <MenuButton 
-                                            icon={<Play size={18} />} 
-                                            label="Start Consultation" 
-                                            color="text-blue-600"
-                                            onClick={() => handleStatusUpdate(app._id, 'in_consultation')} 
-                                          />
-                                        )}
-                                        {canEditAppointmentDetails(app) && (
-                                           <>
-                                             <MenuButton 
-                                               icon={<ClipboardList size={18} />} 
-                                               label={app.consultationNotes ? "Edit Consultation Notes" : "Add Consultation Notes"} 
-                                               onClick={() => {
-                                                 setNotesModal(app);
-                                                 setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
-                                                 setActiveMenu(null);
-                                               }} 
-                                             />
-                                             <MenuButton 
-                                               icon={<Pill size={18} />} 
-                                               label={app.prescriptions && app.prescriptions.length > 0 ? "Edit Prescription" : "Create Prescription"} 
-                                               onClick={() => {
-                                                 setPrescriptionModal(app);
-                                                 setPrescriptionForm(app.prescriptions && app.prescriptions.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
-                                                 setActiveMenu(null);
-                                               }} 
-                                             />
-                                             <MenuButton 
-                                               icon={<FileUp size={18} />} 
-                                               label="Upload Report" 
-                                               onClick={() => { setReportModal(app); setActiveMenu(null); }} 
-                                             />
-                                             {app.status === 'in_consultation' && (
-                                               <>
-                                                 <MenuButton 
-                                                   icon={<Calendar size={18} />} 
-                                                   label="Mark Follow-up Required" 
-                                                   onClick={() => { setFollowUpModal(app); setActiveMenu(null); }} 
-                                                 />
-                                                 <div className="h-px bg-slate-50 my-2" />
-                                                 <MenuButton 
-                                                   icon={<CheckCircle2 size={18} />} 
-                                                   label="Complete Consultation" 
-                                                   color="text-emerald-600"
-                                                   onClick={() => { setCompletingAppointment(app); setActiveMenu(null); }} 
-                                                 />
-                                               </>
-                                             )}
-                                           </>
-                                         )}
-                                      </>
-                                    )}
-
-                                    {(user?.role === 'admin' || user?.role === 'receptionist') && (
-                                      <>
-                                        {['booked', 'checked_in', 'waiting'].includes(app.status) && (
-                                          <MenuButton 
-                                            icon={<Calendar size={18} />} 
-                                            label="Reschedule Appointment" 
-                                            onClick={() => {
-                                              setReschedulingAppointment(app);
-                                              setRescheduleData({ date: app.date.split('T')[0], slot: app.slot });
-                                              setActiveMenu(null);
-                                            }} 
-                                          />
-                                        )}
-                                        {app.status === 'booked' && (
-                                          <>
-                                            <MenuButton 
-                                              icon={<User size={18} />} 
-                                              label="Check-In Patient" 
-                                              color="text-cyan-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<CheckCircle2 size={18} />} 
-                                              label="Move to Waiting Queue" 
-                                              color="text-amber-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'waiting')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<XCircle size={18} />} 
-                                              label="Mark Patient Missed" 
-                                              color="text-orange-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<XCircle size={18} />} 
-                                              label="Cancel Appointment" 
-                                              color="text-red-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
-                                            />
-                                          </>
-                                        )}
-                                        {app.status === 'checked_in' && (
-                                          <>
-                                            <MenuButton 
-                                              icon={<CheckCircle2 size={18} />} 
-                                              label="Move to Waiting Queue" 
-                                              color="text-cyan-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'waiting')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<XCircle size={18} />} 
-                                              label="Mark Patient Missed" 
-                                              color="text-orange-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'patient_missed')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<XCircle size={18} />} 
-                                              label="Cancel Appointment" 
-                                              color="text-red-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
-                                            />
-                                          </>
-                                        )}
-                                        {app.status === 'waiting' && (
-                                          <>
-                                            <MenuButton 
-                                              icon={<CheckCircle2 size={18} />} 
-                                              label="Check-In Patient" 
-                                              color="text-cyan-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'checked_in')} 
-                                            />
-                                            <MenuButton 
-                                              icon={<XCircle size={18} />} 
-                                              label="Cancel Appointment" 
-                                              color="text-red-600"
-                                              onClick={() => handleStatusUpdate(app._id, 'cancelled')} 
-                                            />
-                                          </>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                </motion.div>
                               </>
                             )}
-                          </AnimatePresence>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}
@@ -1377,10 +1609,89 @@ export default function AppointmentsPage() {
                 You are marking this visit as completed. This will move the patient record to the history collection.
               </p>
             </div>
-            <NoteField label="Final Summary / Diagnosis" value={notesForm.diagnosis} onChange={(v) => setNotesForm({...notesForm, diagnosis: v})} placeholder="Enter final consultation diagnosis..." />
+            
+            <div className="space-y-4">
+              <NoteField 
+                label="Final Summary / Diagnosis (Required)" 
+                value={notesForm.diagnosis} 
+                onChange={(v) => setNotesForm({...notesForm, diagnosis: v})} 
+                placeholder="Enter final consultation diagnosis..." 
+              />
+
+              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={scheduleFollowUp} 
+                    onChange={(e) => setScheduleFollowUp(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                  />
+                  <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Schedule a Follow-Up Visit</span>
+                </label>
+
+                {scheduleFollowUp && (
+                  <div className="space-y-3 animate-in fade-in duration-300 pt-2">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Follow-up Date</label>
+                      <input 
+                        type="date" 
+                        value={followUpForm.date}
+                        onChange={(e) => setFollowUpForm({...followUpForm, date: e.target.value})}
+                        className="w-full h-10 px-3 rounded-xl bg-white border border-slate-200 focus:border-blue-600 transition-all outline-none font-semibold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Follow-up Instructions</label>
+                      <input 
+                        type="text" 
+                        value={followUpForm.notes}
+                        onChange={(e) => setFollowUpForm({...followUpForm, notes: e.target.value})}
+                        placeholder="e.g. Check blood sugar levels"
+                        className="w-full h-10 px-3 rounded-xl bg-white border border-slate-200 focus:border-blue-600 transition-all outline-none font-semibold text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="mt-8 flex gap-4">
-              <button onClick={() => setCompletingAppointment(null)} className="flex-1 h-14 rounded-2xl bg-slate-100 text-slate-600 font-black">Cancel</button>
-              <button onClick={() => handleStatusUpdate(completingAppointment._id, 'completed', { consultationNotes: notesForm })} className="flex-[2] h-14 rounded-2xl bg-emerald-600 text-white font-black shadow-lg shadow-emerald-200">Finalize & Complete</button>
+              <button 
+                onClick={() => {
+                  setCompletingAppointment(null);
+                  setScheduleFollowUp(false);
+                  setFollowUpForm({ date: '', notes: '' });
+                }} 
+                className="flex-1 h-14 rounded-2xl bg-slate-100 text-slate-600 font-black"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  if (!notesForm.diagnosis || !notesForm.diagnosis.trim()) {
+                    alert("Diagnosis is required to complete the consultation.");
+                    return;
+                  }
+                  
+                  const extraData = {
+                    consultationNotes: notesForm
+                  };
+
+                  if (scheduleFollowUp && followUpForm.date) {
+                    extraData.followUp = {
+                      date: followUpForm.date,
+                      notes: followUpForm.notes
+                    };
+                  }
+
+                  await handleStatusUpdate(completingAppointment._id, 'completed', extraData);
+                  setScheduleFollowUp(false);
+                  setFollowUpForm({ date: '', notes: '' });
+                }} 
+                className="flex-[2] h-14 rounded-2xl bg-emerald-600 text-white font-black shadow-lg shadow-emerald-200"
+              >
+                Finalize & Complete
+              </button>
             </div>
           </Modal>
         )}
