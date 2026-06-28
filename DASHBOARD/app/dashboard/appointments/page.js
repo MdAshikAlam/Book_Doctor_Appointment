@@ -59,6 +59,10 @@ export default function AppointmentsPage() {
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+  
   // Doctor workflow states
   const [todaySubFilter, setTodaySubFilter] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
@@ -225,6 +229,10 @@ export default function AppointmentsPage() {
       }
     }
   }, [appointments, searchParams]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm, quickFilter, selectedDoctor, selectedSpecialty, selectedStatus, todaySubFilter, selectedPriority, selectedAppType]);
 
   useEffect(() => {
     if (notesModal) {
@@ -455,6 +463,12 @@ export default function AppointmentsPage() {
 
     return matchesFilter && matchesQuickFilter && matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const paginatedAppointments = filteredAppointments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const canEditAppointmentDetails = (app) => {
     if (!app) return false;
@@ -752,7 +766,7 @@ export default function AppointmentsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             <AnimatePresence mode='popLayout'>
-              {filteredAppointments.map((app) => {
+              {paginatedAppointments.map((app) => {
                 const status = getEffectiveStatus(app);
                 const isEmergency = app.reason?.toLowerCase().includes('emergency') || app.reason?.toLowerCase().includes('urgent') || app.priority === 'high' || app.isEmergency;
                 
@@ -1098,6 +1112,91 @@ export default function AppointmentsPage() {
                 );
               })}
             </AnimatePresence>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-slate-200/60 shadow-sm mt-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-slate-700">
+                  Showing <span className="font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold">{Math.min(currentPage * itemsPerPage, filteredAppointments.length)}</span> of <span className="font-bold">{filteredAppointments.length}</span> entries
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeft size={16} />
+                  </button>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 2 && page <= currentPage + 2)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-semibold transition-all ${
+                            currentPage === page
+                              ? 'z-10 bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-100'
+                              : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 3 ||
+                      page === currentPage + 3
+                    ) {
+                      return (
+                        <span
+                          key={page}
+                          className="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-slate-50 text-sm font-medium text-slate-500 select-none"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
       </div>
