@@ -126,7 +126,7 @@ export default function PatientDetailsPage({ params }) {
       header: 'View', 
       accessor: 'actions',
       render: (row) => (
-        <Link href={`/dashboard/appointments/${row._id}`}>
+        <Link href={`/dashboard/appointments?id=${row._id}&filter=all`}>
           <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50">
             <ExternalLink size={14} />
           </Button>

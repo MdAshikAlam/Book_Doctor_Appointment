@@ -217,6 +217,16 @@ export default function AppointmentsPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    const appointmentId = searchParams?.get('id');
+    if (appointmentId && appointments.length > 0) {
+      const found = appointments.find(a => a._id === appointmentId);
+      if (found) {
+        setViewingAppointment(found);
+      }
+    }
+  }, [appointments, searchParams]);
+
+  useEffect(() => {
     if (notesModal) {
       setNotesForm({
         symptoms: notesModal.consultationNotes?.symptoms || '',
