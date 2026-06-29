@@ -1,8 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export enum ClinicType {
-  PRIVATE_CLINIC = 'Private Clinic',
-  GOVERNMENT_CLINIC = 'Government Clinic'
+  PRIVATE_CLINIC = 'Private Clinic'
 }
 
 export enum VerificationStatus {
