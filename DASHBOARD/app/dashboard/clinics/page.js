@@ -50,7 +50,7 @@ const getFullImageUrl = (path) => {
   return `${BACKEND_URL}${path}`;
 };
 
-const CLINIC_TYPES = ['Private Clinic', 'Government Clinic'];
+const CLINIC_TYPES = ['Private Clinic'];
 const CLINIC_SPECIALTIES = [
   'General Physician',
   'Cardiology',
