@@ -74,7 +74,8 @@ export interface IAppointment extends Document {
   gender: string;
   address: string;
   country: string;
-  city: string;
+  city?: string;
+  pincode?: string;
   visitedBefore: boolean;
   isMovedToPatients?: boolean;
   checkedInAt?: Date;
@@ -165,7 +166,8 @@ const appointmentSchema = new Schema<IAppointment>(
     gender: { type: String, required: true },
     address: { type: String, required: true },
     country: { type: String, required: true },
-    city: { type: String, required: true },
+    city: { type: String },
+    pincode: { type: String },
     visitedBefore: { type: Boolean, default: false },
     isMovedToPatients: { type: Boolean, default: false },
     checkedInAt: { type: Date },

@@ -26,7 +26,7 @@ interface DoctorSuggestion {
 }
 
 export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = {}) {
-  const { selectedState, selectedDistrict, selectedCity, setSelectedState, setSelectedDistrict, setSelectedCity, latitude, longitude, updateLocation } = useLocation();
+  const { selectedState, selectedDistrict, pincode, setSelectedState, setSelectedDistrict, setPincode, latitude, longitude, updateLocation } = useLocation();
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [states, setStates] = useState<string[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
@@ -50,8 +50,8 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
           });
           const data = await res.json();
           if (data.status === 'success') {
-            const { city, district, state } = data.data;
-            updateLocation(state, district, city, lat, lng);
+            const { pincode: resPincode, district, state } = data.data;
+            updateLocation(state, district, resPincode || '', lat, lng);
             setIsLocationOpen(false);
           } else {
             alert('Failed to resolve coordinates to address details.');
@@ -153,8 +153,9 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
         // Add geographical filters if available
         if (latitude && longitude) {
           url += `&lat=${latitude}&lng=${longitude}&radius=60`; // 60km radius
-        } else if (selectedDistrict) {
-          url += `&district=${encodeURIComponent(selectedDistrict)}`;
+        } else {
+          if (pincode) url += `&pincode=${encodeURIComponent(pincode)}`;
+          if (selectedDistrict) url += `&district=${encodeURIComponent(selectedDistrict)}`;
           if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
         }
 
@@ -174,7 +175,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
 
     const debounce = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounce);
-  }, [query, latitude, longitude, selectedDistrict, selectedState]);
+  }, [query, latitude, longitude, selectedDistrict, selectedState, pincode]);
 
   return (
     <div className={mobile ? "flex flex-col gap-3 w-full" : "hidden lg:flex items-center gap-2"}>
@@ -190,7 +191,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
           <div className="text-left">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-none mb-1">Your Location</p>
             <p className="text-sm font-extrabold text-gray-900 leading-none truncate max-w-[120px]">
-              {selectedCity ? (selectedState ? `${selectedCity}, ${selectedState}` : selectedCity) : (selectedDistrict || selectedState || 'Select District')}
+              {pincode ? (selectedState ? `${pincode}, ${selectedState}` : pincode) : (selectedDistrict || selectedState || 'Select District')}
             </p>
           </div>
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
@@ -246,24 +247,26 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-400 uppercase">City</label>
+                <label className="text-[11px] font-bold text-gray-400 uppercase">Pincode</label>
                 <div className="relative">
-                  <select 
-                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
-                    value={selectedCity}
+                  <input 
+                    type="text"
+                    maxLength={6}
+                    placeholder="Enter 6-digit Pincode"
+                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                    value={pincode}
                     onChange={(e) => {
-                      setSelectedCity(e.target.value);
-                      setIsLocationOpen(false);
+                      const val = e.target.value.replace(/\D/g, '');
+                      setPincode(val);
+                      if (val.length === 6) {
+                        setIsLocationOpen(false);
+                      }
                     }}
-                    disabled={!selectedDistrict || isLoadingLocations}
-                  >
-                    <option value="">Choose City</option>
-                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  />
                 </div>
               </div>
 
-              {!selectedCity && (
+              {!pincode && (
                 <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
                   <Navigation size={18} />
                   <p className="text-xs font-bold leading-tight">

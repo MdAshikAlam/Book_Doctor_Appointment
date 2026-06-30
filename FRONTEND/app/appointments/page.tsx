@@ -49,7 +49,7 @@ function AppointmentsForm() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [formData, setFormData] = useState({
     department: "Pediatrics",
-    city: "",
+    pincode: "",
     country: "",
     doctor: "",
     appointmentDate: "",
@@ -171,7 +171,7 @@ function AppointmentsForm() {
               ...prev, 
               doctor: doc._id,
               department: doc.specialty || prev.department,
-              city: detectedCity || prev.city,
+              pincode: doc.clinic?.pincode || doc.pincode || prev.pincode || "",
               country: detectedCountry || prev.country,
               address: doc.address || prev.address,
               appointmentDate: queryDate || prev.appointmentDate,
@@ -256,7 +256,7 @@ function AppointmentsForm() {
         setShowSuccessModal(true);
         setFormData({
           department: "Pediatrics",
-          city: "",
+          pincode: "",
           country: "",
           doctor: "",
           appointmentDate: "",
@@ -290,7 +290,7 @@ function AppointmentsForm() {
 
   const isFormValid = 
     formData.department &&
-    formData.city &&
+    formData.pincode &&
     formData.country &&
     formData.doctor &&
     formData.appointmentDate &&
@@ -343,11 +343,11 @@ function AppointmentsForm() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="city" className="text-xs font-black text-slate-400 uppercase tracking-widest">Clinic City <span className="text-rose-500">*</span></label>
+                  <label htmlFor="pincode" className="text-xs font-black text-slate-400 uppercase tracking-widest">Clinic Pincode <span className="text-rose-500">*</span></label>
                   <input 
-                    id="city" 
-                    name="city" 
-                    value={formData.city} 
+                    id="pincode" 
+                    name="pincode" 
+                    value={formData.pincode} 
                     onChange={handleChange} 
                     required 
                     readOnly={!!doctorInfo}

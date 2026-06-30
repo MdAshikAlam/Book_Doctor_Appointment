@@ -5,14 +5,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface LocationContextType {
   selectedState: string;
   selectedDistrict: string;
-  selectedCity: string;
+  pincode: string;
   latitude: number | null;
   longitude: number | null;
   setSelectedState: (state: string) => void;
   setSelectedDistrict: (district: string) => void;
-  setSelectedCity: (city: string) => void;
+  setPincode: (pincode: string) => void;
   setCoordinates: (lat: number | null, lng: number | null) => void;
-  updateLocation: (state: string, district: string, city: string, lat: number | null, lng: number | null) => void;
+  updateLocation: (state: string, district: string, pincode: string, lat: number | null, lng: number | null) => void;
   clearLocation: () => void;
 }
 
@@ -23,7 +23,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [pincode, setPincode] = useState<string>('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
 
@@ -31,15 +31,15 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Initialize from localStorage on client-side
     const storedState = localStorage.getItem('userState');
     const storedDistrict = localStorage.getItem('userDistrict');
-    const storedCity = localStorage.getItem('userCity');
+    const storedPincode = localStorage.getItem('userPincode');
     const storedLat = localStorage.getItem('userLat');
     const storedLng = localStorage.getItem('userLng');
     
-    console.log('[LocationContext] Init from localStorage:', { storedState, storedDistrict, storedCity, storedLat, storedLng });
+    console.log('[LocationContext] Init from localStorage:', { storedState, storedDistrict, storedPincode, storedLat, storedLng });
 
     if (storedState) setSelectedState(storedState);
     if (storedDistrict) setSelectedDistrict(storedDistrict);
-    if (storedCity) setSelectedCity(storedCity);
+    if (storedPincode) setPincode(storedPincode);
     if (storedLat) setLatitude(parseFloat(storedLat));
     if (storedLng) setLongitude(parseFloat(storedLng));
   }, []);
@@ -48,12 +48,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     console.log('[LocationContext] handleSetState called with:', state);
     setSelectedState(state);
     setSelectedDistrict(''); 
-    setSelectedCity('');
+    setPincode('');
     setLatitude(null);
     setLongitude(null);
     localStorage.removeItem('userLat');
     localStorage.removeItem('userLng');
-    localStorage.removeItem('userCity');
+    localStorage.removeItem('userPincode');
     if (state) {
       localStorage.setItem('userState', state);
       localStorage.removeItem('userDistrict');
@@ -68,24 +68,18 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedDistrict(district);
     if (district) {
       localStorage.setItem('userDistrict', district);
-      // Default city to district if not set
-      if (!selectedCity) {
-        console.log('[LocationContext] selectedCity is empty, defaulting city to district:', district);
-        setSelectedCity(district);
-        localStorage.setItem('userCity', district);
-      }
     } else {
       localStorage.removeItem('userDistrict');
     }
   };
 
-  const handleSetCity = (city: string) => {
-    console.log('[LocationContext] handleSetCity called with:', city);
-    setSelectedCity(city);
-    if (city) {
-      localStorage.setItem('userCity', city);
+  const handleSetPincode = (pin: string) => {
+    console.log('[LocationContext] handleSetPincode called with:', pin);
+    setPincode(pin);
+    if (pin) {
+      localStorage.setItem('userPincode', pin);
     } else {
-      localStorage.removeItem('userCity');
+      localStorage.removeItem('userPincode');
     }
   };
 
@@ -102,16 +96,16 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const updateLocation = (state: string, district: string, city: string, lat: number | null, lng: number | null) => {
-    console.log('[LocationContext] updateLocation called with:', { state, district, city, lat, lng });
+  const updateLocation = (state: string, district: string, pin: string, lat: number | null, lng: number | null) => {
+    console.log('[LocationContext] updateLocation called with:', { state, district, pin, lat, lng });
     setSelectedState(state);
     setSelectedDistrict(district);
-    setSelectedCity(city);
+    setPincode(pin);
     setLatitude(lat);
     setLongitude(lng);
     if (state) localStorage.setItem('userState', state);
     if (district) localStorage.setItem('userDistrict', district);
-    if (city) localStorage.setItem('userCity', city);
+    if (pin) localStorage.setItem('userPincode', pin);
     if (lat !== null && lng !== null) {
       localStorage.setItem('userLat', lat.toString());
       localStorage.setItem('userLng', lng.toString());
@@ -121,12 +115,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const clearLocation = () => {
     setSelectedState('');
     setSelectedDistrict('');
-    setSelectedCity('');
+    setPincode('');
     setLatitude(null);
     setLongitude(null);
     localStorage.removeItem('userState');
     localStorage.removeItem('userDistrict');
-    localStorage.removeItem('userCity');
+    localStorage.removeItem('userPincode');
     localStorage.removeItem('userLat');
     localStorage.removeItem('userLng');
   };
@@ -136,12 +130,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         selectedState,
         selectedDistrict,
-        selectedCity,
+        pincode,
         latitude,
         longitude,
         setSelectedState: handleSetState,
         setSelectedDistrict: handleSetDistrict,
-        setSelectedCity: handleSetCity,
+        setPincode: handleSetPincode,
         setCoordinates,
         updateLocation,
         clearLocation,

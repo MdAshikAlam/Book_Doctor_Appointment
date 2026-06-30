@@ -98,7 +98,6 @@ const adminSections = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', category: 'appointments' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
     ]
   },
   {
@@ -120,7 +119,6 @@ const receptionistSections = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: CalendarCheck, label: 'Appointments', href: '/dashboard/appointments', category: 'appointments' },
-      { icon: History, label: 'Patient History', href: '/dashboard/patients', category: 'patients' },
     ]
   },
   {

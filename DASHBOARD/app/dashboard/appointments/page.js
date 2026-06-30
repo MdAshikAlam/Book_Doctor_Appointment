@@ -145,8 +145,7 @@ export default function AppointmentsPage() {
         { id: 'today', label: 'Today' },
         { id: 'completed', label: 'Completed' },
         { id: 'cancelled', label: 'Cancelled' },
-        { id: 'patient_missed', label: 'Patient Missed' },
-        { id: 'reports', label: 'Reports' }
+        { id: 'patient_missed', label: 'Patient Missed' }
       ];
     } else {
       return [
@@ -781,21 +780,16 @@ export default function AppointmentsPage() {
                   >
                     <div className="p-0.5">
                       <div className="flex flex-col lg:flex-row lg:items-stretch">
-                        {/* Time & Token Block */}
-                        <div className="lg:w-28 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl bg-slate-50/50 flex flex-col items-center justify-center p-3 border-b lg:border-b-0 lg:border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors shrink-0">
-                          <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">{app.slot}</p>
-                          {isEmergency && (
-                            <span className="mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-black bg-red-100 text-red-700 animate-pulse uppercase tracking-wider">
-                              EMERGENCY
-                            </span>
-                          )}
-                        </div>
-
                         {/* Main Patient Metadata Area */}
                         <div className="flex-1 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 lg:gap-6">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <h3 className="text-base font-extrabold text-slate-900">{app.fullName || app.patient?.name}</h3>
+                              {isEmergency && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-red-100 text-red-700 animate-pulse uppercase tracking-wider">
+                                  EMERGENCY
+                                </span>
+                              )}
                             </div>
                             
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 pt-1.5 text-xs text-slate-500 font-semibold">

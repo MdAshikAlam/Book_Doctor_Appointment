@@ -199,12 +199,12 @@ export default function ClinicsPage() {
           });
           const data = await res.json();
           if (data.status === 'success') {
-            const { city, district, state } = data.data;
+            const { pincode, district, state } = data.data;
             setFormData(prev => ({
               ...prev,
               state,
               district,
-              city
+              pincode: pincode || prev.pincode
             }));
           } else {
             alert('Failed to resolve coordinates to location details.');
@@ -465,7 +465,7 @@ export default function ClinicsPage() {
   const filteredClinics = clinics.filter(c => 
     c.clinicName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.address && c.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (c.city && c.city.toLowerCase().includes(searchTerm.toLowerCase()))
+    (c.pincode && c.pincode.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getDoctorsInClinic = (clinicId) => {
@@ -685,7 +685,7 @@ export default function ClinicsPage() {
           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
           <input 
             type="text" 
-            placeholder="Search clinics by name, city or address..."
+            placeholder="Search clinics by name, pincode or address..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full h-14 pl-14 pr-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-sm"
@@ -769,7 +769,7 @@ export default function ClinicsPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
-                          <MapPin size={14} /> {clinic.city}, {clinic.state}
+                          <MapPin size={14} /> {clinic.state} - {clinic.pincode}
                         </div>
                       </div>
                     </div>
@@ -1249,30 +1249,11 @@ export default function ClinicsPage() {
                           <select
                             name="district"
                             value={formData.district}
-                            onChange={(e) => {
-                              handleInputChange(e);
-                              if (!formData.city || formData.city === formData.district) {
-                                setFormData(prev => ({ ...prev, city: e.target.value }));
-                              }
-                            }}
-                            disabled={!formData.state}
-                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm disabled:opacity-50"
-                          >
-                            <option value="">Choose District</option>
-                            {districtsList.map(d => <option key={d} value={d}>{d}</option>)}
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">City *</label>
-                          <select
-                            name="city"
-                            value={formData.city}
                             onChange={handleInputChange}
                             disabled={!formData.state}
                             className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 outline-none font-bold text-sm disabled:opacity-50"
                           >
-                            <option value="">Choose City</option>
+                            <option value="">Choose District</option>
                             {districtsList.map(d => <option key={d} value={d}>{d}</option>)}
                           </select>
                         </div>
@@ -1377,7 +1358,7 @@ export default function ClinicsPage() {
                         )}
                         <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</span>
-                          <span className="text-xs font-black text-slate-800 truncate max-w-sm">{formData.address}, {formData.city}, {formData.state} - {formData.pincode}</span>
+                          <span className="text-xs font-black text-slate-800 truncate max-w-sm">{formData.address}, {formData.state} - {formData.pincode}</span>
                         </div>
                         <div className="flex justify-between items-center py-2.5 border-b border-slate-200/65">
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reg Number</span>
