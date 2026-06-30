@@ -19,7 +19,8 @@ const appointmentSchema = z.object({
   gender: z.string(),
   address: z.string(),
   country: z.string(),
-  city: z.string(),
+  city: z.string().optional(),
+  pincode: z.string().optional(),
   visitedBefore: z.boolean().optional().default(false),
 });
 

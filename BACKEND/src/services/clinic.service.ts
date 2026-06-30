@@ -2,7 +2,7 @@ import Clinic, { IClinic } from '../models/Clinic';
 import { AppError } from '../middlewares/error';
 
 export const getAllClinics = async (query: any, creatorId?: string) => {
-  const { lat, lng, radius = 5, clinicName, name, district, state, clinicType, specialty } = query;
+  const { lat, lng, radius = 5, clinicName, name, district, state, clinicType, specialty, pincode } = query;
   const filter: any = {};
 
   // Status Filtering
@@ -39,6 +39,9 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
   }
   if (state && !lat && !lng) {
     filter.state = { $regex: state, $options: 'i' };
+  }
+  if (pincode) {
+    filter.pincode = pincode;
   }
 
   if (lat && lng && !query.isDashboard) {

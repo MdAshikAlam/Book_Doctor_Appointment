@@ -263,6 +263,7 @@ export default function MyAppointmentsPage() {
     return status === 'completed' || status === 'visited';
   }).length;
   const cancelledCount = appointments.filter(a => getEffectiveStatus(a) === 'cancelled').length;
+  const missedCount = appointments.filter(a => getEffectiveStatus(a) === 'missed').length;
 
   const uniqueClinics = new Set(appointments.map(a => a.clinic?._id || a.clinic?.name || (a.doctor?._id ? `clinic_${a.doctor._id}` : 'Default Clinic')).filter(Boolean));
   const uniqueDoctors = new Set(appointments.map(a => a.doctor?._id || a.doctor?.user?.name).filter(Boolean));
@@ -366,7 +367,7 @@ export default function MyAppointmentsPage() {
           <div className="space-y-12">
 
             {/* SECTION 2: APPOINTMENT SUMMARY - metric cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">📅 Upcoming</p>
                 <h4 className="text-2xl font-black text-slate-900">{upcomingCount}</h4>
@@ -380,10 +381,14 @@ export default function MyAppointmentsPage() {
                 <h4 className="text-2xl font-black text-slate-900">{cancelledCount}</h4>
               </div>
               <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">⏰ Missed</p>
+                <h4 className="text-2xl font-black text-slate-900">{missedCount}</h4>
+              </div>
+              <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">🏥 Clinics Visited</p>
                 <h4 className="text-2xl font-black text-slate-900">{uniqueClinics.size}</h4>
               </div>
-              <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between col-span-2 md:col-span-1">
+              <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">👨‍⚕️ Doctors Consulted</p>
                 <h4 className="text-2xl font-black text-slate-900">{uniqueDoctors.size}</h4>
               </div>

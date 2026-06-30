@@ -102,7 +102,7 @@ const clinicSchema = z.object({
   // Location
   address: z.string().min(1, { message: "Detailed address is required" }),
   addressLine2: z.string().optional(),
-  city: z.string().min(1, { message: "City is required" }),
+  city: z.string().optional(),
   state: z.string().min(1, { message: "State is required" }),
   pincode: z.string().min(1, { message: "Pincode is required" }),
   country: z.string().default('India'),
@@ -151,7 +151,7 @@ export const createClinic = async (req: AuthRequest, res: Response, next: NextFu
       try {
         const geo = await geocodeAddress(
           validatedData.address,
-          validatedData.city,
+          validatedData.city || '',
           validatedData.state,
           validatedData.pincode
         );
@@ -231,7 +231,7 @@ export const updateClinic = async (req: AuthRequest, res: Response, next: NextFu
         if (existingClinic) {
           const geo = await geocodeAddress(
             validatedData.address || existingClinic.address,
-            validatedData.city || existingClinic.city,
+            validatedData.city || existingClinic.city || "",
             validatedData.state || existingClinic.state,
             validatedData.pincode || existingClinic.pincode
           );

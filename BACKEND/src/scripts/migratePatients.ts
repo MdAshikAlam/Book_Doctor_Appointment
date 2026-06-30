@@ -41,7 +41,7 @@ const migrate = async () => {
           date: app.date,
           timeSlot: app.slot,
           reason: app.reason,
-          location: `${app.city}, ${app.country}`,
+          location: `${app.city || ''}, ${app.country}`,
           status: 'visited',
           patientId: app.patient,
           doctorId: app.doctor,
@@ -49,7 +49,7 @@ const migrate = async () => {
           dob: app.dob,
           gender: app.gender,
           address: app.address,
-          city: app.city,
+          city: app.city || "",
           country: app.country
         });
 

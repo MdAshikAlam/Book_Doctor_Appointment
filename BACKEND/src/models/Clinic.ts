@@ -26,7 +26,7 @@ export interface IClinic extends Document {
   // Location
   address: string;
   addressLine2?: string;
-  city: string;
+  city?: string;
   state: string;
   pincode: string;
   country: string;
@@ -98,7 +98,7 @@ const clinicSchema = new Schema<IClinic>(
     // Location
     address: { type: String, required: true },
     addressLine2: { type: String },
-    city: { type: String, required: true },
+    city: { type: String },
     state: { type: String, required: true },
     pincode: { type: String, required: true },
     country: { type: String, required: true, default: 'India' },
@@ -154,7 +154,7 @@ const clinicSchema = new Schema<IClinic>(
   { timestamps: true }
 );
 
-clinicSchema.index({ clinicName: 1, city: 1 }, { unique: true });
+clinicSchema.index({ clinicName: 1, pincode: 1 }, { unique: true });
 clinicSchema.index({ location: '2dsphere' });
 
 clinicSchema.pre('save', function() {

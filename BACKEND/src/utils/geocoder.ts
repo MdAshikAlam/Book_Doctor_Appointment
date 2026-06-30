@@ -100,7 +100,7 @@ const normalizeState = (state: string): string => {
 export const reverseGeocode = async (
   lat: number,
   lng: number
-): Promise<{ city: string; district: string; state: string }> => {
+): Promise<{ city: string; district: string; state: string; pincode?: string }> => {
   const apiKey = process.env.OPENCAGE_API_KEY;
   
   if (!apiKey) {
@@ -118,6 +118,7 @@ export const reverseGeocode = async (
       let state = normalizeState(rawState);
       let district = components.state_district || components.county || components.district || '';
       let city = components.city || components.town || components.suburb || components.village || '';
+      const pincode = components.postcode || '';
       
       // Fallback: If state or district is missing from the geocoder API, look it up using city/suburb in our database
       if (!state || !district) {
@@ -132,7 +133,7 @@ export const reverseGeocode = async (
       if (!city && district) city = district;
       if (city && !district) district = city;
 
-      return { city, district, state };
+      return { city, district, state, pincode };
     } else {
       throw new AppError(`Could not find address for coordinates: ${lat}, ${lng}`, 400);
     }
