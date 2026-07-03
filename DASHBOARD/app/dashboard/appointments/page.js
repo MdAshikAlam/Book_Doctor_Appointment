@@ -833,15 +833,6 @@ export default function AppointmentsPage() {
                                 <div className="flex items-center gap-1.5 justify-end w-full">
                                   {status === 'checked_in' && (
                                     <button
-                                      onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
-                                      className="flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
-                                    >
-                                      Start Consultation
-                                    </button>
-                                  )}
-
-                                  {status === 'in_consultation' && (
-                                    <button
                                       onClick={() => {
                                         setCompletingAppointment(app);
                                         setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
@@ -880,45 +871,37 @@ export default function AppointmentsPage() {
                                             className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden"
                                           >
                                             <div className="p-2">
-                                              {status === 'checked_in' && (
-                                                <MenuButton 
-                                                  icon={<Play size={18} />} 
-                                                  label="Start Consultation" 
-                                                  onClick={() => { handleStatusUpdate(app._id, 'in_consultation'); setActiveMenu(null); }} 
-                                                />
-                                              )}
-
-                                              {status === 'in_consultation' && (
-                                                <>
-                                                  <MenuButton 
-                                                    icon={<FileText size={18} />} 
-                                                    label={app.consultationNotes ? 'Continue Consultation' : 'Diagnosis / Notes'} 
-                                                    onClick={() => {
-                                                      setNotesModal(app);
-                                                      setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
-                                                      setActiveMenu(null);
-                                                    }} 
-                                                  />
-                                                  <MenuButton 
-                                                    icon={<Pill size={18} />} 
-                                                    label="Prescription" 
-                                                    onClick={() => {
-                                                      setPrescriptionModal(app);
-                                                      setPrescriptionForm(app.prescriptions?.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
-                                                      setActiveMenu(null);
-                                                    }} 
-                                                  />
-                                                  <MenuButton 
-                                                    icon={<CheckCircle2 size={18} />} 
-                                                    label="Complete Consultation" 
-                                                    color="text-emerald-650"
-                                                    onClick={() => {
-                                                      setCompletingAppointment(app);
-                                                      setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
-                                                      setActiveMenu(null);
-                                                    }} 
-                                                  />
-                                                </>
+                                              {['checked_in', 'in_consultation'].includes(status) && (
+                                                 <>
+                                                   <MenuButton 
+                                                     icon={<FileText size={18} />} 
+                                                     label={app.consultationNotes ? 'Consultation Notes' : 'Diagnosis / Notes'} 
+                                                     onClick={() => {
+                                                       setNotesModal(app);
+                                                       setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                                       setActiveMenu(null);
+                                                     }} 
+                                                   />
+                                                   <MenuButton 
+                                                     icon={<Pill size={18} />} 
+                                                     label="Prescription" 
+                                                     onClick={() => {
+                                                       setPrescriptionModal(app);
+                                                       setPrescriptionForm(app.prescriptions?.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+                                                       setActiveMenu(null);
+                                                     }} 
+                                                   />
+                                                   <MenuButton 
+                                                     icon={<CheckCircle2 size={18} />} 
+                                                     label="Complete Consultation" 
+                                                     color="text-emerald-650"
+                                                     onClick={() => {
+                                                       setCompletingAppointment(app);
+                                                       setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                                       setActiveMenu(null);
+                                                     }} 
+                                                   />
+                                                 </>
                                               )}
 
                                               {(status === 'completed' || status === 'visited' || status === 'follow_up') && (

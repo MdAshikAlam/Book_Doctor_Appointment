@@ -96,14 +96,12 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
         return [
           { title: 'Waiting (Clinic Total)', value: 14, icon: Clock, color: 'amber' },
           { title: 'Checked-In (Total)', value: 8, icon: UserCheck, color: 'cyan' },
-          { title: 'In Consultation', value: 4, icon: Stethoscope, color: 'purple' },
           { title: 'Completed Today', value: 32, icon: CheckCircle2, color: 'emerald' },
         ];
       case 'hospital':
         return [
           { title: 'Waiting (ER + OPD)', value: 48, icon: Clock, color: 'amber' },
           { title: 'Checked-In (Active)', value: 24, icon: UserCheck, color: 'cyan' },
-          { title: 'In Consultation', value: 12, icon: Stethoscope, color: 'purple' },
           { title: 'Completed (Shift)', value: 114, icon: CheckCircle2, color: 'emerald' },
         ];
       case 'single':
@@ -111,7 +109,6 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
         return [
           { title: 'Waiting Patients', value: patients.filter(p => p.status === 'waiting').length, icon: Clock, color: 'amber' },
           { title: 'Checked-In Patients', value: patients.filter(p => p.status === 'checked_in').length, icon: UserCheck, color: 'cyan' },
-          { title: 'In Consultation', value: patients.filter(p => p.status === 'in_consultation').length, icon: Stethoscope, color: 'purple' },
           { title: 'Completed Today', value: patients.filter(p => p.status === 'completed').length, icon: CheckCircle2, color: 'emerald' },
         ];
     }
@@ -191,13 +188,12 @@ export default function DoctorDashboard({ data, selectedDate, onDateSelect }) {
   const statsList = [
     { title: "Today's Appointments", value: todayApts.length, icon: 'Users', color: 'blue' },
     { title: "Checked-In", value: todayApts.filter(a => a.status === 'checked_in').length, icon: 'UserCheck', color: 'cyan' },
-    { title: "In Consultation", value: todayApts.filter(a => a.status === 'in_consultation').length, icon: 'Stethoscope', color: 'purple' },
     { title: "Completed Today", value: todayApts.filter(a => a.status === 'completed' || a.status === 'visited').length, icon: 'CheckCircle2', color: 'green' },
     { title: "Upcoming Today", value: todayApts.filter(a => a.status === 'booked' || a.status === 'confirmed').length, icon: 'Clock', color: 'amber' },
     { title: "Pending Follow-Ups", value: allAppointments.filter(a => a.status === 'follow_up').length, icon: 'CalendarCheck', color: 'indigo' }
   ];
 
-  const activePatients = todayApts.filter(p => ['checked_in', 'in_consultation'].includes(p.status)).map(p => ({
+  const activePatients = todayApts.filter(p => ['checked_in'].includes(p.status)).map(p => ({
     id: p._id,
     patientName: p.fullName || p.patient?.name || 'Unknown Patient',
     timeSlot: p.slot,
