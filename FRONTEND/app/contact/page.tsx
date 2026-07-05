@@ -246,7 +246,7 @@ export default function Contact() {
 
           {/* Subtitle */}
           <p className="font-body-primary text-slate-500 mx-auto mb-8">
-            Need assistance with appointments, doctor discovery, clinic registration, or general questions? Our team is ready to help.
+            Need assistance with appointments, finding nearby doctors, clinic registration, or general questions? Our team is ready to help.
           </p>
 
           {/* Quick Support Tags */}
