@@ -75,8 +75,8 @@ export default function Home() {
               const Icon = feature.icon;
               return (
                 <Card key={i} className="hover:-translate-y-1 transition-all duration-300 flex flex-row gap-5 items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
-                    <Icon size={20} />
+                  <div className="w-16 h-16 rounded-2xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
+                    <Icon size={28} />
                   </div>
                   <div>
                     {/* Card Title must use H3 */}

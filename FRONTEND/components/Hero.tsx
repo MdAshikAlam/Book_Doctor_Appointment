@@ -19,14 +19,14 @@ const Hero = () => {
           <div className="max-w-2xl text-center lg:text-left">
             {/* Heading */}
             <h1 className="font-h1 text-slate-900 mb-6">
-              Find Trusted <br />
-              <span className="text-[#00B5B5]">Doctors & Clinics</span> <br />
+              Find the Right <br />
+              <span className="text-[#00B5B5]">Doctor</span> <br />
               Near You
             </h1>
 
             {/* Sub Heading */}
             <p className="font-body-primary text-slate-500 mb-8 max-w-xl">
-              Search verified doctors, specialists, and healthcare clinics in your area. Compare experience, consultation fees, patient ratings, and available appointment slots before booking.
+              Book appointments instantly with verified doctors and clinics across India. Search by specialty, symptoms, clinic, doctor name, or location.
             </p>
 
             {/* Benefits list */}
