@@ -42,7 +42,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                title: "Find Nearby Doctors",
+                title: "Location-Based Search",
                 description: "Discover healthcare professionals based on your location.",
                 icon: MapPin
               },
@@ -57,7 +57,7 @@ export default function Home() {
                 icon: Calendar
               },
               {
-                title: "Doctor Discovery",
+                title: "Find Nearby Doctors",
                 description: "Search by specialty, symptoms, clinic, or treatment type.",
                 icon: Search
               },
