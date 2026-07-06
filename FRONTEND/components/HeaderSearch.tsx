@@ -23,6 +23,16 @@ interface DoctorSuggestion {
     avatar?: string;
   };
   specialty: string;
+  clinicName?: string;
+  clinic?: {
+    clinicName?: string;
+  };
+  branch_info?: {
+    clinicName?: string;
+  }[];
+  clinic_info?: {
+    clinicName?: string;
+  }[];
 }
 
 export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = {}) {
@@ -92,6 +102,20 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Listen to external triggers to open the location dropdown
+  useEffect(() => {
+    const handleOpenHeaderLocation = () => {
+      setIsLocationOpen(true);
+      if (locationRef.current) {
+        locationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+    window.addEventListener('open-header-location', handleOpenHeaderLocation);
+    return () => {
+      window.removeEventListener('open-header-location', handleOpenHeaderLocation);
+    };
+  }, []);
+
   // Fetch States on mount
   useEffect(() => {
     const fetchStates = async () => {
@@ -139,8 +163,13 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
   // Fetch Search Suggestions
   useEffect(() => {
     const fetchSuggestions = async () => {
-      // If no query and no location, don't show anything
-      if (query.length < 2 && !latitude && !longitude && !selectedDistrict) {
+      // If no location selected, don't fetch suggestions
+      if (!latitude && !longitude && !selectedDistrict) {
+        setSuggestions({ doctors: [], clinics: [] });
+        return;
+      }
+      // If query is too short, don't fetch suggestions
+      if (query.length < 2) {
         setSuggestions({ doctors: [], clinics: [] });
         return;
       }
@@ -404,6 +433,11 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                                     )}
                                   </p>
                                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{doc.specialty}</p>
+                                  {(doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName) && (
+                                    <p className="text-[10px] font-bold text-primary truncate mt-0.5">
+                                      {doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName}
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="px-2 py-1 bg-gray-50 rounded-lg text-[10px] font-extrabold text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                   BOOK

@@ -243,6 +243,12 @@ export default function DoctorDiscoverySection() {
   // Search Autocomplete suggestions fetch
   useEffect(() => {
     const fetchSuggestions = async () => {
+      // Do not fetch suggestions if location is not selected
+      if (!lat && !lng && !selectedDistrict) {
+        setSuggestions([]);
+        return;
+      }
+
       if (searchTerm.length < 2) {
         setSuggestions([]);
         return;
@@ -267,7 +273,8 @@ export default function DoctorDiscoverySection() {
             type: 'doctor',
             id: d._id,
             name: `Dr. ${d.user.name}`,
-            sub: d.specialty
+            sub: d.specialty,
+            clinicName: d.clinicName || d.clinic?.clinicName || d.branch_info?.[0]?.clinicName || d.clinic_info?.[0]?.clinicName || ''
           }));
           const clinicSuggs = data.data.clinics.map((c: any) => ({
             type: 'clinic',
@@ -412,7 +419,7 @@ export default function DoctorDiscoverySection() {
     selectedDistrict !== '';
 
   return (
-    <Section className="bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative overflow-hidden" id="doctor-discovery">
+    <Section className="bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative z-30" id="doctor-discovery">
       
       {/* Decorative Orbs */}
       <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-3xl pointer-events-none" />
@@ -454,28 +461,78 @@ export default function DoctorDiscoverySection() {
 
               {/* Suggestions Dropdown */}
               <AnimatePresence>
-                {showSuggestions && suggestions.length > 0 && (
+                {showSuggestions && searchTerm.length >= 2 && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 max-h-[300px] overflow-y-auto z-50 p-2"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 max-h-[300px] overflow-y-auto z-50 p-4"
                   >
-                    {suggestions.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleSelectSuggestion(item)}
-                        className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-all text-left"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-primary text-xs font-black">
-                          {item.type === 'doctor' ? <Stethoscope size={16} /> : <Building2 size={16} />}
+                    {!lat && !lng && !selectedDistrict ? (
+                      <div className="py-6 px-4 text-center text-slate-500 rounded-xl bg-slate-50/50 border border-slate-100/50">
+                        <div className="w-10 h-10 bg-[#00B5B5]/10 text-[#00B5B5] rounded-full flex items-center justify-center mx-auto mb-3 animate-bounce">
+                          <MapPin className="w-5 h-5" />
                         </div>
-                        <div>
-                          <p className="text-xs sm:text-sm font-extrabold text-slate-800">{item.name}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.sub}</p>
+                        <p className="text-sm font-extrabold text-slate-900 mb-1">Location Required</p>
+                        <p className="text-[11px] text-slate-400 font-bold leading-relaxed mb-4">
+                          Please select your location manually or allow auto-detection to search doctors and clinics.
+                        </p>
+                        
+                        {locationError && (
+                          <div className="mb-3 text-[10px] font-bold text-rose-500 bg-rose-50 border border-rose-100 rounded-xl p-2">
+                            {locationError}
+                          </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
+                          <button
+                            type="button"
+                            onClick={handleUseCurrentLocation}
+                            disabled={isLocating}
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md shadow-[#00B5B5]/15 disabled:opacity-50"
+                          >
+                            <Navigation className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
+                            {isLocating ? 'Detecting...' : 'Auto-Detect'}
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowManualLocDropdown(true);
+                              setShowSuggestions(false);
+                            }}
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-all"
+                          >
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            Select Manually
+                          </button>
                         </div>
-                      </button>
-                    ))}
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleSelectSuggestion(item)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-all text-left"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-primary text-xs font-black">
+                            {item.type === 'doctor' ? <Stethoscope size={16} /> : <Building2 size={16} />}
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm font-extrabold text-slate-800">{item.name}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.sub}</p>
+                            {item.type === 'doctor' && item.clinicName && (
+                              <p className="text-[9px] font-bold text-[#00B5B5] truncate mt-0.5">{item.clinicName}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center text-slate-400">
+                        <p className="text-xs font-bold mb-0.5">No exact matches found for "{searchTerm}"</p>
+                        <p className="text-[10px] font-medium text-slate-300">Try searching with a broader name or check other filters.</p>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
