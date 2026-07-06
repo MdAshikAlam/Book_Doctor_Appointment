@@ -39,7 +39,8 @@ import {
   PhoneCall,
   Languages,
   Navigation,
-  Star
+  Star,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLocation } from '@/context/LocationContext';
@@ -116,7 +117,97 @@ const specialtiesList = [
 
 function SpecialtiesList() {
   const searchParams = useSearchParams();
-  const { selectedState, selectedDistrict, latitude, longitude } = useLocation();
+  const { selectedState, selectedDistrict, pincode, setSelectedState, setSelectedDistrict, setPincode, latitude, longitude, updateLocation } = useLocation();
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationDetectError, setLocationDetectError] = useState<string | null>(null);
+
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [modalStates, setModalStates] = useState<string[]>([]);
+  const [modalDistricts, setModalDistricts] = useState<string[]>([]);
+  const [isLoadingModalLocations, setIsLoadingModalLocations] = useState(false);
+
+  // Fetch States for local modal on open
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        setIsLoadingModalLocations(true);
+        const res = await fetch(`${API_BASE_URL}/utility/states`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          setModalStates(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch states:', err);
+      } finally {
+        setIsLoadingModalLocations(false);
+      }
+    };
+    if (isManualModalOpen && modalStates.length === 0) {
+      fetchStates();
+    }
+  }, [isManualModalOpen, modalStates.length]);
+
+  // Fetch Districts for local modal when selectedState changes
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (!selectedState) {
+        setModalDistricts([]);
+        return;
+      }
+      try {
+        setIsLoadingModalLocations(true);
+        const res = await fetch(`${API_BASE_URL}/utility/districts?state=${encodeURIComponent(selectedState)}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          setModalDistricts(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch districts:', err);
+      } finally {
+        setIsLoadingModalLocations(false);
+      }
+    };
+    if (isManualModalOpen && selectedState) {
+      fetchDistricts();
+    }
+  }, [isManualModalOpen, selectedState]);
+
+  const handleAutoFetchLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationDetectError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetectingLocation(true);
+    setLocationDetectError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        try {
+          const res = await fetch(`${API_BASE_URL}/utility/reverse-geocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: lat, longitude: lng })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            const { pincode: resPincode, district, state } = data.data;
+            updateLocation(state, district, resPincode || '', lat, lng);
+          } else {
+            setLocationDetectError('Failed to resolve coordinates to district details.');
+          }
+        } catch (err) {
+          console.error(err);
+          setLocationDetectError('Failed to connect to geocoding service.');
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (error) => {
+        setIsDetectingLocation(false);
+        setLocationDetectError(`Location retrieval failed: ${error.message}`);
+      }
+    );
+  };
   const [selectedSpecialty, setSelectedSpecialty] = useState('ENT');
   const [currentLocation, setCurrentLocation] = useState('Nawada');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -144,7 +235,13 @@ function SpecialtiesList() {
   // Fetch search suggestions based on search term
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (searchTerm.length < 2 && !latitude && !longitude && !selectedDistrict) {
+      // Do not fetch suggestions if location is not selected
+      if (!selectedDistrict && (!latitude || !longitude)) {
+        setSuggestions({ doctors: [], clinics: [] });
+        return;
+      }
+
+      if (searchTerm.length < 2) {
         setSuggestions({ doctors: [], clinics: [] });
         return;
       }
@@ -419,7 +516,7 @@ function SpecialtiesList() {
     <div className="min-h-screen bg-slate-50/50">
 
       {/* SECTION 1: HERO SECTION */}
-      <section className="relative overflow-hidden bg-[#F0FDFD] pt-10 pb-16 border-b border-[#00B5B5]/10">
+      <section className="relative z-30 bg-[#F0FDFD] pt-10 pb-16 border-b border-[#00B5B5]/10">
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
@@ -469,102 +566,151 @@ function SpecialtiesList() {
                     className="absolute top-full left-0 right-0 mt-3 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50 text-left"
                   >
                     <div className="max-h-[400px] overflow-y-auto p-4 space-y-4">
-                      {/* Fallback Location Notice */}
-                      {(suggestions.doctors.some((d: any) => d.isFallback) || suggestions.clinics.some((c: any) => c.isFallback)) && (
-                        <div className="p-3 bg-amber-50 text-amber-800 text-xs font-bold rounded-2xl border border-amber-100">
-                          <p className="font-extrabold uppercase text-[9px] tracking-wide text-amber-600 mb-0.5">Notice</p>
-                          <p>No clinics or doctors available in {selectedDistrict || 'this district'}. Showing nearby options:</p>
-                        </div>
-                      )}
-
-                      {suggestions.clinics.length > 0 && (
-                        <div>
-                          <div className="px-3 py-1.5 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 rounded-lg mb-2">
-                            Clinics & Hospitals
+                       {!selectedDistrict && (!latitude || !longitude) ? (
+                        <div className="py-8 px-6 text-center text-slate-500 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                          <div className="w-12 h-12 bg-[#00B5B5]/10 text-[#00B5B5] rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                            <MapPin className="w-6 h-6" />
                           </div>
-                          {suggestions.clinics.map((clinic) => (
+                          <p className="text-base font-extrabold text-slate-900 mb-2">Location Required</p>
+                          <p className="text-xs text-slate-400 font-bold leading-relaxed max-w-md mx-auto mb-6">
+                            To find doctors and clinics in your area, please select your location manually or allow auto-detection.
+                          </p>
+                          
+                          {locationDetectError && (
+                            <div className="mb-4 text-xs font-bold text-rose-500 bg-rose-50 border border-rose-100 rounded-xl p-2.5 max-w-sm mx-auto">
+                              {locationDetectError}
+                            </div>
+                          )}
+
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center max-w-sm mx-auto">
                             <button
-                              key={clinic._id}
+                              type="button"
+                              onClick={handleAutoFetchLocation}
+                              disabled={isDetectingLocation}
+                              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-xs font-black flex items-center justify-center gap-2 transition-all shadow-md shadow-[#00B5B5]/20 disabled:opacity-50"
+                            >
+                              <Navigation className={`w-3.5 h-3.5 ${isDetectingLocation ? 'animate-spin' : ''}`} />
+                              {isDetectingLocation ? 'Detecting...' : 'Auto-Detect Location'}
+                            </button>
+                            
+                            <button
+                              type="button"
                               onClick={() => {
-                                window.location.href = `/clinics/${clinic.slug || clinic._id}`;
+                                setIsManualModalOpen(true);
                                 setShowSuggestions(false);
                               }}
-                              className="w-full flex items-center gap-3.5 p-2.5 hover:bg-slate-50 rounded-xl transition-all group text-left"
+                              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-black flex items-center justify-center gap-2 transition-all"
                             >
-                              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-emerald-600 group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
-                                {clinic.images?.[0] ? (
-                                  <img src={resolveImageUrl(clinic.images[0]) || ''} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <Search size={16} />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-extrabold text-slate-900 truncate flex items-center gap-2">
-                                  <span>{clinic.clinicName}</span>
-                                  {clinic.isFallback && (
-                                    <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
-                                  )}
-                                </p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{clinic.clinicType}</p>
-                              </div>
-                              <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all uppercase">
-                                Visit
-                              </span>
+                              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                              Select Manually
                             </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {suggestions.doctors.length > 0 && (
-                        <div>
-                          <div className="px-3 py-1.5 text-[9px] font-black text-[#00B5B5] uppercase tracking-widest bg-[#00B5B5]/5 rounded-lg mb-2">
-                            Doctors & Specialists
                           </div>
-                          {suggestions.doctors.map((doc) => (
-                            <button
-                              key={doc._id}
-                              onClick={() => {
-                                window.location.href = `/doctors/${doc._id}`;
-                                setShowSuggestions(false);
-                              }}
-                              className="w-full flex items-center gap-3.5 p-2.5 hover:bg-slate-50 rounded-xl transition-all group text-left"
-                            >
-                              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#00B5B5] group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
-                                {doc.user.avatar ? (
-                                  <img
-                                    src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = getAvatarFallback(doc.user.name);
-                                    }}
-                                  />
-                                ) : (
-                                  doc.user.name[0]
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-extrabold text-slate-900 truncate flex items-center gap-2">
-                                  <span>Dr. {doc.user.name}</span>
-                                  {doc.isFallback && (
-                                    <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
-                                  )}
-                                </p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{doc.specialty}</p>
-                              </div>
-                              <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-[#00B5B5]/10 group-hover:text-[#00B5B5] transition-all uppercase">
-                                Book
-                              </span>
-                            </button>
-                          ))}
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          {/* Fallback Location Notice */}
+                          {(suggestions.doctors.some((d: any) => d.isFallback) || suggestions.clinics.some((c: any) => c.isFallback)) && (
+                            <div className="p-3 bg-amber-50 text-amber-800 text-xs font-bold rounded-2xl border border-amber-100">
+                              <p className="font-extrabold uppercase text-[9px] tracking-wide text-amber-600 mb-0.5">Notice</p>
+                              <p>No clinics or doctors available in {selectedDistrict || 'this district'}. Showing nearby options:</p>
+                            </div>
+                          )}
 
-                      {suggestions.doctors.length === 0 && suggestions.clinics.length === 0 && !isLoadingSuggestions && (
-                        <div className="py-6 text-center text-slate-400">
-                          <p className="text-xs font-bold mb-0.5">No exact matches found for "{searchTerm}"</p>
-                          <p className="text-[10px] font-medium text-slate-300">Try searching with a broader name or check other filters.</p>
-                        </div>
+                          {suggestions.clinics.length > 0 && (
+                            <div>
+                              <div className="px-3 py-1.5 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 rounded-lg mb-2">
+                                Clinics & Hospitals
+                              </div>
+                              {suggestions.clinics.map((clinic) => (
+                                <button
+                                  key={clinic._id}
+                                  onClick={() => {
+                                    window.location.href = `/clinics/${clinic.slug || clinic._id}`;
+                                    setShowSuggestions(false);
+                                  }}
+                                  className="w-full flex items-center gap-3.5 p-2.5 hover:bg-slate-50 rounded-xl transition-all group text-left"
+                                >
+                                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-emerald-600 group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
+                                    {clinic.images?.[0] ? (
+                                      <img src={resolveImageUrl(clinic.images[0]) || ''} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <Search size={16} />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-extrabold text-slate-900 truncate flex items-center gap-2">
+                                      <span>{clinic.clinicName}</span>
+                                      {clinic.isFallback && (
+                                        <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
+                                      )}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{clinic.clinicType}</p>
+                                  </div>
+                                  <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all uppercase">
+                                    Visit
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {suggestions.doctors.length > 0 && (
+                            <div>
+                              <div className="px-3 py-1.5 text-[9px] font-black text-[#00B5B5] uppercase tracking-widest bg-[#00B5B5]/5 rounded-lg mb-2">
+                                Doctors & Specialists
+                              </div>
+                              {suggestions.doctors.map((doc) => (
+                                <button
+                                  key={doc._id}
+                                  onClick={() => {
+                                    window.location.href = `/doctors/${doc._id}`;
+                                    setShowSuggestions(false);
+                                  }}
+                                  className="w-full flex items-center gap-3.5 p-2.5 hover:bg-slate-50 rounded-xl transition-all group text-left"
+                                >
+                                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#00B5B5] group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
+                                    {doc.user.avatar ? (
+                                      <img
+                                        src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.src = getAvatarFallback(doc.user.name);
+                                        }}
+                                      />
+                                    ) : (
+                                      doc.user.name[0]
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-extrabold text-slate-900 truncate flex items-center gap-2">
+                                      <span>Dr. {doc.user.name}</span>
+                                      {doc.isFallback && (
+                                        <span className="text-[8px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">Nearby</span>
+                                      )}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{doc.specialty}</p>
+                                    {(doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName) && (
+                                      <p className="text-[9px] font-bold text-[#00B5B5] truncate mt-0.5">
+                                        {doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-[#00B5B5]/10 group-hover:text-[#00B5B5] transition-all uppercase">
+                                    Book
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {suggestions.doctors.length === 0 && suggestions.clinics.length === 0 && !isLoadingSuggestions && (
+                            <div className="py-6 text-center text-slate-400">
+                              <p className="text-xs font-bold mb-0.5">No exact matches found for "{searchTerm}"</p>
+                              <p className="text-[10px] font-medium text-slate-300">Try searching with a broader name or check other filters.</p>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </motion.div>
@@ -1145,6 +1291,110 @@ function SpecialtiesList() {
           </div>
         </Container>
       </Section>
+
+      {/* LOCAL LOCATION SELECTOR MODAL (FOR MOBILE & DESKTOP SUITABILITY) */}
+      <AnimatePresence>
+        {isManualModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsManualModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            
+            {/* Modal Box */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden z-10 text-left p-6 sm:p-8"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-[#00B5B5]" />
+                  <span className="text-base font-black text-slate-900">Select Your Location</span>
+                </div>
+                <button 
+                  onClick={() => setIsManualModalOpen(false)} 
+                  className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {/* State Input */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">State</label>
+                  <select 
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none"
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                  >
+                    <option value="">Choose State</option>
+                    {modalStates.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                {/* District Input */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">District</label>
+                  <div className="relative">
+                    <select 
+                      className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none disabled:opacity-50"
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        setSelectedDistrict(e.target.value);
+                      }}
+                      disabled={!selectedState || isLoadingModalLocations}
+                    >
+                      <option value="">{isLoadingModalLocations ? 'Loading...' : 'Choose District'}</option>
+                      {modalDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    {isLoadingModalLocations && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <Loader2 size={16} className="animate-spin text-[#00B5B5]" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pincode Input */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pincode</label>
+                  <input 
+                    type="text"
+                    maxLength={6}
+                    placeholder="Enter 6-digit Pincode"
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none"
+                    value={pincode}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setPincode(val);
+                      if (val.length === 6) {
+                        setIsManualModalOpen(false);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Confirm Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(false)}
+                  disabled={!selectedDistrict}
+                  className="w-full mt-4 py-3.5 rounded-2xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-xs font-black transition-all shadow-md shadow-[#00B5B5]/20 disabled:opacity-40"
+                >
+                  Confirm Location
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
