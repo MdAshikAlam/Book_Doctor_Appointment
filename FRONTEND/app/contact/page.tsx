@@ -576,19 +576,60 @@ export default function Contact() {
       </Section>
 
       {/* SECTION 5: IMPORTANT NOTICE */}
-      <Section className="bg-white">
+      <Section className="bg-slate-50/30 py-16 border-t border-slate-100">
         <Container className="max-w-4xl">
-          <div className="bg-rose-50/50 p-8 rounded-[2.5rem] border border-rose-100/50 flex gap-4 items-start relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-100/20 rounded-full blur-2xl pointer-events-none" />
-            <div className="w-10 h-10 rounded-xl bg-rose-100/40 text-rose-550 flex items-center justify-center shrink-0">
-              <ShieldAlert size={22} className="text-rose-500" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black text-rose-700 uppercase tracking-wider mb-2">Medical Emergency Notice</h4>
-              <div className="text-xs text-rose-600/90 font-semibold leading-relaxed space-y-2">
-                <p>BookMyDoctor does not provide emergency medical services.</p>
-                <p>If you are experiencing a medical emergency, immediately contact your local emergency services or visit the nearest hospital.</p>
-                <p>Do not use this platform for urgent or life-threatening medical situations.</p>
+          <div className="bg-white border-l-4 md:border-l-8 border-rose-600 rounded-r-3xl shadow-xl shadow-slate-100/75 p-8 md:p-10 relative overflow-hidden">
+            {/* Ambient gradients for a premium aesthetic */}
+            <div className="absolute top-0 right-0 w-72 h-72 bg-rose-50 rounded-full blur-3xl -z-0 opacity-70 pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-rose-50/40 rounded-full blur-3xl -z-0 opacity-40 pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col sm:flex-row gap-6 items-start">
+              {/* Alert icon with animation */}
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0 shadow-sm">
+                <ShieldAlert size={28} className="text-rose-600 animate-pulse" />
+              </div>
+              
+              <div className="flex-1">
+                {/* Badge tags */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-extrabold bg-rose-50 text-rose-700 px-3 py-1 rounded-full uppercase tracking-wider border border-rose-100">
+                    CRITICAL NOTICE
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">Patient Safety Guidelines</span>
+                </div>
+                
+                {/* Heading */}
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-4">
+                  Medical Emergency Notice
+                </h3>
+                
+                {/* Primary statement */}
+                <p className="text-base font-extrabold text-slate-950 mb-6 pb-4 border-b border-slate-100">
+                  BookMyDoctor <span className="text-rose-600 underline decoration-2 decoration-rose-350">does not</span> provide emergency medical services.
+                </p>
+                
+                {/* Columns */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex gap-3 items-start">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 mt-2 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-extrabold uppercase text-rose-700 tracking-wider mb-1">Emergency Actions</h4>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed">
+                        If you are experiencing a medical emergency, immediately contact your local emergency services or visit the nearest hospital.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 items-start">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 mt-2 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-extrabold uppercase text-slate-500 tracking-wider mb-1">Restricted Situations</h4>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed">
+                        Do not use this platform for urgent or life-threatening medical situations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
