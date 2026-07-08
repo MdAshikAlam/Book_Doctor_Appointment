@@ -20,7 +20,8 @@ export default function SuperAdminDashboard({ data, selectedDate, onDateSelect }
     supportMetrics = {},
     appointmentChartData = [],
     branchPerformance = [],
-    recentActivity = []
+    recentActivity = [],
+    registeredPatientsWithActivity = []
   } = data || {};
 
   return (
@@ -250,7 +251,69 @@ export default function SuperAdminDashboard({ data, selectedDate, onDateSelect }
         </Card>
       </div>
 
-      {/* 5. Live Feed & Calendar */}
+      {/* 5. Registered Patients & Activity */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="text-blue-500" size={20} />
+          <h2 className="text-lg font-black text-slate-800 uppercase tracking-wider">Registered Patients & Activity</h2>
+        </div>
+        <Card title="Patient Engagement" subtitle="Registered patient base and their platform booking statistics">
+          <Table 
+            columns={[
+              { 
+                header: 'Patient Name', 
+                accessor: 'fullName',
+                render: (row) => <span className="font-bold text-slate-900">{row.fullName || row.name || 'N/A'}</span>
+              },
+              { 
+                header: 'Email', 
+                accessor: 'email',
+                render: (row) => <span className="text-slate-600 font-medium">{row.email}</span>
+              },
+              { 
+                header: 'Phone', 
+                accessor: 'phone',
+                render: (row) => <span className="text-slate-600 font-medium">{row.phone || 'N/A'}</span>
+              },
+              { 
+                header: 'Join Date', 
+                accessor: 'createdAt',
+                render: (row) => <span className="text-slate-500 text-xs font-semibold">{new Date(row.createdAt).toLocaleDateString()}</span>
+              },
+              { 
+                header: 'Booked', 
+                accessor: 'totalBooked',
+                render: (row) => <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700">{row.totalBooked}</span>
+              },
+              { 
+                header: 'Completed', 
+                accessor: 'totalCompleted',
+                render: (row) => <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700">{row.totalCompleted}</span>
+              },
+              { 
+                header: 'Cancelled', 
+                accessor: 'totalCancelled',
+                render: (row) => <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-50 text-rose-700">{row.totalCancelled}</span>
+              },
+              { 
+                header: 'Missed', 
+                accessor: 'totalMissed',
+                render: (row) => <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-50 text-amber-700">{row.totalMissed || 0}</span>
+              },
+              { 
+                header: 'Total Bookings', 
+                accessor: 'totalAppointments',
+                render: (row) => <span className="font-black text-slate-800">{row.totalAppointments}</span>
+              }
+            ]} 
+            data={registeredPatientsWithActivity} 
+            pagination={false}
+            emptyMessage="No registered patients found."
+          />
+        </Card>
+      </div>
+
+      {/* 6. Live Feed & Calendar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card title="Audit Activity Log" subtitle="Recent administration events">

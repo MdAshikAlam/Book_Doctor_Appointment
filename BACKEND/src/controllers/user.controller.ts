@@ -15,10 +15,125 @@ export const getPatients = async (req: Request, res: Response, next: NextFunctio
 
     // Data Isolation Logic
     if (currentUser.role === UserRole.SUPER_ADMIN) {
-      // Global access: no branch filter unless selected
-      if (branchId) {
-        query.branchId = new mongoose.Types.ObjectId(branchId);
-      }
+      // For Super Admin, always return all registered patients from the User collection
+      const patients = await User.aggregate([
+        { $match: { role: UserRole.PATIENT, isDeleted: { $ne: true } } },
+        {
+          $lookup: {
+            from: 'appointments',
+            localField: '_id',
+            foreignField: 'patient',
+            as: 'apts'
+          }
+        },
+        {
+          $lookup: {
+            from: 'appointments',
+            let: { userId: '$_id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$patient', '$$userId'] } } },
+              {
+                $lookup: {
+                  from: 'doctors',
+                  localField: 'doctor',
+                  foreignField: '_id',
+                  as: 'docInfo'
+                }
+              },
+              { $unwind: { path: '$docInfo', preserveNullAndEmptyArrays: true } },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'docInfo.user',
+                  foreignField: '_id',
+                  as: 'docUser'
+                }
+              },
+              { $unwind: { path: '$docUser', preserveNullAndEmptyArrays: true } },
+              {
+                $lookup: {
+                  from: 'clinics',
+                  localField: 'clinic',
+                  foreignField: '_id',
+                  as: 'clinicInfo'
+                }
+              },
+              { $unwind: { path: '$clinicInfo', preserveNullAndEmptyArrays: true } },
+              {
+                $project: {
+                  _id: 1,
+                  date: 1,
+                  slot: 1,
+                  status: 1,
+                  fullName: 1,
+                  email: 1,
+                  phone: 1,
+                  doctorName: { $ifNull: ['$docUser.fullName', '$docUser.name'] },
+                  clinicName: '$clinicInfo.clinicName'
+                }
+              }
+            ],
+            as: 'appointmentsList'
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            fullName: 1,
+            email: 1,
+            phone: 1,
+            createdAt: 1,
+            gender: 1,
+            dob: 1,
+            totalBooked: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $in: ['$$apt.status', ['booked', 'confirmed', 'checked_in', 'waiting', 'in_consultation']] }
+                }
+              }
+            },
+            totalCancelled: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $eq: ['$$apt.status', 'cancelled'] }
+                }
+              }
+            },
+            totalCompleted: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $in: ['$$apt.status', ['completed', 'follow_up']] }
+                }
+              }
+            },
+            totalMissed: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $eq: ['$$apt.status', 'patient_missed'] }
+                }
+              }
+            },
+            totalAppointments: { $size: '$apts' },
+            patientStatus: { $literal: 'Active' },
+            appointmentsList: 1
+          }
+        },
+        { $sort: { createdAt: -1 } }
+      ]);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { patients }
+      });
     } else {
       // Branch-specific access
       if (!branchId) {

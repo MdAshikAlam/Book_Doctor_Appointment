@@ -532,6 +532,14 @@ export default function AppointmentsPage() {
               {user?.role === 'doctor' ? 'Medical Consultation Desk' : user?.role === 'admin' ? 'Clinic Administration Desk' : 'Front Desk Queue'}
             </p>
           </div>
+          {user?.role === 'doctor' && (
+            <button
+              onClick={handleCallNextPatient}
+              className="py-2.5 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white transition-all font-black text-xs shadow-md flex items-center gap-2 self-start xl:self-end"
+            >
+              <Play size={14} fill="white" /> Call Next Patient
+            </button>
+          )}
           <div className="w-full xl:w-auto flex items-center gap-2 overflow-hidden">
             <button 
               onClick={() => scroll('left')}
@@ -830,17 +838,46 @@ export default function AppointmentsPage() {
                           <div className="flex flex-wrap items-center gap-1.5 justify-center mt-2 w-full">
                             {user?.role === 'doctor' ? (
                               <>
-                                <div className="flex items-center gap-1.5 justify-end w-full">
-                                  {status === 'checked_in' && (
+                                <div className="flex flex-wrap items-center gap-2 justify-end w-full">
+                                  {['checked_in', 'waiting'].includes(status) && (
                                     <button
-                                      onClick={() => {
-                                        setCompletingAppointment(app);
-                                        setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
-                                      }}
-                                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
+                                      onClick={() => handleStatusUpdate(app._id, 'in_consultation')}
+                                      className="flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
                                     >
-                                      Complete Consultation
+                                      Start Consultation
                                     </button>
+                                  )}
+
+                                  {status === 'in_consultation' && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setNotesModal(app);
+                                          setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                        }}
+                                        className="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all font-bold text-xs flex items-center justify-center gap-1"
+                                      >
+                                        <FileText size={14} /> Notes
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setPrescriptionModal(app);
+                                          setPrescriptionForm(app.prescriptions?.length > 0 ? app.prescriptions : [{ medicine: '', dosage: '', timing: '1-0-1', days: 5, notes: 'After food' }]);
+                                        }}
+                                        className="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all font-bold text-xs flex items-center justify-center gap-1"
+                                      >
+                                        <Pill size={14} /> Prescription
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setCompletingAppointment(app);
+                                          setNotesForm(app.consultationNotes || { symptoms: '', diagnosis: '', observations: '', advice: '' });
+                                        }}
+                                        className="py-2 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all font-black text-xs shadow-sm flex items-center justify-center gap-1"
+                                      >
+                                        Complete
+                                      </button>
+                                    </>
                                   )}
 
                                   <div className="relative">
