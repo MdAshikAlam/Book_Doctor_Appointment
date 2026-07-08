@@ -271,7 +271,69 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
         { $limit: 5 }
       ]);
 
+      // Fetch registered patients with activity counts (booked, completed, cancelled, total)
+      const registeredPatientsWithActivity = await User.aggregate([
+        { $match: { role: UserRole.PATIENT, isDeleted: { $ne: true } } },
+        {
+          $lookup: {
+            from: 'appointments',
+            localField: '_id',
+            foreignField: 'patient',
+            as: 'apts'
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            fullName: 1,
+            email: 1,
+            phone: 1,
+            createdAt: 1,
+            totalBooked: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $in: ['$$apt.status', ['booked', 'confirmed', 'checked_in', 'waiting', 'in_consultation']] }
+                }
+              }
+            },
+            totalCancelled: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $eq: ['$$apt.status', 'cancelled'] }
+                }
+              }
+            },
+            totalCompleted: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $in: ['$$apt.status', ['completed', 'follow_up']] }
+                }
+              }
+            },
+            totalMissed: {
+              $size: {
+                $filter: {
+                  input: '$apts',
+                  as: 'apt',
+                  cond: { $eq: ['$$apt.status', 'patient_missed'] }
+                }
+              }
+            },
+            totalAppointments: { $size: '$apts' }
+          }
+        },
+        { $sort: { createdAt: -1 } }
+      ]);
+
       resultData = {
+        registeredPatientsWithActivity,
         approvalQueue: {
           pendingClinics,
           pendingDoctors,

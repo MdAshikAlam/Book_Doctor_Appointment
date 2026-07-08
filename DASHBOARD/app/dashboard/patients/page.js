@@ -133,7 +133,122 @@ export default function PatientsPage() {
     }
   };
 
-  const columns = [
+  const columns = user?.role === 'super_admin' ? [
+    {
+      header: 'Patient Name',
+      accessor: 'name',
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold border border-blue-100 uppercase">
+            {row.name?.charAt(0) || 'P'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewingPatient(row)}
+                className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors text-left"
+              >
+                {row.fullName || row.name}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 truncate max-w-[150px]">{row.email}</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Contact Info',
+      accessor: 'email',
+      render: (row) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <Mail size={12} className="text-slate-400" />
+            {row.email}
+          </div>
+          {row.phone && (
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <Phone size={12} className="text-slate-400" />
+              {row.phone}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      header: 'Joined Date',
+      accessor: 'createdAt',
+      render: (row) => (
+        <div className="flex items-center gap-2 text-xs text-slate-600">
+          <Calendar size={12} className="text-slate-400" />
+          {new Date(row.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}
+        </div>
+      )
+    },
+    {
+      header: 'Booked',
+      accessor: 'totalBooked',
+      render: (row) => (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700">
+          {row.totalBooked || 0}
+        </span>
+      )
+    },
+    {
+      header: 'Completed',
+      accessor: 'totalCompleted',
+      render: (row) => (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700">
+          {row.totalCompleted || 0}
+        </span>
+      )
+    },
+    {
+      header: 'Cancelled',
+      accessor: 'totalCancelled',
+      render: (row) => (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-50 text-rose-700">
+          {row.totalCancelled || 0}
+        </span>
+      )
+    },
+    {
+      header: 'Missed',
+      accessor: 'totalMissed',
+      render: (row) => (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-50 text-amber-700">
+          {row.totalMissed || 0}
+        </span>
+      )
+    },
+    {
+      header: 'Total Bookings',
+      accessor: 'totalAppointments',
+      render: (row) => (
+        <span className="font-black text-slate-800">
+          {row.totalAppointments || 0}
+        </span>
+      )
+    },
+    {
+      header: 'ACTIONS',
+      accessor: 'view',
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewingPatient(row)}
+            className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
+            title="View Details"
+          >
+            <Eye size={18} />
+          </button>
+        </div>
+      )
+    }
+  ] : [
     {
       header: 'Patient Name',
       accessor: 'name',
@@ -497,6 +612,92 @@ export default function PatientsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Platform Activity Summary (SuperAdmin only) */}
+                {user?.role === 'super_admin' && (
+                  <div>
+                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                      <Users size={14} /> Platform Booking Activity
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Booked</p>
+                        <p className="text-lg font-black text-blue-600">{viewingPatient.totalBooked || 0}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Completed</p>
+                        <p className="text-lg font-black text-emerald-600">{viewingPatient.totalCompleted || 0}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Cancelled</p>
+                        <p className="text-lg font-black text-rose-600">{viewingPatient.totalCancelled || 0}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Missed</p>
+                        <p className="text-lg font-black text-amber-600">{viewingPatient.totalMissed || 0}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Total Bookings</p>
+                        <p className="text-lg font-black text-slate-800">{viewingPatient.totalAppointments || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Booked Appointments List (SuperAdmin only) */}
+                {user?.role === 'super_admin' && (
+                  <div>
+                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                      <Calendar size={14} /> Booked Appointments
+                    </h4>
+                    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                      {viewingPatient.appointmentsList && viewingPatient.appointmentsList.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-100">
+                                <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">Patient (Booked For)</th>
+                                <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">Doctor</th>
+                                <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">Clinic</th>
+                                <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">Date & Time</th>
+                                <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {viewingPatient.appointmentsList.map((apt, idx) => (
+                                <tr key={apt._id || idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-4 py-3 font-bold text-slate-900">
+                                    <div>{apt.fullName}</div>
+                                    <div className="text-[10px] text-slate-400 font-medium">{apt.email || apt.phone}</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-600 font-semibold">{apt.doctorName || 'N/A'}</td>
+                                  <td className="px-4 py-3 text-slate-600 font-semibold">{apt.clinicName || 'N/A'}</td>
+                                  <td className="px-4 py-3 text-slate-500 font-medium">
+                                    <div>{new Date(apt.date).toLocaleDateString()}</div>
+                                    <div className="text-[10px] text-slate-400 font-bold">{apt.slot}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                      apt.status === 'completed' || apt.status === 'follow_up' ? 'bg-emerald-50 text-emerald-600' :
+                                      apt.status === 'cancelled' ? 'bg-rose-50 text-rose-600' :
+                                      apt.status === 'booked' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500'
+                                    }`}>
+                                      {apt.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center text-slate-400 font-medium">
+                          No appointments booked yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Booking History Details */}
                 {viewingPatient.aadhaar && (
