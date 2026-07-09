@@ -361,7 +361,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                         {suggestions.clinics.length > 0 && (
                           <div className="mb-4">
                             <div className="px-4 py-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 rounded-xl mb-2 mx-1">
-                              Clinics & Hospitals
+                              Clinics & Medical Centers
                             </div>
                             {suggestions.clinics.map((clinic) => (
                               <button 

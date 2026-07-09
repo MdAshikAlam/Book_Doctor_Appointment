@@ -93,7 +93,7 @@ interface Doctor {
   consultationFee?: number;
   languages?: string[];
   gender?: 'Male' | 'Female';
-  clinicType?: 'Hospital' | 'Private Clinic' | 'Medical Center';
+  clinicType?: 'Private Clinic' | 'Medical Center';
   nextSlot?: string;
   isAvailableToday?: boolean;
   rating?: number;
@@ -619,7 +619,7 @@ function SpecialtiesList() {
                           {suggestions.clinics.length > 0 && (
                             <div>
                               <div className="px-3 py-1.5 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 rounded-lg mb-2">
-                                Clinics & Hospitals
+                                Clinics & Medical Centers
                               </div>
                               {suggestions.clinics.map((clinic) => (
                                 <button
@@ -947,7 +947,6 @@ function SpecialtiesList() {
                   <div className="space-y-2">
                     {[
                       { value: 'all', label: 'All Clinics' },
-                      { value: 'Hospital', label: 'Hospital' },
                       { value: 'Private Clinic', label: 'Private Clinic' },
                       { value: 'Medical Center', label: 'Medical Center' }
                     ].map((opt) => (

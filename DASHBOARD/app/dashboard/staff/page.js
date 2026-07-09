@@ -748,7 +748,7 @@ export default function StaffManagementPage() {
                   disabled={emailVerified}
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="john@hospital.com"
+                  placeholder="john@clinic.com"
                   className="flex h-10 w-full rounded-xl border border-border bg-white pl-10 pr-24 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 {!emailVerified && (

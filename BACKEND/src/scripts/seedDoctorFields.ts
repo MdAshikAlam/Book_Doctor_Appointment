@@ -55,8 +55,8 @@ const seed = async () => {
       let clinic: any = await Clinic.findOne();
       if (!clinic) {
         clinic = await Clinic.create({
-          name: 'Central Care Hospital',
-          clinicType: 'Hospital',
+          name: 'Central Care Medical Center',
+          clinicType: 'Medical Center',
           address: '123 Health Ave, Central District',
           district: 'New Delhi',
           state: 'Delhi',
