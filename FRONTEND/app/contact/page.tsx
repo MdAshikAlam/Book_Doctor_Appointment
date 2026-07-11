@@ -147,11 +147,11 @@ export default function Contact() {
     },
     {
       q: "How can doctors join BookMyDoctor?",
-      a: "Doctors can start onboarding by selecting 'Doctor Registration' in the contact form categories, or directly reaching out to partners@bookmydoctor.in to begin profile verification."
+      a: "Doctors can start onboarding by selecting 'Doctor Registration' in the contact form categories, or directly reaching out to partners@example.com to begin profile verification."
     },
     {
       q: "How can clinics register?",
-      a: "Clinics can register by choosing 'Clinic Registration' in the contact form or sending clinic details to partners@bookmydoctor.in. Our partner team will help set up your facilities."
+      a: "Clinics can register by choosing 'Clinic Registration' in the contact form or sending clinic details to partners@example.com. Our partner team will help set up your facilities."
     },
     {
       q: "How long does support take to respond?",
@@ -440,19 +440,19 @@ export default function Contact() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> General Support
                       </p>
-                      <a href="mailto:support@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">support@bookmydoctor.in</a>
+                      <a href="mailto:support@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">support@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> Appointment Support
                       </p>
-                      <a href="mailto:appointments@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">appointments@bookmydoctor.in</a>
+                      <a href="mailto:appointments@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">appointments@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> Doctor & Clinic Onboarding
                       </p>
-                      <a href="mailto:partners@bookmydoctor.in" className="text-sm font-extrabold text-[#00B5B5] hover:underline">partners@bookmydoctor.in</a>
+                      <a href="mailto:partners@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">partners@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
@@ -495,7 +495,7 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="font-extrabold text-slate-800 text-sm">Email</h4>
-                      <a href="mailto:support@bookmydoctor.in" className="text-xs text-[#00B5B5] font-semibold mt-0.5 hover:underline">support@bookmydoctor.in</a>
+                      <a href="mailto:support@example.com" className="text-xs text-[#00B5B5] font-semibold mt-0.5 hover:underline">support@example.com</a>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">

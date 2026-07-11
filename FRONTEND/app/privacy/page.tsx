@@ -40,7 +40,7 @@ export default function PrivacyPage() {
           <div className="space-y-3">
             <h2 className="font-h3 text-slate-900">4. Your Privacy Rights</h2>
             <p>
-              You maintain full rights to request modification, review, or erasure of your personal patient profile at any time. Simply reach out to support@bookmydoctor.in to submit a profile correction or deletion query.
+              You maintain full rights to request modification, review, or erasure of your personal patient profile at any time. Simply reach out to support@example.com to submit a profile correction or deletion query.
             </p>
           </div>
         </div>
