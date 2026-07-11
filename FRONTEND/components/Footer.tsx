@@ -85,7 +85,7 @@ const Footer = () => {
               <li><Link href="/about" className="text-gray-500 hover:text-primary transition-colors">About BookMyDoctor</Link></li>
               <li className="pt-2 border-t border-gray-200/60 flex items-center gap-2 text-gray-500 text-xs font-semibold">
                 <Mail size={14} className="text-gray-400" />
-                <a href="mailto:support@bookmydoctor.in" className="hover:underline">support@bookmydoctor.in</a>
+                <a href="mailto:support@example.com" className="hover:underline">support@example.com</a>
               </li>
               <li className="flex items-center gap-2 text-gray-500 text-xs font-semibold">
                 <Phone size={14} className="text-gray-400" />

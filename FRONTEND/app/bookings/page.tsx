@@ -466,7 +466,7 @@ export default function MyAppointmentsPage() {
                             <button
                               onClick={() => {
                                 setSelectedAppointment(apt);
-                                setRescheduleMessage(`To reschedule your appointment with Dr. ${apt.doctor?.user?.name || ''}, please contact ${apt.clinic?.name || 'the clinic'} support at partners@bookmydoctor.in or call support.`);
+                                setRescheduleMessage(`To reschedule your appointment with Dr. ${apt.doctor?.user?.name || ''}, please contact ${apt.clinic?.name || 'the clinic'} support at partners@example.com or call support.`);
                               }}
                               className="w-full sm:w-auto text-center px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors text-xs"
                             >

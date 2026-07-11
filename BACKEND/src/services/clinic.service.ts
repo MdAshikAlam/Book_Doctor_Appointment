@@ -161,6 +161,7 @@ export const getAllClinics = async (query: any, creatorId?: string) => {
   if (clinics.length === 0 && district && !creatorId) {
     const fallbackFilter = { ...filter };
     delete fallbackFilter.district;
+    delete fallbackFilter.$or;
     if (state) {
       fallbackFilter.state = { $regex: state, $options: 'i' };
     }

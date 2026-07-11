@@ -335,6 +335,14 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
         as: 'branch_info',
       },
     });
+    fallbackPipeline.push({
+      $lookup: {
+        from: 'clinics',
+        localField: 'clinic',
+        foreignField: '_id',
+        as: 'clinic_info',
+      },
+    });
 
     const fallbackMatch: any = { status: 'verified' };
     if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
@@ -344,7 +352,9 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
     if (name) {
       fallbackMatch.$or = [
         { 'user.name': { $regex: name, $options: 'i' } },
-        { specialty: { $regex: name, $options: 'i' } }
+        { specialty: { $regex: name, $options: 'i' } },
+        { 'clinic_info.clinicName': { $regex: name, $options: 'i' } },
+        { 'branch_info.clinicName': { $regex: name, $options: 'i' } }
       ];
     }
     
@@ -398,6 +408,14 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
           as: 'branch_info',
         },
       });
+      globalFallbackPipeline.push({
+        $lookup: {
+          from: 'clinics',
+          localField: 'clinic',
+          foreignField: '_id',
+          as: 'clinic_info',
+        },
+      });
 
       const globalMatch: any = { status: 'verified' };
       if (!creatorId && query.isDashboard !== true && query.isDashboard !== 'true') {
@@ -407,7 +425,9 @@ const runDoctorsQuery = async (query: any, creatorId?: string, branchId?: string
       if (name) {
         globalMatch.$or = [
           { 'user.name': { $regex: name, $options: 'i' } },
-          { specialty: { $regex: name, $options: 'i' } }
+          { specialty: { $regex: name, $options: 'i' } },
+          { 'clinic_info.clinicName': { $regex: name, $options: 'i' } },
+          { 'branch_info.clinicName': { $regex: name, $options: 'i' } }
         ];
       }
 
