@@ -422,7 +422,7 @@ export default function DoctorDiscoverySection() {
     <Section className="bg-gradient-to-b from-gray-50/50 via-white to-gray-50/50 relative z-30" id="doctor-discovery">
       
       {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-[#0E7C66]/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <Container>
@@ -439,8 +439,8 @@ export default function DoctorDiscoverySection() {
             
             {/* Search Input field */}
             <div className="lg:col-span-5 relative" ref={searchRef}>
-              <div className="flex items-center bg-slate-50 border border-transparent focus-within:border-[#00B5B5]/20 focus-within:bg-white focus-within:shadow-md focus-within:shadow-teal-500/5 rounded-2xl px-4 py-3 transition-all group">
-                <Search size={18} className="text-slate-400 group-focus-within:text-[#00B5B5] transition-colors" />
+              <div className="flex items-center bg-slate-50 border border-transparent focus-within:border-[#0E7C66]/20 focus-within:bg-white focus-within:shadow-md focus-within:shadow-teal-500/5 rounded-2xl px-4 py-3 transition-all group">
+                <Search size={18} className="text-slate-400 group-focus-within:text-[#0E7C66] transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Search doctor name, specialty, clinic, or symptoms..."
@@ -470,7 +470,7 @@ export default function DoctorDiscoverySection() {
                   >
                     {!lat && !lng && !selectedDistrict ? (
                       <div className="py-6 px-4 text-center text-slate-500 rounded-xl bg-slate-50/50 border border-slate-100/50">
-                        <div className="w-10 h-10 bg-[#00B5B5]/10 text-[#00B5B5] rounded-full flex items-center justify-center mx-auto mb-3 animate-bounce">
+                        <div className="w-10 h-10 bg-[#0E7C66]/10 text-[#0E7C66] rounded-full flex items-center justify-center mx-auto mb-3 animate-bounce">
                           <MapPin className="w-5 h-5" />
                         </div>
                         <p className="text-sm font-extrabold text-slate-900 mb-1">Location Required</p>
@@ -489,7 +489,7 @@ export default function DoctorDiscoverySection() {
                             type="button"
                             onClick={handleUseCurrentLocation}
                             disabled={isLocating}
-                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md shadow-[#00B5B5]/15 disabled:opacity-50"
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#0E7C66] hover:bg-[#0B6A59] text-white text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md shadow-[#0E7C66]/15 disabled:opacity-50"
                           >
                             <Navigation className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
                             {isLocating ? 'Detecting...' : 'Auto-Detect'}
@@ -522,7 +522,7 @@ export default function DoctorDiscoverySection() {
                             <p className="text-xs sm:text-sm font-extrabold text-slate-800">{item.name}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.sub}</p>
                             {item.type === 'doctor' && item.clinicName && (
-                              <p className="text-[9px] font-bold text-[#00B5B5] truncate mt-0.5">{item.clinicName}</p>
+                              <p className="text-[9px] font-bold text-[#0E7C66] truncate mt-0.5">{item.clinicName}</p>
                             )}
                           </div>
                         </button>
@@ -546,7 +546,7 @@ export default function DoctorDiscoverySection() {
                   className="flex-grow flex items-center justify-between gap-2 bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100/50 hover:border-slate-200 rounded-2xl px-4 py-3 transition-all text-left group"
                 >
                   <div className="flex items-center gap-2">
-                    <MapPin size={18} className="text-[#00B5B5]" />
+                    <MapPin size={18} className="text-[#0E7C66]" />
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider leading-none mb-0.5">Location</p>
                       <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight truncate max-w-[150px]">
@@ -560,7 +560,7 @@ export default function DoctorDiscoverySection() {
                 <button
                   onClick={handleUseCurrentLocation}
                   disabled={isLocating}
-                  className="bg-[#E0F7F7] hover:bg-[#00B5B5] text-[#00B5B5] hover:text-white px-4 rounded-2xl transition-all flex items-center justify-center border border-transparent shadow-sm hover:shadow-lg hover:shadow-[#00B5B5]/15 disabled:opacity-50 shrink-0"
+                  className="bg-[#E6F4EA] hover:bg-[#0E7C66] text-[#0E7C66] hover:text-white px-4 rounded-2xl transition-all flex items-center justify-center border border-transparent shadow-sm hover:shadow-lg hover:shadow-[#0E7C66]/15 disabled:opacity-50 shrink-0"
                   title="Use Current Geolocation"
                 >
                   {isLocating ? (
@@ -597,7 +597,7 @@ export default function DoctorDiscoverySection() {
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">State</label>
                         <select 
-                          className="w-full bg-slate-50 border-none rounded-xl py-2 px-3 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 outline-none"
+                          className="w-full bg-slate-50 border-none rounded-xl py-2 px-3 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#0E7C66]/20 outline-none"
                           value={selectedState}
                           onChange={(e) => {
                             setSelectedState(e.target.value);
@@ -614,7 +614,7 @@ export default function DoctorDiscoverySection() {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">District</label>
                         <div className="relative">
                           <select 
-                            className="w-full bg-slate-50 border-none rounded-xl py-2 px-3 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 outline-none disabled:opacity-50"
+                            className="w-full bg-slate-50 border-none rounded-xl py-2 px-3 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#0E7C66]/20 outline-none disabled:opacity-50"
                             value={selectedDistrict}
                             onChange={(e) => {
                               setSelectedDistrict(e.target.value);
@@ -654,16 +654,16 @@ export default function DoctorDiscoverySection() {
               <div
                 className={`flex items-center rounded-2xl px-4 py-3 border transition-all duration-300 ${
                   lat
-                    ? 'bg-teal-50/60 border-[#00B5B5]/30 shadow-sm shadow-teal-500/10'
+                    ? 'bg-teal-50/60 border-[#0E7C66]/30 shadow-sm shadow-teal-500/10'
                     : 'bg-slate-50 border-slate-100'
                 }`}
               >
                 {/* Live GPS indicator dot */}
                 <div className={`w-2 h-2 rounded-full mr-2 shrink-0 transition-all duration-500 ${
-                  lat ? 'bg-[#00B5B5] animate-pulse' : 'bg-slate-300'
+                  lat ? 'bg-[#0E7C66] animate-pulse' : 'bg-slate-300'
                 }`} />
                 <span className={`text-[10px] font-black uppercase tracking-wider mr-2 shrink-0 transition-colors ${
-                  lat ? 'text-[#00B5B5]' : 'text-slate-400'
+                  lat ? 'text-[#0E7C66]' : 'text-slate-400'
                 }`}>Radius</span>
                 <select
                   className={`bg-transparent border-none outline-none text-xs sm:text-sm font-black w-full focus:ring-0 transition-colors ${
@@ -693,8 +693,8 @@ export default function DoctorDiscoverySection() {
                 </p>
               )}
               {lat && (
-                <p className="text-[10px] font-black text-[#00B5B5] mt-1.5 text-right px-1 flex items-center justify-end gap-1">
-                  <Navigation size={10} className="text-[#00B5B5]" />
+                <p className="text-[10px] font-black text-[#0E7C66] mt-1.5 text-right px-1 flex items-center justify-end gap-1">
+                  <Navigation size={10} className="text-[#0E7C66]" />
                   GPS active · {radius} km range
                 </p>
               )}
@@ -715,8 +715,8 @@ export default function DoctorDiscoverySection() {
                   onClick={() => setSelectedSpecialty(spec)}
                   className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 whitespace-nowrap border ${
                     selectedSpecialty === spec
-                      ? 'bg-[#00B5B5] border-[#00B5B5] text-white shadow-lg shadow-teal-500/20'
-                      : 'bg-white border-slate-200/60 text-slate-600 hover:border-[#00B5B5]/40 hover:bg-slate-50/50'
+                      ? 'bg-[#0E7C66] border-[#0E7C66] text-white shadow-lg shadow-teal-500/20'
+                      : 'bg-white border-slate-200/60 text-slate-600 hover:border-[#0E7C66]/40 hover:bg-slate-50/50'
                   }`}
                 >
                   {spec}
@@ -730,7 +730,7 @@ export default function DoctorDiscoverySection() {
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={`flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl border text-xs font-black transition-all ${
                   showAdvancedFilters 
-                    ? 'bg-teal-50/80 border-[#00B5B5]/30 text-[#00B5B5]' 
+                    ? 'bg-teal-50/80 border-[#0E7C66]/30 text-[#0E7C66]' 
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
@@ -1004,7 +1004,7 @@ export default function DoctorDiscoverySection() {
             {hasActiveFilters && (
               <button
                 onClick={handleResetFilters}
-                className="bg-[#00B5B5] hover:bg-[#009A9A] text-white px-6 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-[#00B5B5]/20"
+                className="bg-[#0E7C66] hover:bg-[#0B6A59] text-white px-6 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-[#0E7C66]/20"
               >
                 Clear All Filters
               </button>

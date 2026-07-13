@@ -322,7 +322,7 @@ function AppointmentsForm() {
             {/* Section 1: Doctor & Clinic Details */}
             <div className="space-y-6">
               <h2 className="font-h2 text-slate-900 flex items-center gap-3 pb-3 border-b border-slate-100">
-                <Stethoscope size={24} className="text-[#00B5B5]" /> Doctor & Clinic Details
+                <Stethoscope size={24} className="text-[#0E7C66]" /> Doctor & Clinic Details
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -338,7 +338,7 @@ function AppointmentsForm() {
                     className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
                       doctorInfo 
                         ? "text-slate-400 cursor-not-allowed focus:outline-none" 
-                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white"
                     }`} 
                   />
                 </div>
@@ -354,7 +354,7 @@ function AppointmentsForm() {
                     className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
                       doctorInfo 
                         ? "text-slate-400 cursor-not-allowed focus:outline-none" 
-                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white"
                     }`} 
                   />
                 </div>
@@ -370,17 +370,17 @@ function AppointmentsForm() {
                     className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold transition-all ${
                       doctorInfo 
                         ? "text-slate-400 cursor-not-allowed focus:outline-none" 
-                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white"
+                        : "text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white"
                     }`} 
                   />
                 </div>
               </div>
 
               {doctorInfo?.address && (
-                <div className="p-4 bg-[#F0FDFD] rounded-2xl border border-[#00B5B5]/15 flex items-center gap-3">
-                  <MapPin size={20} className="text-[#00B5B5] flex-shrink-0" />
+                <div className="p-4 bg-[#F3F9F6] rounded-2xl border border-[#0E7C66]/15 flex items-center gap-3">
+                  <MapPin size={20} className="text-[#0E7C66] flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] font-black text-[#00B5B5] uppercase tracking-wider">Clinic Address</p>
+                    <p className="text-[10px] font-black text-[#0E7C66] uppercase tracking-wider">Clinic Address</p>
                     <p className="text-xs font-bold text-slate-700">{doctorInfo.address}</p>
                   </div>
                 </div>
@@ -404,7 +404,7 @@ function AppointmentsForm() {
                     value={formData.appointmentDate} 
                     onChange={handleChange} 
                     required 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" 
                     min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
                   />
                 </div>
@@ -486,7 +486,7 @@ function AppointmentsForm() {
                     }
 
                     return (
-                      <select id="appointmentTime" name="appointmentTime" value={formData.appointmentTime} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800 appearance-none">
+                      <select id="appointmentTime" name="appointmentTime" value={formData.appointmentTime} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800 appearance-none">
                         <option value="">Select slot</option>
                         {activeSlots.map((slot: string) => (
                           <option key={slot} value={slot}>{slot}</option>
@@ -501,25 +501,25 @@ function AppointmentsForm() {
             {/* Section 2: Personal Details */}
             <div className="space-y-6">
               <h2 className="font-h2 text-slate-900 flex items-center gap-3 pb-3 border-b border-slate-100">
-                <User size={24} className="text-[#00B5B5]" /> Personal Details
+                <User size={24} className="text-[#0E7C66]" /> Personal Details
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
                   <label htmlFor="fullName" className="text-xs font-black text-slate-400 uppercase tracking-widest">Full Name <span className="text-rose-500">*</span></label>
-                  <input type="text" id="fullName" name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input type="text" id="fullName" name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="email" className="text-xs font-black text-slate-400 uppercase tracking-widest">Email <span className="text-rose-500">*</span></label>
-                  <input type="email" id="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input type="email" id="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="phone" className="text-xs font-black text-slate-400 uppercase tracking-widest">Mobile Number <span className="text-rose-500">*</span></label>
-                  <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" value={formData.phone} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" value={formData.phone} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="aadhaar" className="text-xs font-black text-slate-400 uppercase tracking-widest">Aadhaar <span className="text-rose-500">*</span></label>
-                  <input type="text" id="aadhaar" name="aadhaar" placeholder="12-digit Aadhaar Number" value={formData.aadhaar} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" />
+                  <input type="text" id="aadhaar" name="aadhaar" placeholder="12-digit Aadhaar Number" value={formData.aadhaar} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" />
                 </div>
               </div>
 
@@ -533,13 +533,13 @@ function AppointmentsForm() {
                     value={formData.dob} 
                     onChange={handleChange} 
                     required 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800" 
                     max={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label htmlFor="gender" className="text-xs font-black text-slate-400 uppercase tracking-widest">Gender <span className="text-rose-500">*</span></label>
-                  <select id="gender" name="gender" value={formData.gender} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800 appearance-none">
+                  <select id="gender" name="gender" value={formData.gender} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800 appearance-none">
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -550,17 +550,17 @@ function AppointmentsForm() {
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="address" className="text-xs font-black text-slate-400 uppercase tracking-widest">Patient Address <span className="text-rose-500">*</span></label>
-                <textarea id="address" name="address" rows={3} placeholder="Your Residential Address" value={formData.address} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800 resize-none h-24"></textarea>
+                <textarea id="address" name="address" rows={3} placeholder="Your Residential Address" value={formData.address} onChange={handleChange} required className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800 resize-none h-24"></textarea>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <label htmlFor="message" className="text-xs font-black text-slate-400 uppercase tracking-widest">Message / About your illness</label>
-              <textarea id="message" name="message" rows={4} placeholder="Describe symptoms or reasons for visit (optional)..." value={formData.message} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-slate-800 resize-none h-32"></textarea>
+              <textarea id="message" name="message" rows={4} placeholder="Describe symptoms or reasons for visit (optional)..." value={formData.message} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-slate-800 resize-none h-32"></textarea>
             </div>
 
             <div className="flex items-center gap-3 py-2">
-              <input type="checkbox" id="visitedBefore" name="visitedBefore" checked={formData.visitedBefore} onChange={handleChange} className="rounded text-[#00B5B5] focus:ring-[#00B5B5] w-5 h-5 cursor-pointer" />
+              <input type="checkbox" id="visitedBefore" name="visitedBefore" checked={formData.visitedBefore} onChange={handleChange} className="rounded text-[#0E7C66] focus:ring-[#0E7C66] w-5 h-5 cursor-pointer" />
               <label htmlFor="visitedBefore" className="text-sm font-semibold text-slate-600 cursor-pointer select-none">Yes, I have visited this doctor/clinic before</label>
             </div>
 
@@ -583,7 +583,7 @@ function AppointmentsForm() {
             </button>
             
             <div className="text-center">
-              <div className="w-20 h-20 bg-[#00B5B5]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#00B5B5]">
+              <div className="w-20 h-20 bg-[#0E7C66]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#0E7C66]">
                 <LogIn size={40} />
               </div>
               <h2 className="font-h2 text-slate-900 mb-2">Login Required</h2>
@@ -617,7 +617,7 @@ function AppointmentsForm() {
               }} className="flex flex-col gap-4 text-left">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Email</label>
-                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] outline-none transition-all text-sm font-semibold text-slate-800" placeholder="Enter your email" />
+                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] outline-none transition-all text-sm font-semibold text-slate-800" placeholder="Enter your email" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Password</label>
@@ -627,7 +627,7 @@ function AppointmentsForm() {
                       value={loginPassword} 
                       onChange={(e) => setLoginPassword(e.target.value)} 
                       required 
-                      className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] outline-none transition-all text-sm font-semibold text-slate-800" 
+                      className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] outline-none transition-all text-sm font-semibold text-slate-800" 
                       placeholder="Enter your password" 
                     />
                     <button
@@ -654,7 +654,7 @@ function AppointmentsForm() {
                   Not Registered?{" "}
                   <Link 
                     href={`/register?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/appointments")}`} 
-                    className="text-[#00B5B5] hover:underline font-black ml-1"
+                    className="text-[#0E7C66] hover:underline font-black ml-1"
                   >
                     Register Now
                   </Link>
@@ -726,7 +726,7 @@ function AppointmentsForm() {
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Clinic Address</p>
                   <p className="text-xs font-bold text-slate-600 mt-1 flex items-start gap-1.5">
-                    <MapPin size={14} className="text-[#00B5B5] shrink-0 mt-0.5" />
+                    <MapPin size={14} className="text-[#0E7C66] shrink-0 mt-0.5" />
                     <span>{bookedDetails.clinicAddress}</span>
                   </p>
                 </div>
@@ -742,7 +742,7 @@ function AppointmentsForm() {
               </Link>
               <Link
                 href="/"
-                className="flex-1 py-4 bg-[#00B5B5] hover:bg-[#009A9A] text-white font-bold rounded-2xl transition-colors text-sm shadow-lg shadow-[#00B5B5]/10"
+                className="flex-1 py-4 bg-[#0E7C66] hover:bg-[#0B6A59] text-white font-bold rounded-2xl transition-colors text-sm shadow-lg shadow-[#0E7C66]/10"
               >
                 Go to Homepage
               </Link>
@@ -757,7 +757,7 @@ function AppointmentsForm() {
 
 export default function Appointments() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#0E7C66] animate-spin" /></div>}>
       <AppointmentsForm />
     </Suspense>
   );

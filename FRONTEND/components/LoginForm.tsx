@@ -346,7 +346,7 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
             <button
               type="submit"
               disabled={loading || !identifier || !password}
-              className="w-full bg-primary hover:bg-[#009A9A] text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none mt-6 flex items-center justify-center gap-2"
+              className="w-full bg-primary hover:bg-[#0B6A59] text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none mt-6 flex items-center justify-center gap-2"
             >
               {loading ? 'Processing...' : 'Login'}
             </button>
@@ -394,7 +394,7 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
             <button
               type="submit"
               disabled={loading || !resetEmail}
-              className="flex-[2] h-12 bg-primary hover:bg-[#009A9A] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 disabled:bg-slate-350"
+              className="flex-[2] h-12 bg-primary hover:bg-[#0B6A59] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 disabled:bg-slate-350"
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
@@ -508,7 +508,7 @@ export default function LoginForm({ isModal = false, onClose }: { isModal?: bool
             <button
               type="submit"
               disabled={loading || !isResetPasswordValid || resetOtpCode.join('').length < 6}
-              className="flex-[2] h-12 bg-primary hover:bg-[#009A9A] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 disabled:bg-slate-350"
+              className="flex-[2] h-12 bg-primary hover:bg-[#0B6A59] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 disabled:bg-slate-350"
             >
               {loading ? 'Processing...' : 'Reset & Login'}
             </button>

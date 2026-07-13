@@ -23,19 +23,25 @@ const steps = [
   }
 ];
 
+const stepStyles = [
+  { bg: "bg-orange-50", text: "text-orange-600" },
+  { bg: "bg-blue-50", text: "text-blue-600" },
+  { bg: "bg-green-50", text: "text-green-600" }
+];
+
 const HowItWorks = () => {
   return (
-    <Section className="bg-gradient-to-b from-[#F0FDFD]/20 via-[#F9FCFC] to-[#F0FDFD]/20 relative overflow-hidden">
+    <Section className="bg-[#F8FCFB] relative overflow-hidden border-y border-slate-100/50">
       {/* Absolute Soothing Ambient Glows */}
-      <div className="absolute top-10 left-10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[#00B5B5]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-10 left-10 w-96 h-96 bg-[#0E7C66]/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[#0E7C66]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <Container className="relative z-10">
         {/* Soothing Header - H2 */}
         <SectionHeader 
           title={
             <span>
-              Book a Doctor in <span className="bg-gradient-to-r from-[#00B5B5] to-[#008F8F] bg-clip-text text-transparent">3 Simple Steps</span>
+              Book a Doctor in <span className="bg-gradient-to-r from-[#0E7C66] to-[#0b3d2f] bg-clip-text text-transparent">3 Simple Steps</span>
             </span>
           }
         />
@@ -44,6 +50,7 @@ const HowItWorks = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
           {steps.map((step, index) => {
             const Icon = step.icon;
+            const style = stepStyles[index];
             return (
               <Card 
                 key={index}
@@ -51,17 +58,17 @@ const HowItWorks = () => {
               >
                 <div>
                   {/* Floating Number Overlay */}
-                  <div className="absolute top-8 right-10 text-8xl font-black text-slate-50/70 select-none group-hover:text-[#00B5B5]/10 transition-colors pointer-events-none">
+                  <div className="absolute top-8 right-10 text-8xl font-black text-slate-100 select-none group-hover:text-[#0E7C66]/5 transition-colors pointer-events-none">
                     0{index + 1}
                   </div>
 
-                  {/* Icon Container with glowing base */}
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#00B5B5]/5 to-transparent border border-slate-100 flex items-center justify-center mb-8 relative z-10 group-hover:bg-[#00B5B5] group-hover:text-white transition-all duration-500 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-[#00B5B5]/20">
-                    <Icon size={26} className="text-[#00B5B5] group-hover:text-white transition-colors duration-500" />
+                  {/* Icon Container with custom bg */}
+                  <div className={`w-16 h-16 rounded-2xl ${style.bg} ${style.text} flex items-center justify-center mb-8 relative z-10 transition-all duration-500 group-hover:scale-105`}>
+                    <Icon size={32} />
                   </div>
 
                   {/* Title - Card Title must use H3 */}
-                  <h3 className="font-h3 text-slate-900 group-hover:text-[#00B5B5] transition-colors leading-tight">
+                  <h3 className="font-h3 text-slate-900 group-hover:text-[#0E7C66] transition-colors leading-tight">
                     {step.title}
                   </h3>
 
@@ -72,7 +79,7 @@ const HowItWorks = () => {
                 </div>
 
                 {/* Card Glow Border */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00B5B5]/60 to-transparent transition-transform duration-500 scale-x-0 group-hover:scale-x-100 rounded-b-[24px]" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#0E7C66]/60 to-transparent transition-transform duration-500 scale-x-0 group-hover:scale-x-100 rounded-b-[18px]" />
               </Card>
             );
           })}

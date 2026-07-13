@@ -342,7 +342,7 @@ export default function RegisterForm({ isModal = false, onClose }: { isModal?: b
                   type="button"
                   onClick={handleSendOTP}
                   disabled={otpSending || cooldown > 0 || !formData.email}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-[#00B5B5] hover:bg-[#009A9A] text-white rounded-xl font-black text-[9px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 bg-[#0E7C66] hover:bg-[#0B6A59] text-white rounded-xl font-black text-[9px] uppercase tracking-widest transition-all disabled:bg-slate-200 disabled:text-slate-400 active:scale-[0.98] flex items-center justify-center shrink-0"
                 >
                   {otpSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : cooldown > 0 ? `${cooldown}s` : 'Send'}
                 </button>
@@ -495,7 +495,7 @@ export default function RegisterForm({ isModal = false, onClose }: { isModal?: b
             <button
               type="submit"
               disabled={loading || !isFormValid}
-              className="w-full h-12 bg-primary hover:bg-[#009A9A] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="w-full h-12 bg-primary hover:bg-[#0B6A59] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {loading ? 'Processing...' : 'Register'}
             </button>

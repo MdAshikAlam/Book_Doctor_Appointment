@@ -9,13 +9,13 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0d6efd',
-          dark: '#0a58ca',
-          light: '#3d8bfd',
+          DEFAULT: '#0E7C66',
+          dark: '#0B6A59',
+          light: '#F3F9F6',
         },
         healthcare: {
-          blue: '#e7f1ff',
-          teal: '#20c997',
+          blue: '#F3F9F6',
+          teal: '#0E7C66',
         }
       },
     },

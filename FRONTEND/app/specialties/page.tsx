@@ -516,9 +516,9 @@ function SpecialtiesList() {
     <div className="min-h-screen bg-slate-50/50">
 
       {/* SECTION 1: HERO SECTION */}
-      <section className="relative z-30 bg-[#F0FDFD] pt-10 pb-16 border-b border-[#00B5B5]/10">
+      <section className="relative z-30 bg-[#F3F9F6] pt-10 pb-16 border-b border-[#0E7C66]/10">
         <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%230E7C66' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
         }} />
 
@@ -526,7 +526,7 @@ function SpecialtiesList() {
           <div className="max-w-4xl mx-auto">
             {/* Main Title */}
             <h1 className="font-h1 text-slate-900 mb-6">
-              Find Specialists <span className="text-[#00B5B5]">Near You</span>
+              Find Specialists <span className="text-[#0E7C66]">Near You</span>
             </h1>
 
             {/* Sub Heading */}
@@ -537,11 +537,11 @@ function SpecialtiesList() {
             {/* Premium Search Bar with Auto-Suggestions */}
             <div className="relative w-full max-w-2xl mx-auto mb-12" ref={searchRef}>
               <div className="relative shadow-xl shadow-slate-200/50 rounded-2xl">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00B5B5]" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0E7C66]" />
                 <input
                   type="text"
                   placeholder="Search by specialty, doctor name, symptom, or clinic..."
-                  className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-12 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all font-medium text-sm text-slate-800 outline-none h-14"
+                  className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-12 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] transition-all font-medium text-sm text-slate-800 outline-none h-14"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -551,7 +551,7 @@ function SpecialtiesList() {
                 />
                 {isLoadingSuggestions && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <Loader2 className="w-5 h-5 text-[#00B5B5] animate-spin" />
+                    <Loader2 className="w-5 h-5 text-[#0E7C66] animate-spin" />
                   </div>
                 )}
               </div>
@@ -568,7 +568,7 @@ function SpecialtiesList() {
                     <div className="max-h-[400px] overflow-y-auto p-4 space-y-4">
                        {!selectedDistrict && (!latitude || !longitude) ? (
                         <div className="py-8 px-6 text-center text-slate-500 rounded-2xl bg-slate-50/50 border border-slate-100/50">
-                          <div className="w-12 h-12 bg-[#00B5B5]/10 text-[#00B5B5] rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                          <div className="w-12 h-12 bg-[#0E7C66]/10 text-[#0E7C66] rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
                             <MapPin className="w-6 h-6" />
                           </div>
                           <p className="text-base font-extrabold text-slate-900 mb-2">Location Required</p>
@@ -587,7 +587,7 @@ function SpecialtiesList() {
                               type="button"
                               onClick={handleAutoFetchLocation}
                               disabled={isDetectingLocation}
-                              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-xs font-black flex items-center justify-center gap-2 transition-all shadow-md shadow-[#00B5B5]/20 disabled:opacity-50"
+                              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0E7C66] hover:bg-[#0B6A59] text-white text-xs font-black flex items-center justify-center gap-2 transition-all shadow-md shadow-[#0E7C66]/20 disabled:opacity-50"
                             >
                               <Navigation className={`w-3.5 h-3.5 ${isDetectingLocation ? 'animate-spin' : ''}`} />
                               {isDetectingLocation ? 'Detecting...' : 'Auto-Detect Location'}
@@ -656,7 +656,7 @@ function SpecialtiesList() {
 
                           {suggestions.doctors.length > 0 && (
                             <div>
-                              <div className="px-3 py-1.5 text-[9px] font-black text-[#00B5B5] uppercase tracking-widest bg-[#00B5B5]/5 rounded-lg mb-2">
+                              <div className="px-3 py-1.5 text-[9px] font-black text-[#0E7C66] uppercase tracking-widest bg-[#0E7C66]/5 rounded-lg mb-2">
                                 Doctors & Specialists
                               </div>
                               {suggestions.doctors.map((doc) => (
@@ -668,7 +668,7 @@ function SpecialtiesList() {
                                   }}
                                   className="w-full flex items-center gap-3.5 p-2.5 hover:bg-slate-50 rounded-xl transition-all group text-left"
                                 >
-                                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#00B5B5] group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
+                                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#0E7C66] group-hover:text-white transition-all overflow-hidden font-bold shrink-0">
                                     {doc.user.avatar ? (
                                       <img
                                         src={resolveImageUrl(doc.user.avatar) || getAvatarFallback(doc.user.name)}
@@ -691,12 +691,12 @@ function SpecialtiesList() {
                                     </p>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{doc.specialty}</p>
                                     {(doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName) && (
-                                      <p className="text-[9px] font-bold text-[#00B5B5] truncate mt-0.5">
+                                      <p className="text-[9px] font-bold text-[#0E7C66] truncate mt-0.5">
                                         {doc.clinicName || doc.clinic?.clinicName || doc.branch_info?.[0]?.clinicName || doc.clinic_info?.[0]?.clinicName}
                                       </p>
                                     )}
                                   </div>
-                                  <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-[#00B5B5]/10 group-hover:text-[#00B5B5] transition-all uppercase">
+                                  <span className="px-2 py-1 bg-slate-50 rounded-md text-[9px] font-extrabold text-slate-400 group-hover:bg-[#0E7C66]/10 group-hover:text-[#0E7C66] transition-all uppercase">
                                     Book
                                   </span>
                                 </button>
@@ -743,18 +743,18 @@ function SpecialtiesList() {
                     }, 100);
                   }}
                   className={`bg-white rounded-[2rem] p-8 border border-slate-100 transition-all duration-500 group cursor-pointer relative overflow-hidden flex flex-col justify-between h-full ${isActive
-                      ? 'border-[#00B5B5]/50 shadow-2xl shadow-[#00B5B5]/10 bg-gradient-to-b from-[#F0FDFD] to-white'
-                      : 'hover:border-[#00B5B5]/30 hover:shadow-xl hover:shadow-[#00B5B5]/5 hover:-translate-y-2'
+                      ? 'border-[#0E7C66]/50 shadow-2xl shadow-[#0E7C66]/10 bg-gradient-to-b from-[#F3F9F6] to-white'
+                      : 'hover:border-[#0E7C66]/30 hover:shadow-xl hover:shadow-[#0E7C66]/5 hover:-translate-y-2'
                     }`}
                 >
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
                   <div>
                     {/* Top bar with Icon and Count */}
                     <div className="flex items-start justify-between mb-6 relative z-10">
                       <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${isActive
-                          ? 'bg-[#00B5B5] text-white shadow-lg shadow-[#00B5B5]/30'
-                          : 'bg-slate-50 text-[#00B5B5] border border-slate-100 group-hover:bg-[#00B5B5] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#00B5B5]/25 group-hover:scale-105'
+                          ? 'bg-[#0E7C66] text-white shadow-lg shadow-[#0E7C66]/30'
+                          : 'bg-slate-50 text-[#0E7C66] border border-slate-100 group-hover:bg-[#0E7C66] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#0E7C66]/25 group-hover:scale-105'
                         }`}>
                         <Icon size={26} className="group-hover:rotate-12 transition-transform duration-500" />
                       </div>
@@ -767,7 +767,7 @@ function SpecialtiesList() {
                     </div>
 
                     {/* Title */}
-                    <h3 className={`text-xl font-extrabold mb-3 transition-colors relative z-10 leading-snug tracking-tight ${isActive ? 'text-slate-900' : 'text-slate-900 group-hover:text-[#00B5B5]'
+                    <h3 className={`text-xl font-extrabold mb-3 transition-colors relative z-10 leading-snug tracking-tight ${isActive ? 'text-slate-900' : 'text-slate-900 group-hover:text-[#0E7C66]'
                       }`}>
                       {specialty.name}
                     </h3>
@@ -780,14 +780,14 @@ function SpecialtiesList() {
 
                   {/* Action Footer Button */}
                   <div className="pt-5 border-t border-slate-50 relative z-10">
-                    <span className="text-[#00B5B5] text-xs font-black flex items-center gap-2 uppercase tracking-widest">
+                    <span className="text-[#0E7C66] text-xs font-black flex items-center gap-2 uppercase tracking-widest">
                       View Doctors
                       <ArrowRight size={14} className="transform group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>
 
                   {/* Glowing Bottom Border Accent */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00B5B5]/60 to-transparent transition-transform duration-500 scale-x-0 ${isActive ? 'scale-x-100' : 'group-hover:scale-x-100'
+                  <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#0E7C66]/60 to-transparent transition-transform duration-500 scale-x-0 ${isActive ? 'scale-x-100' : 'group-hover:scale-x-100'
                     }`} />
                 </Card>
               );
@@ -806,7 +806,7 @@ function SpecialtiesList() {
             <div className="lg:col-span-3 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm sticky top-24">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
                 <span className="text-md font-black text-slate-900 flex items-center gap-2">
-                  <Filter size={18} className="text-[#00B5B5]" />
+                  <Filter size={18} className="text-[#0E7C66]" />
                   Refine Your Search
                 </span>
                 {(filterExperience !== 'all' || filterFee !== 'all' || filterAvailability !== 'all' || filterLanguage !== 'all' || filterGender !== 'all' || filterClinicType !== 'all') && (
@@ -819,7 +819,7 @@ function SpecialtiesList() {
                       setFilterGender('all');
                       setFilterClinicType('all');
                     }}
-                    className="text-xs font-bold text-[#00B5B5] hover:underline"
+                    className="text-xs font-bold text-[#0E7C66] hover:underline"
                   >
                     Clear All
                   </button>
@@ -843,7 +843,7 @@ function SpecialtiesList() {
                           name="exp"
                           checked={filterExperience === opt.value}
                           onChange={() => setFilterExperience(opt.value)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -867,7 +867,7 @@ function SpecialtiesList() {
                           name="fee"
                           checked={filterFee === opt.value}
                           onChange={() => setFilterFee(opt.value)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -891,7 +891,7 @@ function SpecialtiesList() {
                           name="avail"
                           checked={filterAvailability === opt.value}
                           onChange={() => setFilterAvailability(opt.value)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -910,7 +910,7 @@ function SpecialtiesList() {
                           name="lang"
                           checked={filterLanguage === lang}
                           onChange={() => setFilterLanguage(lang)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{lang === 'all' ? 'All Languages' : lang}</span>
                       </label>
@@ -933,7 +933,7 @@ function SpecialtiesList() {
                           name="gender"
                           checked={filterGender === opt.value}
                           onChange={() => setFilterGender(opt.value)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -956,7 +956,7 @@ function SpecialtiesList() {
                           name="clinicType"
                           checked={filterClinicType === opt.value}
                           onChange={() => setFilterClinicType(opt.value)}
-                          className="w-4 h-4 text-[#00B5B5] focus:ring-[#00B5B5]/20 border-slate-200"
+                          className="w-4 h-4 text-[#0E7C66] focus:ring-[#0E7C66]/20 border-slate-200"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -971,7 +971,7 @@ function SpecialtiesList() {
             <div className="lg:col-span-9 space-y-8">
 
               {/* SECTION 3: SPECIALTY OVERVIEW */}
-              <div className="bg-[#F6FCFC] border border-[#00B5B5]/15 rounded-[2.5rem] p-8">
+              <div className="bg-[#F6FCFC] border border-[#0E7C66]/15 rounded-[2.5rem] p-8">
                 <h2 className="font-h2 text-slate-900 mb-2">
                   {selectedSpecialty} Specialists Near You
                 </h2>
@@ -1015,7 +1015,7 @@ function SpecialtiesList() {
                             onClick={() => {
                               setCurrentLocation(city);
                             }}
-                            className="bg-white border border-slate-200 hover:border-[#00B5B5] hover:text-[#00B5B5] px-3 py-1 rounded-xl text-xs font-bold transition-all"
+                            className="bg-white border border-slate-200 hover:border-[#0E7C66] hover:text-[#0E7C66] px-3 py-1 rounded-xl text-xs font-bold transition-all"
                           >
                             {city}
                           </button>
@@ -1029,7 +1029,7 @@ function SpecialtiesList() {
               {/* SECTION 5: DOCTOR LISTINGS */}
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <Loader2 className="w-12 h-12 text-[#00B5B5] animate-spin mb-4" />
+                  <Loader2 className="w-12 h-12 text-[#0E7C66] animate-spin mb-4" />
                   <p className="text-slate-500 font-bold text-md">Assembling the directory...</p>
                 </div>
               ) : filteredDoctors.length > 0 ? (
@@ -1037,9 +1037,9 @@ function SpecialtiesList() {
                   {filteredDoctors.map((doctor: Doctor) => (
                     <div
                       key={doctor._id}
-                      className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-md hover:shadow-xl hover:shadow-[#00B5B5]/5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
+                      className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-md hover:shadow-xl hover:shadow-[#0E7C66]/5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
                     >
-                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
                       {/* Top badges bar */}
                       <div className="flex flex-wrap gap-2 mb-4 relative z-10">
@@ -1064,7 +1064,7 @@ function SpecialtiesList() {
                             />
                           </div>
                           <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow border border-slate-50">
-                            <CheckCircle2 size={16} className="text-[#00B5B5] fill-[#F0FDFD]" />
+                            <CheckCircle2 size={16} className="text-[#0E7C66] fill-[#F3F9F6]" />
                           </div>
                         </div>
 
@@ -1075,13 +1075,13 @@ function SpecialtiesList() {
                               <h4 className="text-lg font-black text-slate-900 leading-tight">
                                 Dr. {doctor.user.name}
                               </h4>
-                              <p className="text-[#00B5B5] font-black text-[10px] uppercase tracking-widest mt-0.5">
+                              <p className="text-[#0E7C66] font-black text-[10px] uppercase tracking-widest mt-0.5">
                                 {doctor.specialty} Specialist
                               </p>
                             </div>
 
                             {/* Rating */}
-                            <div className="bg-[#F0FDFD] text-[#00B5B5] px-3 py-1 rounded-xl text-xs font-black flex items-center border border-[#E0F7F7] shrink-0">
+                            <div className="bg-[#F3F9F6] text-[#0E7C66] px-3 py-1 rounded-xl text-xs font-black flex items-center border border-[#E6F4EA] shrink-0">
                               <Star size={12} className="mr-1 fill-amber-500 text-amber-500" />
                               {doctor.rating?.toFixed(1) || '4.8'}
                               <span className="text-slate-400 font-bold ml-1">({doctor.reviews || '120'} Reviews)</span>
@@ -1106,7 +1106,7 @@ function SpecialtiesList() {
                               <span className="truncate">{doctor.district}, {doctor.state}</span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-[#00B5B5] text-xs font-black uppercase tracking-wider justify-center sm:justify-start col-span-2 sm:col-span-1">
+                            <div className="flex items-center gap-2 text-[#0E7C66] text-xs font-black uppercase tracking-wider justify-center sm:justify-start col-span-2 sm:col-span-1">
                               <Navigation size={12} />
                               <span>{doctor.distance ? `${Math.round(doctor.distance / 1000)} km Away` : '120 km Away'}</span>
                             </div>
@@ -1129,7 +1129,7 @@ function SpecialtiesList() {
                       {/* Availability & slot display */}
                       <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <div className="flex items-center gap-2.5 text-xs font-bold text-slate-600">
-                          <Calendar size={14} className="text-[#00B5B5]" />
+                          <Calendar size={14} className="text-[#0E7C66]" />
                           <span>Next Available: <strong>Today • 4:30 PM</strong></span>
                         </div>
 
@@ -1171,7 +1171,7 @@ function SpecialtiesList() {
                       setFilterClinicType('all');
                       setSearchTerm('');
                     }}
-                    className="bg-[#00B5B5] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-[#009A9A] transition-all"
+                    className="bg-[#0E7C66] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-[#0B6A59] transition-all"
                   >
                     Reset Filters
                   </button>
@@ -1192,11 +1192,11 @@ function SpecialtiesList() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {[
-              { title: 'Verified Doctors', desc: 'Every specialist is verified before joining our platform.', icon: <CheckCircle2 className="w-6 h-6 text-[#00B5B5]" /> },
-              { title: 'Transparent Fees', desc: 'Know the consultation cost before booking.', icon: <DollarSign className="w-6 h-6 text-[#00B5B5]" /> },
-              { title: 'Trusted Reviews', desc: 'Read authentic feedback from patients.', icon: <Star className="w-6 h-6 text-[#00B5B5] fill-amber-400 text-amber-400" /> },
-              { title: 'Easy Booking', desc: 'Book appointments within minutes.', icon: <Calendar className="w-6 h-6 text-[#00B5B5]" /> },
-              { title: 'Nearby Access', desc: 'Find doctors closest to your location.', icon: <MapPin className="w-6 h-6 text-[#00B5B5]" /> }
+              { title: 'Verified Doctors', desc: 'Every specialist is verified before joining our platform.', icon: <CheckCircle2 className="w-6 h-6 text-[#0E7C66]" /> },
+              { title: 'Transparent Fees', desc: 'Know the consultation cost before booking.', icon: <DollarSign className="w-6 h-6 text-[#0E7C66]" /> },
+              { title: 'Trusted Reviews', desc: 'Read authentic feedback from patients.', icon: <Star className="w-6 h-6 text-[#0E7C66] fill-amber-400 text-amber-400" /> },
+              { title: 'Easy Booking', desc: 'Book appointments within minutes.', icon: <Calendar className="w-6 h-6 text-[#0E7C66]" /> },
+              { title: 'Nearby Access', desc: 'Find doctors closest to your location.', icon: <MapPin className="w-6 h-6 text-[#0E7C66]" /> }
             ].map((card, i) => (
               <Card key={i} className="flex flex-col justify-between">
                 <div>
@@ -1222,7 +1222,7 @@ function SpecialtiesList() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {getConditionsBySpecialty(selectedSpecialty).map((condition, index) => (
-              <div key={index} className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm text-center font-bold text-slate-800 text-xs hover:border-[#00B5B5] transition-all">
+              <div key={index} className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm text-center font-bold text-slate-800 text-xs hover:border-[#0E7C66] transition-all">
                 {condition}
               </div>
             ))}
@@ -1245,7 +1245,7 @@ function SpecialtiesList() {
               >
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                  className="w-full flex justify-between items-center p-6 text-left font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
+                  className="w-full flex justify-between items-center p-6 text-left font-extrabold text-slate-800 hover:text-[#0E7C66] transition-colors"
                 >
                   <h3 className="font-h3 text-slate-900 m-0 p-0 flex-grow text-left">{faq.q}</h3>
                   {expandedFaq === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -1262,7 +1262,7 @@ function SpecialtiesList() {
       </Section>
 
       {/* SECTION 10: CTA SECTION */}
-      <Section className="bg-[#F0FDFD] border-t border-[#00B5B5]/10 text-center">
+      <Section className="bg-[#F3F9F6] border-t border-[#0E7C66]/10 text-center">
         <Container className="max-w-2xl">
           <h2 className="font-h2 text-slate-900 mb-4">Ready to Book Your Appointment?</h2>
           <p className="font-body-primary text-slate-500 mx-auto mb-8">
@@ -1313,7 +1313,7 @@ function SpecialtiesList() {
             >
               <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-[#00B5B5]" />
+                  <MapPin className="w-5 h-5 text-[#0E7C66]" />
                   <span className="text-base font-black text-slate-900">Select Your Location</span>
                 </div>
                 <button 
@@ -1329,7 +1329,7 @@ function SpecialtiesList() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">State</label>
                   <select 
-                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none"
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] transition-all outline-none"
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
                   >
@@ -1343,7 +1343,7 @@ function SpecialtiesList() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">District</label>
                   <div className="relative">
                     <select 
-                      className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none disabled:opacity-50"
+                      className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] transition-all outline-none disabled:opacity-50"
                       value={selectedDistrict}
                       onChange={(e) => {
                         setSelectedDistrict(e.target.value);
@@ -1355,7 +1355,7 @@ function SpecialtiesList() {
                     </select>
                     {isLoadingModalLocations && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <Loader2 size={16} className="animate-spin text-[#00B5B5]" />
+                        <Loader2 size={16} className="animate-spin text-[#0E7C66]" />
                       </div>
                     )}
                   </div>
@@ -1368,7 +1368,7 @@ function SpecialtiesList() {
                     type="text"
                     maxLength={6}
                     placeholder="Enter 6-digit Pincode"
-                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] transition-all outline-none"
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl py-3 px-4 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] transition-all outline-none"
                     value={pincode}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, '');
@@ -1385,7 +1385,7 @@ function SpecialtiesList() {
                   type="button"
                   onClick={() => setIsManualModalOpen(false)}
                   disabled={!selectedDistrict}
-                  className="w-full mt-4 py-3.5 rounded-2xl bg-[#00B5B5] hover:bg-[#009b9b] text-white text-xs font-black transition-all shadow-md shadow-[#00B5B5]/20 disabled:opacity-40"
+                  className="w-full mt-4 py-3.5 rounded-2xl bg-[#0E7C66] hover:bg-[#0B6A59] text-white text-xs font-black transition-all shadow-md shadow-[#0E7C66]/20 disabled:opacity-40"
                 >
                   Confirm Location
                 </button>
@@ -1400,7 +1400,7 @@ function SpecialtiesList() {
 
 export default function SpecialtiesPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#0E7C66] animate-spin" /></div>}>
       <SpecialtiesList />
     </Suspense>
   );

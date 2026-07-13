@@ -32,7 +32,7 @@ export default function Home() {
       <Hero />
 
       {/* Why Patients Use BookMyDoctor */}
-      <Section className="bg-slate-50/50 relative overflow-hidden border-y border-slate-100">
+      <Section className="bg-[#F8FCFB] relative overflow-hidden border-y border-slate-100">
         <Container className="relative z-10">
           <SectionHeader 
             title="Why Choose BookMyDoctor"
@@ -44,39 +44,51 @@ export default function Home() {
               {
                 title: "Location-Based Search",
                 description: "Discover healthcare professionals based on your location.",
-                icon: MapPin
+                icon: MapPin,
+                bg: "bg-orange-50",
+                text: "text-orange-600"
               },
               {
                 title: "Verified Clinics",
                 description: "Browse trusted clinics and healthcare centers.",
-                icon: Building2
+                icon: Building2,
+                bg: "bg-green-50",
+                text: "text-green-600"
               },
               {
                 title: "Easy Appointment Booking",
                 description: "Book confirmed appointment slots within minutes.",
-                icon: Calendar
+                icon: Calendar,
+                bg: "bg-purple-50",
+                text: "text-purple-600"
               },
               {
                 title: "Find Nearby Doctors",
                 description: "Search by specialty, symptoms, clinic, or treatment type.",
-                icon: Search
+                icon: Search,
+                bg: "bg-emerald-50",
+                text: "text-[#0E7C66]"
               },
               {
                 title: "Transparent Information",
                 description: "View doctor experience, consultation fees, and patient reviews before booking.",
-                icon: FileText
+                icon: FileText,
+                bg: "bg-blue-50",
+                text: "text-blue-600"
               },
               {
                 title: "Follow-Up Appointments",
                 description: "Manage repeat visits easily.",
-                icon: RefreshCw
+                icon: RefreshCw,
+                bg: "bg-cyan-50",
+                text: "text-cyan-600"
               }
             ].map((feature, i) => {
               const Icon = feature.icon;
               return (
-                <Card key={i} className="hover:-translate-y-1 transition-all duration-300 flex flex-row gap-5 items-start">
-                  <div className="w-16 h-16 rounded-2xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
-                    <Icon size={28} />
+                <Card key={i} className="hover:-translate-y-1.5 transition-all duration-300 flex flex-row gap-5 items-start">
+                  <div className={`w-16 h-16 rounded-2xl ${feature.bg} flex items-center justify-center ${feature.text} shrink-0`}>
+                    <Icon size={34} />
                   </div>
                   <div>
                     {/* Card Title must use H3 */}
@@ -94,8 +106,8 @@ export default function Home() {
       {/* Specialties Overview */}
       <Section className="bg-white relative overflow-hidden">
         {/* Soft Radial Background Accent */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-[#00B5B5]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-[#0E7C66]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+ 
         <Container className="relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
             <div className="max-w-2xl text-left">
@@ -135,7 +147,7 @@ export default function Home() {
       <DoctorDiscoverySection />
 
       {/* Why Patients Trust BookMyDoctor */}
-      <Section className="bg-[#F0FDFD]/25 relative overflow-hidden border-y border-slate-100/50">
+      <Section className="bg-white relative overflow-hidden border-y border-slate-100/50">
         <Container className="relative z-10">
           <SectionHeader 
             title="Why Patients Trust BookMyDoctor"
@@ -168,7 +180,7 @@ export default function Home() {
                 desc: "Designed to simplify healthcare access for everyone."
               }
             ].map((trust, i) => (
-              <Card key={i} className="flex flex-col justify-between h-full">
+              <Card key={i} className="flex flex-col justify-between h-full border-l-4 border-l-[#0E7C66]">
                 <div>
                   <h3 className="font-h3 text-slate-900 mb-3">{trust.title}</h3>
                   <p className="font-body-secondary text-slate-400">{trust.desc}</p>
@@ -180,7 +192,7 @@ export default function Home() {
       </Section>
 
       {/* Testimonials */}
-      <Section className="bg-white relative overflow-hidden">
+      <Section className="bg-[#F8FCFB] relative overflow-hidden border-b border-slate-100/50">
         <Container className="relative z-10">
           <SectionHeader 
             title="Patient Reviews"

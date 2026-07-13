@@ -5,10 +5,10 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --primary-color: #00B5B5;
-  --primary-hover: #009A9A;
+  --background: #F8FCFB;
+  --foreground: #0F172A;
+  --primary-color: #0E7C66;
+  --primary-hover: #0B6A59;
 }
 
 body {
@@ -52,7 +52,7 @@ h2,
 
 h3,
 .font-h3 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 130%;
 }
@@ -61,37 +61,37 @@ h3,
 
   h3,
   .font-h3 {
-    font-size: 28px;
+    font-size: 24px;
   }
 }
 
 .font-body-primary {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 170%;
-  font-weight: 400;
+  font-weight: 500;
   max-width: 700px;
 }
 
 .font-body-secondary {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 160%;
 }
 
 .font-metadata {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 150%;
 }
 
 /* Section Spacing System */
 .global-section {
-  padding-top: 32px;
-  padding-bottom: 64px;
+  padding-top: 48px;
+  padding-bottom: 72px;
 }
 
 @media (min-width: 1024px) {
   .global-section {
-    padding-top: 48px;
-    padding-bottom: 96px;
+    padding-top: 72px;
+    padding-bottom: 120px;
   }
 }
 
@@ -106,11 +106,20 @@ h3,
 
 /* Card Spacing System */
 .global-card {
-  padding: 24px;
-  border-radius: 24px;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background-color: #FFFFFF;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.global-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
 }
 
 /* ═══════════════════════════════════════
@@ -255,5 +264,5 @@ h3,
 }
 
 .bg-healthcare-blue {
-  background-color: #e7f1ff;
+  background-color: #F3F9F6;
 }

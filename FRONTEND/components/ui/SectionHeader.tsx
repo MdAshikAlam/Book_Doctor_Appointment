@@ -23,7 +23,7 @@ export default function SectionHeader({
       {badge && (
         <div className="mb-4"> {/* 16px gap */}
           {typeof badge === 'string' ? (
-            <span className="px-4 py-1.5 rounded-full bg-[#00B5B5]/10 text-[#00B5B5] text-xs font-bold uppercase tracking-wider">
+            <span className="px-4 py-1.5 rounded-full bg-[#0E7C66]/10 text-[#0E7C66] text-xs font-bold uppercase tracking-wider">
               {badge}
             </span>
           ) : (
