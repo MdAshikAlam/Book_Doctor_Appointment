@@ -32,7 +32,7 @@ export default function ProfileDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 border border-gray-100 text-gray-600 hover:bg-gray-100 hover:text-primary transition-all shadow-sm"
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0E7C66]/50 border border-[#0E7C66]/40 text-emerald-100 hover:bg-[#0E7C66]/80 hover:text-white transition-all shadow-sm"
         aria-label="Profile menu"
       >
         <User className="w-5 h-5" />

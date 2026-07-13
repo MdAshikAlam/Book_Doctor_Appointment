@@ -212,18 +212,18 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
       <div className="relative" ref={locationRef}>
         <button 
           onClick={() => setIsLocationOpen(!isLocationOpen)}
-          className={`flex items-center gap-2 bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 rounded-2xl px-4 py-2.5 transition-all group ${mobile ? 'w-full justify-between' : ''}`}
+          className={`flex items-center gap-2 bg-[#0E7C66]/50 hover:bg-[#0E7C66]/80 border border-[#0E7C66]/40 rounded-2xl px-4 h-14 transition-all group ${mobile ? 'w-full justify-between' : ''}`}
         >
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+          <div className="w-8 h-8 rounded-xl bg-[#083325]/50 flex items-center justify-center text-emerald-100 group-hover:bg-[#0E7C66] group-hover:text-white transition-all">
             <MapPin size={16} />
           </div>
           <div className="text-left">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight leading-none mb-1">Your Location</p>
-            <p className="text-sm font-extrabold text-gray-900 leading-none truncate max-w-[120px]">
+            <p className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-tight leading-none mb-1">Your Location</p>
+            <p className="text-sm font-extrabold text-white leading-none truncate max-w-[120px]">
               {pincode ? (selectedState ? `${pincode}, ${selectedState}` : pincode) : (selectedDistrict || selectedState || 'Select District')}
             </p>
           </div>
-          <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown size={14} className={`text-emerald-200/80 transition-transform duration-300 ${isLocationOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isLocationOpen && (
@@ -235,7 +235,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={isDetecting}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-primary/5 hover:bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition-all disabled:opacity-50 border border-primary/10"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0E7C66]/5 hover:bg-[#0E7C66]/10 px-4 py-2.5 text-xs font-black text-[#0E7C66] transition-all disabled:opacity-50 border border-[#0E7C66]/10"
               >
                 <Navigation size={14} className={isDetecting ? 'animate-spin' : ''} />
                 {isDetecting ? 'Detecting Location...' : 'Use Current Location'}
@@ -244,7 +244,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-gray-400 uppercase">State</label>
                 <select 
-                  className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-[#0E7C66]/20 transition-all outline-none"
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.target.value)}
                 >
@@ -257,7 +257,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                 <label className="text-[11px] font-bold text-gray-400 uppercase">District</label>
                 <div className="relative">
                   <select 
-                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
+                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-[#0E7C66]/20 transition-all outline-none disabled:opacity-50"
                     value={selectedDistrict}
                     onChange={(e) => {
                       setSelectedDistrict(e.target.value);
@@ -269,7 +269,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                   </select>
                   {isLoadingLocations && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <Loader2 size={16} className="animate-spin text-primary" />
+                      <Loader2 size={16} className="animate-spin text-[#0E7C66]" />
                     </div>
                   )}
                 </div>
@@ -282,7 +282,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
                     type="text"
                     maxLength={6}
                     placeholder="Enter 6-digit Pincode"
-                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                    className="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-[#0E7C66]/20 transition-all outline-none"
                     value={pincode}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, '');
@@ -296,7 +296,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
               </div>
 
               {!pincode && (
-                <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl text-primary border border-primary/10">
+                <div className="flex items-center gap-3 p-4 bg-[#0E7C66]/5 rounded-2xl text-[#0E7C66] border border-[#0E7C66]/10">
                   <Navigation size={18} />
                   <p className="text-xs font-bold leading-tight">
                     Please select your location to find nearby specialists.
@@ -310,12 +310,12 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
 
       {/* Main Search Bar */}
       <div className={`relative ${mobile ? 'w-full' : 'w-80 xl:w-96'}`} ref={searchRef}>
-        <div className="flex items-center bg-gray-50 border border-transparent focus-within:border-primary/20 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-primary/5 rounded-2xl px-4 py-2.5 transition-all group">
-          <Search size={18} className="text-gray-400 group-focus-within:text-primary transition-colors" />
+        <div className="flex items-center bg-[#0E7C66]/50 border border-[#0E7C66]/40 focus-within:border-[#0E7C66] focus-within:bg-[#083325]/85 focus-within:shadow-lg rounded-2xl px-4 h-14 transition-all group">
+          <Search size={18} className="text-emerald-200/70 group-focus-within:text-white transition-colors" />
           <input 
             type="text" 
             placeholder="Search doctors, specialities..."
-            className="bg-transparent border-none focus:ring-0 outline-none w-full text-sm font-bold text-gray-900 placeholder:text-gray-400 px-3"
+            className="bg-transparent border-none focus:ring-0 outline-none w-full text-sm font-bold text-white placeholder:text-emerald-200/40 px-3"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -323,7 +323,7 @@ export default function HeaderSearch({ mobile = false }: { mobile?: boolean } = 
             }}
             onFocus={() => setShowSuggestions(true)}
           />
-          {isLoadingSuggestions && <Loader2 size={16} className="animate-spin text-primary ml-2" />}
+          {isLoadingSuggestions && <Loader2 size={16} className="animate-spin text-emerald-200 ml-2" />}
         </div>
 
         <AnimatePresence>

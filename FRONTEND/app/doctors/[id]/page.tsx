@@ -376,7 +376,7 @@ export default function DoctorProfilePage() {
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center bg-slate-50/50">
-        <Loader2 className="w-12 h-12 animate-spin text-[#00B5B5] mb-4" />
+        <Loader2 className="w-12 h-12 animate-spin text-[#0E7C66] mb-4" />
         <p className="text-slate-500 font-extrabold text-sm uppercase tracking-wider animate-pulse">Loading Profile...</p>
       </div>
     );
@@ -428,7 +428,7 @@ export default function DoctorProfilePage() {
     <Section className="bg-slate-50/50 py-10 relative">
       <Container>
         {/* Floating background blobs */}
-        <div className="absolute top-10 right-10 w-80 h-80 bg-[#00B5B5]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-10 w-80 h-80 bg-[#0E7C66]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Outer Layout Grid */}
@@ -439,7 +439,7 @@ export default function DoctorProfilePage() {
             
             {/* HERO CARD */}
             <Card className="!flex-col md:!flex-row items-center md:items-start gap-8 bg-white border border-slate-100 shadow-xl shadow-slate-100/50 p-6 md:p-8 rounded-[2rem] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-2xl pointer-events-none" />
               
               {/* Profile Image */}
               <div className="relative shrink-0">
@@ -454,7 +454,7 @@ export default function DoctorProfilePage() {
                   />
                 </div>
                 <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-lg border border-slate-100">
-                  <CheckCircle size={20} className="text-[#00B5B5] fill-[#F0FDFD]" />
+                  <CheckCircle size={20} className="text-[#0E7C66] fill-[#F3F9F6]" />
                 </div>
               </div>
 
@@ -502,7 +502,7 @@ export default function DoctorProfilePage() {
                   )}
                   {doctor.languages && doctor.languages.length > 0 && (
                     <span className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
-                      <Languages className="text-[#00B5B5] w-4 h-4" /> Languages: {doctor.languages.join(", ")}
+                      <Languages className="text-[#0E7C66] w-4 h-4" /> Languages: {doctor.languages.join(", ")}
                     </span>
                   )}
                 </div>
@@ -517,7 +517,7 @@ export default function DoctorProfilePage() {
                   onClick={() => setConsultMode("clinic")}
                   className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${
                     consultMode === "clinic"
-                      ? "bg-teal-50/50 border-[#00B5B5] text-[#00B5B5] shadow-md shadow-teal-500/5"
+                      ? "bg-teal-50/50 border-[#0E7C66] text-[#0E7C66] shadow-md shadow-teal-500/5"
                       : "bg-white border-slate-100 hover:border-slate-200 text-slate-500"
                   }`}
                 >
@@ -562,24 +562,24 @@ export default function DoctorProfilePage() {
                 {/* Qualifications & Education */}
                 <div className="space-y-4">
                   <h3 className="text-md font-black text-slate-800 flex items-center gap-2">
-                    <GraduationCap className="text-[#00B5B5] w-5 h-5" /> Education & Qualifications
+                    <GraduationCap className="text-[#0E7C66] w-5 h-5" /> Education & Qualifications
                   </h3>
                   <ul className="space-y-2 text-sm text-slate-600 font-bold">
                     {doctor.qualifications && doctor.qualifications.length > 0 ? (
                       doctor.qualifications.map((q, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                           <span>{q}</span>
                         </li>
                       ))
                     ) : (
                       <>
                         <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                           <span>MBBS, MD - Dermatology & Venereology</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                           <span>Fellowship in Aesthetic Dermatology</span>
                         </li>
                       </>
@@ -590,19 +590,19 @@ export default function DoctorProfilePage() {
                 {/* Certifications & Memberships */}
                 <div className="space-y-4">
                   <h3 className="text-md font-black text-slate-800 flex items-center gap-2">
-                    <Award className="text-[#00B5B5] w-5 h-5" /> Certifications & Awards
+                    <Award className="text-[#0E7C66] w-5 h-5" /> Certifications & Awards
                   </h3>
                   <ul className="space-y-2 text-sm text-slate-600 font-bold">
                     <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                       <span>Certified Medical Practitioner - Board of Health</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                       <span>Life Member - National Academy of Dermatologists</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00B5B5] mt-2 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0E7C66] mt-2 shrink-0" />
                       <span>Distinguished Academic Excellence Award 2024</span>
                     </li>
                   </ul>
@@ -616,11 +616,11 @@ export default function DoctorProfilePage() {
                 <div>
                   <h2 className="text-xl font-black text-slate-900 mb-1">Clinic Information</h2>
                   <div className="flex items-center gap-2 mt-1">
-                    <Hospital className="w-5 h-5 text-[#00B5B5] shrink-0" />
+                    <Hospital className="w-5 h-5 text-[#0E7C66] shrink-0" />
                     {doctor.clinic ? (
                       <Link 
                         href={`/clinics/${doctor.clinic.slug || doctor.clinic._id}`}
-                        className="hover:underline text-lg font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
+                        className="hover:underline text-lg font-extrabold text-slate-800 hover:text-[#0E7C66] transition-colors"
                       >
                         {doctor.clinic.clinicName || "Central Specialty Clinic"}
                       </Link>
@@ -679,7 +679,7 @@ export default function DoctorProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400">
-                      <MapPinned size={36} className="text-[#00B5B5] mb-2" />
+                      <MapPinned size={36} className="text-[#0E7C66] mb-2" />
                       <p className="text-xs font-bold text-slate-500">Interactive Map Directions</p>
                       <span className="text-[10px] text-slate-400">Click below to locate via Google Maps</span>
                     </div>
@@ -690,7 +690,7 @@ export default function DoctorProfilePage() {
                     rel="noopener noreferrer"
                     className="absolute bottom-3 right-3 bg-white hover:bg-slate-50 text-slate-800 px-3 py-1.5 rounded-xl border border-slate-100 shadow-lg text-xs font-black flex items-center gap-1.5 transition-all"
                   >
-                    <Compass size={13} className="text-[#00B5B5]" /> Get Directions
+                    <Compass size={13} className="text-[#0E7C66]" /> Get Directions
                   </a>
                 </div>
               </div>
@@ -720,7 +720,7 @@ export default function DoctorProfilePage() {
                     <div key={row.stars} className="flex items-center gap-3 text-xs">
                       <span className="w-12 text-slate-500 font-bold text-right">{row.stars} Star</span>
                       <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-[#00B5B5] h-full rounded-full" style={{ width: `${row.percent}%` }} />
+                        <div className="bg-[#0E7C66] h-full rounded-full" style={{ width: `${row.percent}%` }} />
                       </div>
                       <span className="w-8 text-slate-400 font-bold">{row.percent}%</span>
                     </div>
@@ -730,9 +730,9 @@ export default function DoctorProfilePage() {
 
               {/* Review Submission Form */}
               <div className="bg-slate-50/30 p-6 rounded-3xl border border-slate-100/80 space-y-5 relative overflow-hidden shadow-inner">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-2xl pointer-events-none" />
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <MessageSquare size={14} className="text-[#00B5B5]" /> Share Your Experience
+                  <MessageSquare size={14} className="text-[#0E7C66]" /> Share Your Experience
                 </h3>
                 
                 {isAuthenticated ? (
@@ -746,7 +746,7 @@ export default function DoctorProfilePage() {
                           <button
                             type="button"
                             onClick={() => setIsEditingReview(true)}
-                            className="text-xs font-black text-[#00B5B5] hover:underline uppercase tracking-wider"
+                            className="text-xs font-black text-[#0E7C66] hover:underline uppercase tracking-wider"
                           >
                             Edit Review
                           </button>
@@ -805,7 +805,7 @@ export default function DoctorProfilePage() {
                           placeholder="Write your review here... How was your consultation experience?"
                           rows={3}
                           required
-                          className="w-full bg-white border border-slate-200 focus:border-[#00B5B5] focus:ring-1 focus:ring-[#00B5B5] rounded-2xl p-4 text-xs md:text-sm font-medium outline-none transition-all resize-none text-slate-800"
+                          className="w-full bg-white border border-slate-200 focus:border-[#0E7C66] focus:ring-1 focus:ring-[#0E7C66] rounded-2xl p-4 text-xs md:text-sm font-medium outline-none transition-all resize-none text-slate-800"
                         />
                       </div>
 
@@ -857,7 +857,7 @@ export default function DoctorProfilePage() {
                   
                   return (
                     <div key={r._id || idx} className="bg-slate-50/40 p-5 rounded-2xl border border-slate-100/50 flex gap-4 items-start hover:shadow-md transition-shadow">
-                      <div className="w-10 h-10 rounded-full bg-[#00B5B5]/10 text-[#00B5B5] flex items-center justify-center font-black text-sm shrink-0 uppercase">
+                      <div className="w-10 h-10 rounded-full bg-[#0E7C66]/10 text-[#0E7C66] flex items-center justify-center font-black text-sm shrink-0 uppercase">
                         {reviewerName.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0 space-y-2">
@@ -870,7 +870,7 @@ export default function DoctorProfilePage() {
                                   Your Review
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-50 text-[9px] font-black text-[#00B5B5] uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-50 text-[9px] font-black text-[#0E7C66] uppercase tracking-wider">
                                   Verified Patient
                                 </span>
                               )}
@@ -913,7 +913,7 @@ export default function DoctorProfilePage() {
                       >
                         <h3 className="text-xs md:text-sm font-black text-slate-800">{faq.q}</h3>
                         {isOpen ? (
-                          <ChevronUp size={16} className="text-[#00B5B5] shrink-0" />
+                          <ChevronUp size={16} className="text-[#0E7C66] shrink-0" />
                         ) : (
                           <ChevronDown size={16} className="text-slate-400 shrink-0" />
                         )}
@@ -942,10 +942,10 @@ export default function DoctorProfilePage() {
                           <img
                             src={resolveImageUrl(doc.user?.avatar) || getAvatarFallback(doc.user?.name)}
                             alt={docTitle}
-                            className="w-14 h-14 rounded-2xl object-cover shrink-0 ring-2 ring-slate-100 group-hover:ring-[#00B5B5]/20 transition-all"
+                            className="w-14 h-14 rounded-2xl object-cover shrink-0 ring-2 ring-slate-100 group-hover:ring-[#0E7C66]/20 transition-all"
                           />
                           <div className="min-w-0">
-                            <p className="text-sm font-black text-slate-900 truncate group-hover:text-[#00B5B5] transition-colors">
+                            <p className="text-sm font-black text-slate-900 truncate group-hover:text-[#0E7C66] transition-colors">
                               <Link href={`/doctors/${doc.slug || doc._id}`}>{docTitle}</Link>
                             </p>
                             <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-0.5">{doc.specialty}</p>
@@ -958,7 +958,7 @@ export default function DoctorProfilePage() {
                         </div>
                         <Link
                           href={`/doctors/${doc.slug || doc._id}`}
-                          className="shrink-0 bg-slate-50 hover:bg-[#E0F7F7] text-slate-700 hover:text-[#00B5B5] px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
+                          className="shrink-0 bg-slate-50 hover:bg-[#E6F4EA] text-slate-700 hover:text-[#0E7C66] px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
                         >
                           Profile
                         </Link>
@@ -978,12 +978,12 @@ export default function DoctorProfilePage() {
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Mode</p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-black capitalize text-slate-800 flex items-center gap-1.5">
-                    {consultMode === "clinic" && <Hospital className="w-4 h-4 text-[#00B5B5]" />}
-                    {consultMode === "video" && <Video className="w-4 h-4 text-[#00B5B5]" />}
-                    {consultMode === "phone" && <Phone className="w-4 h-4 text-[#00B5B5]" />}
+                    {consultMode === "clinic" && <Hospital className="w-4 h-4 text-[#0E7C66]" />}
+                    {consultMode === "video" && <Video className="w-4 h-4 text-[#0E7C66]" />}
+                    {consultMode === "phone" && <Phone className="w-4 h-4 text-[#0E7C66]" />}
                     {consultMode === "clinic" ? "In-Clinic Visit" : consultMode === "video" ? "Video Consultation" : "Phone Call Consult"}
                   </span>
-                  <span className="text-lg font-black text-[#00B5B5]">₹{feesMap[consultMode]}</span>
+                  <span className="text-lg font-black text-[#0E7C66]">₹{feesMap[consultMode]}</span>
                 </div>
               </div>
 
@@ -996,7 +996,7 @@ export default function DoctorProfilePage() {
                     onClick={() => dateInputRef.current?.showPicker()}
                     className="flex items-center gap-1 text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-wider cursor-pointer transition-colors bg-teal-50 px-2.5 py-1 rounded-lg"
                   >
-                    <Calendar size={11} className="text-[#00B5B5]" />
+                    <Calendar size={11} className="text-[#0E7C66]" />
                     <span>Full Calendar</span>
                     <input 
                       ref={dateInputRef}
@@ -1019,7 +1019,7 @@ export default function DoctorProfilePage() {
                         }}
                         className={`flex flex-col items-center justify-center p-2.5 rounded-xl border min-w-[55px] text-center transition-all ${
                           isSelected
-                            ? "bg-[#00B5B5] border-[#00B5B5] text-white shadow-md shadow-teal-500/10"
+                            ? "bg-[#0E7C66] border-[#0E7C66] text-white shadow-md shadow-teal-500/10"
                             : "bg-white border-slate-100 hover:border-slate-200 text-slate-600"
                         }`}
                       >
@@ -1124,7 +1124,7 @@ export default function DoctorProfilePage() {
                 disabled={!selectedSlot}
                 className={`w-full py-4.5 rounded-2xl font-black text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                   selectedSlot 
-                    ? "bg-[#00B5B5] hover:bg-[#00B5B5]/90 text-white shadow-lg shadow-teal-500/20 active:translate-y-0.5" 
+                    ? "bg-[#0E7C66] hover:bg-[#0E7C66]/90 text-white shadow-lg shadow-teal-500/20 active:translate-y-0.5" 
                     : "bg-slate-100 text-slate-400 cursor-not-allowed"
                 }`}
               >
@@ -1145,7 +1145,7 @@ export default function DoctorProfilePage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100/80 shadow-2xl p-4 z-50 flex justify-between items-center gap-4 animate-in slide-in-from-bottom duration-300">
         <div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Consultation Fee</p>
-          <p className="text-lg font-black text-[#00B5B5] leading-none mt-0.5">₹{feesMap[consultMode]}</p>
+          <p className="text-lg font-black text-[#0E7C66] leading-none mt-0.5">₹{feesMap[consultMode]}</p>
         </div>
         <button
           onClick={() => {
@@ -1154,7 +1154,7 @@ export default function DoctorProfilePage() {
               rightWidget.scrollIntoView({ behavior: "smooth" });
             }
           }}
-          className="bg-[#00B5B5] hover:bg-[#00B5B5]/90 text-white font-black text-xs px-6 py-3.5 rounded-xl uppercase tracking-wider shadow-lg shadow-teal-500/15"
+          className="bg-[#0E7C66] hover:bg-[#0E7C66]/90 text-white font-black text-xs px-6 py-3.5 rounded-xl uppercase tracking-wider shadow-lg shadow-teal-500/15"
         >
           Book Now
         </button>

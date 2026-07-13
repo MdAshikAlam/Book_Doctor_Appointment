@@ -25,7 +25,7 @@ export default function LoginModal() {
           <X className="w-6 h-6" />
         </button>
         
-        <Suspense fallback={<div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin mx-auto" />}>
+        <Suspense fallback={<div className="w-10 h-10 rounded-full border-4 border-slate-100 border-t-[#0E7C66] animate-spin mx-auto" />}>
           <LoginForm isModal onClose={() => router.back()} />
         </Suspense>
       </div>

@@ -13,7 +13,7 @@ const Header = () => {
   const pathname = usePathname();
 
   return (
-    <header className="bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm backdrop-blur-md">
+    <header className="bg-[#083325] sticky top-0 z-50 border-b border-[#0E7C66]/40 shadow-md backdrop-blur-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -24,7 +24,7 @@ const Header = () => {
                 alt="BookMyDoctor" 
                 width={400} 
                 height={120} 
-                className="h-16 md:h-20 w-auto object-contain max-w-none group-hover:scale-105 transition-transform"
+                className="h-16 md:h-20 w-auto object-contain max-w-none group-hover:scale-105 transition-transform brightness-0 invert"
                 style={{ height: '140%', position: 'relative', top: '5px' }}
                 priority
               />
@@ -32,7 +32,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden xl:flex space-x-8 items-center">
+          <nav className="hidden xl:flex space-x-2 items-center">
             {[
               { name: 'Home', href: '/' },
               { name: 'Specialties', href: '/specialties' },
@@ -47,7 +47,7 @@ const Header = () => {
                 <Link 
                   key={link.name} 
                   href={link.href} 
-                  className={`text-sm font-black transition-all ${isActive ? 'text-[#00B5B5]' : 'text-slate-500 hover:text-[#00B5B5]'}`}
+                  className={`text-sm font-black px-4 py-2 rounded-full transition-all ${isActive ? 'bg-[#0E7C66] text-white shadow-sm' : 'text-emerald-100/90 hover:text-white hover:bg-[#0E7C66]/30'}`}
                 >
                   {link.name}
                 </Link>
@@ -63,7 +63,7 @@ const Header = () => {
               <ProfileDropdown />
               <button 
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="xl:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                className="xl:hidden p-2 text-emerald-100 hover:bg-[#0E7C66]/50 rounded-lg transition-colors"
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -76,17 +76,17 @@ const Header = () => {
       {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div 
-          className="xl:hidden fixed inset-0 top-20 bg-slate-900/20 backdrop-blur-xs z-30 transition-opacity" 
+          className="xl:hidden fixed inset-0 top-20 bg-emerald-950/40 backdrop-blur-xs z-30 transition-opacity" 
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden absolute top-20 left-0 right-0 bg-white border-b border-slate-100 shadow-xl z-40 transition-all duration-300 ease-in-out">
+        <div className="xl:hidden absolute top-20 left-0 right-0 bg-[#083325] border-b border-[#0E7C66]/40 shadow-xl z-40 transition-all duration-300 ease-in-out">
           <div className="container mx-auto px-4 py-6 flex flex-col space-y-4">
             {/* Search and Location for Mobile */}
-            <div className="pb-4 border-b border-slate-100 lg:hidden">
+            <div className="pb-4 border-b border-[#0E7C66]/40 lg:hidden">
               <HeaderSearch mobile={true} />
             </div>
 
@@ -105,7 +105,7 @@ const Header = () => {
                   key={link.name} 
                   href={link.href} 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`text-base font-bold py-3 px-4 rounded-xl transition-all flex items-center ${isActive ? 'bg-[#00B5B5]/10 text-[#00B5B5]' : 'text-slate-600 hover:bg-slate-50 hover:text-[#00B5B5]'}`}
+                  className={`text-base font-bold py-3 px-4 rounded-xl transition-all flex items-center ${isActive ? 'bg-[#0E7C66] text-white' : 'text-emerald-100 hover:bg-[#0E7C66]/30 hover:text-white'}`}
                 >
                   {link.name}
                 </Link>

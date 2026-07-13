@@ -210,7 +210,7 @@ export default function Contact() {
                 </button>
                 <button
                   onClick={() => router.push('/')}
-                  className="flex-1 py-3 px-4 rounded-2xl bg-[#00B5B5] text-white font-bold text-sm hover:bg-[#009999] transition"
+                  className="flex-1 py-3 px-4 rounded-2xl bg-[#0E7C66] text-white font-bold text-sm hover:bg-[#009999] transition"
                 >
                   Go Home
                 </button>
@@ -227,15 +227,15 @@ export default function Contact() {
       )}
 
       {/* SECTION 1: HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F0FDFD] via-[#F6FCFC] to-white pt-10 pb-16 border-b border-slate-100"> {/* Navbar -> Hero = 40px */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F3F9F6] via-[#F6FCFC] to-white pt-10 pb-16 border-b border-slate-100"> {/* Navbar -> Hero = 40px */}
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%230E7C66' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
         }} />
 
         {/* Ambient Glowing Orbs */}
-        <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#00B5B5]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#0E7C66]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '12s' }} />
 
         <Container className="relative z-10 text-center">
@@ -286,7 +286,7 @@ export default function Contact() {
                         type="text" 
                         required
                         maxLength={40}
-                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
+                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                         placeholder="John Doe"
                         value={formData.fullName}
                         onChange={(e) => {
@@ -309,7 +309,7 @@ export default function Contact() {
                           type="email" 
                           required
                           maxLength={60}
-                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
+                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                           placeholder="john@example.com"
                           value={formData.email}
                           onChange={(e) => {
@@ -328,7 +328,7 @@ export default function Contact() {
                         <input 
                           type="tel" 
                           required
-                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
+                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                           placeholder="+91 98765 43210"
                           value={formData.phone}
                           onChange={(e) => {
@@ -350,7 +350,7 @@ export default function Contact() {
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2.5">Category</label>
                         <div className="relative">
                           <select
-                            className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800 appearance-none"
+                            className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800 appearance-none"
                             value={formData.category}
                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                           >
@@ -371,7 +371,7 @@ export default function Contact() {
                           type="text" 
                           required
                           maxLength={100}
-                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
+                          className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800" 
                           placeholder="e.g. Schedule query"
                           value={formData.subject}
                           onChange={(e) => {
@@ -393,7 +393,7 @@ export default function Contact() {
                       <textarea 
                         required
                         maxLength={500}
-                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-32 focus:outline-none focus:ring-2 focus:ring-[#00B5B5]/20 focus:border-[#00B5B5] focus:bg-white transition-all text-sm font-semibold text-slate-800 resize-none leading-relaxed" 
+                        className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-4 h-32 focus:outline-none focus:ring-2 focus:ring-[#0E7C66]/20 focus:border-[#0E7C66] focus:bg-white transition-all text-sm font-semibold text-slate-800 resize-none leading-relaxed" 
                         placeholder="Please describe your question or issue in detail..."
                         value={formData.message}
                         onChange={(e) => {
@@ -440,19 +440,19 @@ export default function Contact() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> General Support
                       </p>
-                      <a href="mailto:support@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">support@example.com</a>
+                      <a href="mailto:support@example.com" className="text-sm font-extrabold text-[#0E7C66] hover:underline">support@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> Appointment Support
                       </p>
-                      <a href="mailto:appointments@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">appointments@example.com</a>
+                      <a href="mailto:appointments@example.com" className="text-sm font-extrabold text-[#0E7C66] hover:underline">appointments@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Mail size={12} /> Doctor & Clinic Onboarding
                       </p>
-                      <a href="mailto:partners@example.com" className="text-sm font-extrabold text-[#00B5B5] hover:underline">partners@example.com</a>
+                      <a href="mailto:partners@example.com" className="text-sm font-extrabold text-[#0E7C66] hover:underline">partners@example.com</a>
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
@@ -463,7 +463,7 @@ export default function Contact() {
                   </div>
 
                   <div className="pt-6 border-t border-slate-200/50 flex gap-4 items-center">
-                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[#0E7C66] shrink-0">
                       <Clock size={18} />
                     </div>
                     <div>
@@ -481,7 +481,7 @@ export default function Contact() {
                 <p className="font-body-secondary text-slate-400 mb-6">For business enquiries and administrative communication.</p>
                 <div className="space-y-4">
                   <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#0E7C66] shrink-0 border border-slate-100">
                       <MapPin size={16} />
                     </div>
                     <div>
@@ -490,16 +490,16 @@ export default function Contact() {
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#0E7C66] shrink-0 border border-slate-100">
                       <Mail size={16} />
                     </div>
                     <div>
                       <h4 className="font-extrabold text-slate-800 text-sm">Email</h4>
-                      <a href="mailto:support@example.com" className="text-xs text-[#00B5B5] font-semibold mt-0.5 hover:underline">support@example.com</a>
+                      <a href="mailto:support@example.com" className="text-xs text-[#0E7C66] font-semibold mt-0.5 hover:underline">support@example.com</a>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
-                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#00B5B5] shrink-0 border border-slate-100">
+                    <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#0E7C66] shrink-0 border border-slate-100">
                       <Phone size={16} />
                     </div>
                     <div>
@@ -559,7 +559,7 @@ export default function Contact() {
               const Icon = request.icon;
               return (
                 <Card key={i} className="flex-row gap-5 items-start hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0E7C66]/10 flex items-center justify-center text-[#0E7C66] shrink-0">
                     <Icon size={20} />
                   </div>
                   <div>
@@ -650,14 +650,14 @@ export default function Contact() {
                 className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <button
-                  className="w-full p-6 text-left flex justify-between items-center font-extrabold text-slate-800 hover:text-[#00B5B5] transition-colors"
+                  className="w-full p-6 text-left flex justify-between items-center font-extrabold text-slate-800 hover:text-[#0E7C66] transition-colors"
                   onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
                 >
                   {/* FAQ Questions must use H3 */}
                   <h3 className="font-h3 text-slate-900 m-0 p-0 flex-grow text-left">{faq.q}</h3>
                   <ChevronDown 
                     size={18} 
-                    className={`text-slate-400 transform transition-transform duration-200 ${openFaqIndex === index ? 'rotate-180 text-[#00B5B5]' : ''}`} 
+                    className={`text-slate-400 transform transition-transform duration-200 ${openFaqIndex === index ? 'rotate-180 text-[#0E7C66]' : ''}`} 
                   />
                 </button>
                 {openFaqIndex === index && (

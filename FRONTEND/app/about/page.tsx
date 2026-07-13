@@ -25,24 +25,24 @@ export default function About() {
   return (
     <div className="bg-white min-h-screen relative overflow-hidden">
       {/* SECTION 1: HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F0FDFD] via-[#F6FCFC] to-white pt-10 pb-16 border-b border-slate-100"> {/* Navbar -> Hero = 40px */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F3F9F6] via-[#F6FCFC] to-white pt-10 pb-16 border-b border-slate-100"> {/* Navbar -> Hero = 40px */}
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%230E7C66' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
         }} />
 
         {/* Ambient Glowing Orbs */}
-        <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#00B5B5]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-[#0E7C66]/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDuration: '12s' }} />
 
         <Container className="relative z-10 text-center">
           {/* Main Title */}
           <h1 className="font-h1 text-slate-900 mb-6">
             Making Healthcare Access <br className="hidden sm:inline" />
-            <span className="relative inline-block px-2 text-[#00B5B5]">
+            <span className="relative inline-block px-2 text-[#0E7C66]">
               Simple for Everyone
-              <span className="absolute bottom-1 left-0 w-full h-[6px] bg-[#00B5B5]/10 -skew-x-12 rounded-full"></span>
+              <span className="absolute bottom-1 left-0 w-full h-[6px] bg-[#0E7C66]/10 -skew-x-12 rounded-full"></span>
             </span>
           </h1>
 
@@ -97,13 +97,13 @@ export default function About() {
             <div className="relative">
               {/* Decorative Frame */}
               <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl bg-white p-3 border border-slate-100/50 max-w-[480px] mx-auto lg:ml-auto">
-                <div className="rounded-[2rem] overflow-hidden aspect-[4/3] relative bg-[#F0FDFD]">
+                <div className="rounded-[2rem] overflow-hidden aspect-[4/3] relative bg-[#F3F9F6]">
                   <img
                     src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop"
                     alt="Healthcare professional consulting with patient"
                     className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#00B5B5]/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E7C66]/10 to-transparent" />
                 </div>
               </div>
             </div>
@@ -140,7 +140,7 @@ export default function About() {
                 description: "Patients frequently lack access to consultation fees, experience, and clinic details before booking.",
                 icon: FileText,
                 color: "from-teal-500/10 to-teal-500/5",
-                iconColor: "text-[#00B5B5]"
+                iconColor: "text-[#0E7C66]"
               },
               {
                 title: "Location Challenges",
@@ -205,15 +205,15 @@ export default function About() {
             ].map((step, i) => {
               const Icon = step.icon;
               return (
-                <Card key={i} className="relative flex flex-col justify-between group hover:border-[#00B5B5]/25">
-                  <div className="absolute top-6 right-6 text-slate-200 group-hover:text-[#00B5B5]/10 text-4xl font-black transition-colors">
+                <Card key={i} className="relative flex flex-col justify-between group hover:border-[#0E7C66]/25">
+                  <div className="absolute top-6 right-6 text-slate-200 group-hover:text-[#0E7C66]/10 text-4xl font-black transition-colors">
                     {`0${i + 1}`}
                   </div>
                   <div>
-                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-[#00B5B5] mb-6">
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-[#0E7C66] mb-6">
                       <Icon size={20} />
                     </div>
-                    <span className="text-xs font-bold text-[#00B5B5] uppercase tracking-wider mb-2 block">{step.step}</span>
+                    <span className="text-xs font-bold text-[#0E7C66] uppercase tracking-wider mb-2 block">{step.step}</span>
                     <h3 className="font-h3 text-slate-900 mb-3">{step.title}</h3>
                     <p className="font-body-secondary text-slate-400">{step.description}</p>
                   </div>
@@ -269,7 +269,7 @@ export default function About() {
               return (
                 <Card key={i} className="flex flex-col justify-between">
                   <div>
-                    <div className="w-10 h-10 rounded-xl bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#0E7C66]/10 flex items-center justify-center text-[#0E7C66] mb-4">
                       <Icon size={18} />
                     </div>
                     <h3 className="font-h3 text-slate-900 mb-2">{item.title}</h3>
@@ -294,7 +294,7 @@ export default function About() {
                     alt="Doctors team working in clinic"
                     className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#00B5B5]/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E7C66]/10 to-transparent" />
                 </div>
               </div>
             </div>
@@ -317,7 +317,7 @@ export default function About() {
                   "Reduce Scheduling Friction"
                 ].map((benefit, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-[#00B5B5]/10 flex items-center justify-center text-[#00B5B5] shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-[#0E7C66]/10 flex items-center justify-center text-[#0E7C66] shrink-0">
                       <Check size={12} strokeWidth={3} />
                     </div>
                     <span className="text-sm font-bold text-slate-700">{benefit}</span>
@@ -348,7 +348,7 @@ export default function About() {
       {/* SECTION 8: FINAL CTA */}
       <Section className="bg-white relative">
         <Container className="max-w-4xl">
-          <div className="bg-gradient-to-br from-[#00B5B5] to-[#008A8A] rounded-[2.5rem] p-10 md:p-14 text-center text-white relative overflow-hidden shadow-2xl shadow-[#00B5B5]/25">
+          <div className="bg-gradient-to-br from-[#0E7C66] to-[#008A8A] rounded-[2.5rem] p-10 md:p-14 text-center text-white relative overflow-hidden shadow-2xl shadow-[#0E7C66]/25">
             {/* Subtle background overlay grid */}
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
@@ -363,7 +363,7 @@ export default function About() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link href="/specialties" className="btn-primary-custom !bg-white !text-slate-900 w-full sm:w-auto">
                   Find Doctors Near Me
-                  <ArrowRight size={16} className="ml-2 text-[#00B5B5]" />
+                  <ArrowRight size={16} className="ml-2 text-[#0E7C66]" />
                 </Link>
                 <Link href="/specialties" className="btn-secondary-custom !border-white/30 hover:!border-white !text-white !bg-transparent w-full sm:w-auto">
                   Browse Specialties

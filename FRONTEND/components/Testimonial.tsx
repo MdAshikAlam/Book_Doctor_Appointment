@@ -10,9 +10,9 @@ interface TestimonialProps {
 
 const Testimonial = ({ name, role, content, rating, avatarUrl }: TestimonialProps) => {
   return (
-    <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-lg shadow-slate-200/10 relative hover:shadow-2xl hover:shadow-[#00B5B5]/5 hover:-translate-y-1 transition-all duration-500 group flex flex-col justify-between h-full">
+    <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-lg shadow-slate-200/10 relative hover:shadow-2xl hover:shadow-[#0E7C66]/5 hover:-translate-y-1 transition-all duration-500 group flex flex-col justify-between h-full">
       {/* Premium Gradient Quote Watermark */}
-      <div className="absolute top-8 right-10 text-[#00B5B5]/10 group-hover:text-[#00B5B5]/20 group-hover:scale-110 transition-all duration-500 pointer-events-none">
+      <div className="absolute top-8 right-10 text-[#0E7C66]/10 group-hover:text-[#0E7C66]/20 group-hover:scale-110 transition-all duration-500 pointer-events-none">
         <Quote size={48} className="fill-current" />
       </div>
       
@@ -38,7 +38,7 @@ const Testimonial = ({ name, role, content, rating, avatarUrl }: TestimonialProp
       {/* Patient Biography Footer */}
       <div className="flex items-center gap-4 pt-6 border-t border-slate-50">
         <div className="relative shrink-0">
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-50 ring-4 ring-slate-100/50 group-hover:ring-[#00B5B5]/20 shadow-sm transition-all duration-500">
+          <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-50 ring-4 ring-slate-100/50 group-hover:ring-[#0E7C66]/20 shadow-sm transition-all duration-500">
             <img 
               src={avatarUrl || `https://ui-avatars.com/api/?name=${name}&background=random`} 
               alt={name}

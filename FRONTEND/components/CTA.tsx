@@ -20,10 +20,10 @@ const CTA = ({
   return (
     <Section className="bg-white relative overflow-hidden">
       {/* Soothing background decorative glows */}
-      <div className="absolute top-10 left-10 w-96 h-96 bg-[#00B5B5]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-10 left-10 w-96 h-96 bg-[#0E7C66]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <Container className="relative z-10">
-        <div className="bg-gradient-to-tr from-[#00A5A5] to-[#008F8F] rounded-[3rem] p-8 md:p-20 relative overflow-hidden shadow-2xl shadow-[#00B5B5]/25 border border-white/10">
+        <div className="bg-gradient-to-tr from-[#00A5A5] to-[#0b3d2f] rounded-[3rem] p-8 md:p-20 relative overflow-hidden shadow-2xl shadow-[#0E7C66]/25 border border-white/10">
 
           {/* Calm Ambient Lighting inside Card */}
           <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[450px] h-[450px] bg-white/15 rounded-full blur-3xl animate-pulse duration-[6000ms]" />

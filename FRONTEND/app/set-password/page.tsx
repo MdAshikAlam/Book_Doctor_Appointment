@@ -161,7 +161,7 @@ function SetPasswordFormContent() {
           <button
             type="submit"
             disabled={loading || !isFormValid}
-            className="w-full bg-primary hover:bg-[#009A9A] text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none mt-4 flex items-center justify-center gap-2"
+            className="w-full bg-primary hover:bg-[#0B6A59] text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl transition-all shadow-xl shadow-primary/10 disabled:bg-slate-350 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none mt-4 flex items-center justify-center gap-2"
           >
             {loading ? 'Processing...' : 'Set Password & Continue'}
           </button>

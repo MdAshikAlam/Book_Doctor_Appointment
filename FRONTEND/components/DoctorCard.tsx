@@ -79,7 +79,7 @@ const DoctorCard = ({
     <div className="bg-white rounded-3xl border border-slate-100/80 p-5 shadow-lg shadow-slate-100/50 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between h-full bg-clip-border">
       
       {/* Decorative Gradient Accent */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
       
       <div>
         {/* Top Header Row: Avatar + Basic Info */}
@@ -96,7 +96,7 @@ const DoctorCard = ({
               />
             </div>
             <div className="absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full shadow border border-slate-50">
-              <CheckCircle size={14} className="text-[#00B5B5] fill-[#F0FDFD]" />
+              <CheckCircle size={14} className="text-[#0E7C66] fill-[#F3F9F6]" />
             </div>
           </div>
 

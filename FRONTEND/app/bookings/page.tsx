@@ -200,8 +200,8 @@ export default function MyAppointmentsPage() {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center bg-slate-50/30">
         <div className="relative flex items-center justify-center mb-4">
-          <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#00B5B5] animate-spin" />
-          <Loader2 className="w-6 h-6 text-[#00B5B5] animate-pulse absolute" />
+          <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#0E7C66] animate-spin" />
+          <Loader2 className="w-6 h-6 text-[#0E7C66] animate-pulse absolute" />
         </div>
         <p className="text-slate-500 font-extrabold text-sm tracking-wide animate-pulse uppercase">Assembling your bookings...</p>
       </div>
@@ -214,11 +214,11 @@ export default function MyAppointmentsPage() {
         <Container className="max-w-xl">
           <div className="bg-white rounded-[2.5rem] border border-slate-100 p-10 md:p-12 shadow-xl shadow-slate-200/50 text-center relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%230E7C66' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
               backgroundSize: '45px 45px'
             }} />
 
-            <div className="w-20 h-20 bg-[#00B5B5]/10 text-[#00B5B5] rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
+            <div className="w-20 h-20 bg-[#0E7C66]/10 text-[#0E7C66] rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
               <Lock size={36} />
             </div>
 
@@ -332,7 +332,7 @@ export default function MyAppointmentsPage() {
     <Section className="bg-slate-50/50 min-h-screen relative">
       {/* Background decoration */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%2300B5B5' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%230E7C66' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
         backgroundSize: '40px 40px'
       }} />
 
@@ -397,7 +397,7 @@ export default function MyAppointmentsPage() {
             {/* SECTION 3: UPCOMING APPOINTMENTS */}
             <section>
               <h2 className="font-h2 text-slate-900 mb-6 flex items-center gap-3">
-                <div className="w-2.5 h-6 bg-[#00B5B5] rounded-full"></div>
+                <div className="w-2.5 h-6 bg-[#0E7C66] rounded-full"></div>
                 Upcoming Appointments
               </h2>
 
@@ -410,7 +410,7 @@ export default function MyAppointmentsPage() {
                     });
 
                     return (
-                      <Card key={apt._id} className="hover:border-[#00B5B5]/25">
+                      <Card key={apt._id} className="hover:border-[#0E7C66]/25">
                         <div className="flex flex-col md:flex-row justify-between gap-6">
                           <div className="flex items-start gap-5">
                             {/* Doctor Photo */}
@@ -420,7 +420,7 @@ export default function MyAppointmentsPage() {
                             <div className="space-y-1">
                               {/* Card title must use H3 */}
                               <h3 className="font-h3 text-slate-900">Dr. {apt.doctor?.user?.name || "Healthcare Professional"}</h3>
-                              <p className="text-xs font-bold text-[#00B5B5]">{apt.doctor?.specialty || "Specialist"}</p>
+                              <p className="text-xs font-bold text-[#0E7C66]">{apt.doctor?.specialty || "Specialist"}</p>
                               <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5 pt-1">
                                 <Hospital className="w-3.5 h-3.5" />
                                 <span>{apt.clinic?.name || "BookMyDoctor Clinic"}</span>
@@ -447,7 +447,7 @@ export default function MyAppointmentsPage() {
 
                         {apt.clinic && (
                           <div className="mt-1 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center gap-2.5 text-xs font-bold text-slate-500">
-                            <MapPin size={14} className="text-[#00B5B5]" />
+                            <MapPin size={14} className="text-[#0E7C66]" />
                             <span>{apt.clinic.addressLine1}, {apt.clinic.district}, {apt.clinic.state}</span>
                           </div>
                         )}
@@ -530,11 +530,11 @@ export default function MyAppointmentsPage() {
                             <h3 className="font-h3 text-slate-900">Dr. {apt.doctor?.user?.name || "Doctor"}</h3>
                             <p className="text-xs font-bold text-slate-400">{apt.doctor?.specialty || "Specialist"} — {apt.clinic?.name || "Clinic"}</p>
                             <p className="text-xs font-semibold text-slate-450 flex items-center gap-1 pt-1">
-                              <Calendar size={12} className="text-[#00B5B5]" />
+                              <Calendar size={12} className="text-[#0E7C66]" />
                               <span>{appointmentDate} at {apt.slot}</span>
                             </p>
                             <p className="text-xs font-semibold text-slate-550 flex items-center gap-1 pt-1">
-                              <User size={12} className="text-[#00B5B5]" />
+                              <User size={12} className="text-[#0E7C66]" />
                               <span>Patient: {apt.fullName}</span>
                             </p>
                           </div>
@@ -554,7 +554,7 @@ export default function MyAppointmentsPage() {
                         <div className="mt-2 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                           <button
                             onClick={() => handleOpenDetails(apt)}
-                            className="text-xs font-bold text-[#00B5B5] hover:underline"
+                            className="text-xs font-bold text-[#0E7C66] hover:underline"
                           >
                             View Details
                           </button>
@@ -569,7 +569,7 @@ export default function MyAppointmentsPage() {
                             )}
                             <Link
                               href="/specialties"
-                              className="text-xs font-bold text-white bg-[#00B5B5] px-4 py-2 rounded-xl shadow-md hover:bg-[#009A9A]"
+                              className="text-xs font-bold text-white bg-[#0E7C66] px-4 py-2 rounded-xl shadow-md hover:bg-[#0B6A59]"
                             >
                               Book Again
                             </Link>
@@ -597,21 +597,21 @@ export default function MyAppointmentsPage() {
             <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
               <h2 className="font-h2 text-slate-900 mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#00B5B5]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
-                  <Search size={22} className="text-[#00B5B5]" />
-                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#00B5B5]">Find Doctors</span>
+                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#0E7C66]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
+                  <Search size={22} className="text-[#0E7C66]" />
+                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#0E7C66]">Find Doctors</span>
                 </Link>
-                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#00B5B5]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
-                  <BookOpen size={22} className="text-[#00B5B5]" />
-                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#00B5B5]">Browse Specialties</span>
+                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#0E7C66]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
+                  <BookOpen size={22} className="text-[#0E7C66]" />
+                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#0E7C66]">Browse Specialties</span>
                 </Link>
-                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#00B5B5]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
-                  <Calendar size={22} className="text-[#00B5B5]" />
-                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#00B5B5]">Book New Appointment</span>
+                <Link href="/specialties" className="p-5 rounded-2xl border border-slate-100 hover:border-[#0E7C66]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
+                  <Calendar size={22} className="text-[#0E7C66]" />
+                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#0E7C66]">Book New Appointment</span>
                 </Link>
-                <Link href="/contact" className="p-5 rounded-2xl border border-slate-100 hover:border-[#00B5B5]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
-                  <HelpCircle size={22} className="text-[#00B5B5]" />
-                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#00B5B5]">Contact Support</span>
+                <Link href="/contact" className="p-5 rounded-2xl border border-slate-100 hover:border-[#0E7C66]/30 hover:bg-slate-50/50 transition-all flex flex-col justify-between h-32 group">
+                  <HelpCircle size={22} className="text-[#0E7C66]" />
+                  <span className="font-extrabold text-sm text-slate-800 group-hover:text-[#0E7C66]">Contact Support</span>
                 </Link>
               </div>
             </section>
@@ -620,7 +620,7 @@ export default function MyAppointmentsPage() {
             <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-h2 text-slate-900 m-0">Your Healthcare Activity</h2>
-                <span className="text-xs font-black text-[#00B5B5] bg-[#00B5B5]/10 px-3.5 py-1 rounded-full uppercase tracking-wider">This Year</span>
+                <span className="text-xs font-black text-[#0E7C66] bg-[#0E7C66]/10 px-3.5 py-1 rounded-full uppercase tracking-wider">This Year</span>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-metadata">
                 <div className="space-y-1">
@@ -645,7 +645,7 @@ export default function MyAppointmentsPage() {
         )}
 
         {/* FOOTER CTA */}
-        <div className="mt-20 bg-gradient-to-br from-[#00B5B5] to-[#008A8A] rounded-[2.5rem] p-10 md:p-14 text-center text-white relative overflow-hidden shadow-2xl shadow-[#00B5B5]/25">
+        <div className="mt-20 bg-gradient-to-br from-[#0E7C66] to-[#008A8A] rounded-[2.5rem] p-10 md:p-14 text-center text-white relative overflow-hidden shadow-2xl shadow-[#0E7C66]/25">
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E")`,
             backgroundSize: '40px 40px'
@@ -683,7 +683,7 @@ export default function MyAppointmentsPage() {
             </button>
 
             <h3 className="font-h3 text-slate-900 mb-6 flex items-center gap-2">
-              <Stethoscope className="text-[#00B5B5]" /> Appointment Details
+              <Stethoscope className="text-[#0E7C66]" /> Appointment Details
             </h3>
 
             <div className="space-y-5">
@@ -826,7 +826,7 @@ export default function MyAppointmentsPage() {
               <X size={16} />
             </button>
             <h4 className="font-h3 text-slate-900 mb-3 flex items-center gap-2">
-              <Calendar className="text-[#00B5B5]" /> Reschedule Appointment
+              <Calendar className="text-[#0E7C66]" /> Reschedule Appointment
             </h4>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100/50">
               {rescheduleMessage}

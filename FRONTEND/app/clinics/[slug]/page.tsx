@@ -400,12 +400,12 @@ export default function ClinicDetailsPage() {
 
         {/* 1. PREMIUM HERO SECTION */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-10 mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#00B5B5]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#0E7C66]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
           
           <div className="flex flex-col lg:flex-row gap-8 items-start justify-between">
             <div className="flex-1 space-y-4 text-left">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="bg-[#00B5B5]/10 text-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-[#00B5B5]/20">
+                <span className="bg-[#0E7C66]/10 text-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-[#0E7C66]/20">
                   {clinic.clinicType}
                 </span>
                 {clinic.emergencyAvailable && (
@@ -462,7 +462,7 @@ export default function ClinicDetailsPage() {
               <div className="flex flex-wrap gap-3 pt-4">
                 <button 
                   onClick={() => document.getElementById("booking-card")?.scrollIntoView({ behavior: "smooth" })}
-                  className="bg-primary text-white text-xs font-black uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-lg shadow-[#00B5B5]/15 hover:bg-[#009A9A] transition-all"
+                  className="bg-primary text-white text-xs font-black uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-lg shadow-[#0E7C66]/15 hover:bg-[#0B6A59] transition-all"
                 >
                   Book Appointment
                 </button>
@@ -547,13 +547,13 @@ export default function ClinicDetailsPage() {
             {/* 4. SERVICES */}
             <section className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 text-left space-y-6">
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2.5">
-                <span className="w-2.5 h-6 bg-[#00B5B5] rounded-full" />
+                <span className="w-2.5 h-6 bg-[#0E7C66] rounded-full" />
                 Available Services
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {clinic.services?.map((service, index) => (
                   <div key={index} className="flex items-center gap-3.5 p-4 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 transition-all group text-left">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-slate-100 group-hover:bg-[#00B5B5] group-hover:text-white transition-all">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-slate-100 group-hover:bg-[#0E7C66] group-hover:text-white transition-all">
                       <Stethoscope size={16} />
                     </div>
                     <span className="font-bold text-slate-800 text-sm">{service}</span>
@@ -605,7 +605,7 @@ export default function ClinicDetailsPage() {
                       </div>
                       <Link 
                         href={`/appointments?doctorId=${doc._id}`}
-                        className="bg-primary hover:bg-[#009A9A] text-white text-xs font-black uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-md shadow-[#00B5B5]/10"
+                        className="bg-primary hover:bg-[#0B6A59] text-white text-xs font-black uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-md shadow-[#0E7C66]/10"
                       >
                         Book Now
                       </Link>
@@ -651,7 +651,7 @@ export default function ClinicDetailsPage() {
             {/* 12. INSURANCE ACCEPTED */}
             <section className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 text-left space-y-6">
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2.5">
-                <span className="w-2.5 h-6 bg-[#00B5B5] rounded-full" />
+                <span className="w-2.5 h-6 bg-[#0E7C66] rounded-full" />
                 Cashless Insurance Partners
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -717,7 +717,7 @@ export default function ClinicDetailsPage() {
                     <div key={rev._id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/30 hover:shadow-md transition-all">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#00B5B5]/10 flex items-center justify-center text-primary font-bold overflow-hidden text-xs">
+                          <div className="w-8 h-8 rounded-full bg-[#0E7C66]/10 flex items-center justify-center text-primary font-bold overflow-hidden text-xs">
                             {rev.user?.avatar ? (
                               <img src={resolveImageUrl(rev.user.avatar) || ""} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -747,7 +747,7 @@ export default function ClinicDetailsPage() {
               </div>
               <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6">
                 <h4 className="font-black text-slate-900 mb-4 text-sm flex items-center gap-2">
-                  <AwardIcon size={16} className="text-[#00B5B5]" /> {userReview && !isEditingReview ? "Your Review" : "Write a Patient Review"}
+                  <AwardIcon size={16} className="text-[#0E7C66]" /> {userReview && !isEditingReview ? "Your Review" : "Write a Patient Review"}
                 </h4>
                 {isAuthenticated ? (
                   userReview && !isEditingReview ? (
@@ -760,7 +760,7 @@ export default function ClinicDetailsPage() {
                           <button
                             type="button"
                             onClick={() => setIsEditingReview(true)}
-                            className="text-xs font-black text-[#00B5B5] hover:underline uppercase tracking-wider"
+                            className="text-xs font-black text-[#0E7C66] hover:underline uppercase tracking-wider"
                           >
                             Edit Review
                           </button>
@@ -845,7 +845,7 @@ export default function ClinicDetailsPage() {
                     <Lock size={28} className="text-slate-400 mb-3 animate-pulse" />
                     <p className="text-base font-black text-slate-800">Access Restricted</p>
                     <p className="text-xs sm:text-sm font-semibold text-slate-500 max-w-xs mt-1 mb-4 text-center">Please log in to write an appointment review.</p>
-                    <Link href="/login" className="bg-[#00B5B5] hover:bg-[#009A9A] text-white text-xs font-black uppercase tracking-wider px-6 py-3 rounded-xl shadow-md shadow-[#00B5B5]/10 transition-all">
+                    <Link href="/login" className="bg-[#0E7C66] hover:bg-[#0B6A59] text-white text-xs font-black uppercase tracking-wider px-6 py-3 rounded-xl shadow-md shadow-[#0E7C66]/10 transition-all">
                       Sign In
                     </Link>
                   </div>
@@ -892,7 +892,7 @@ export default function ClinicDetailsPage() {
                     <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                       <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultation Fee</p>
-                        <p className="text-2xl font-black text-[#00B5B5] mt-1">
+                        <p className="text-2xl font-black text-[#0E7C66] mt-1">
                           {selectedDoc ? `₹${selectedDoc.consultationFee || '499'}` : '--'}
                         </p>
                       </div>
@@ -904,7 +904,7 @@ export default function ClinicDetailsPage() {
                     {/* Doctor Selector */}
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1.5">
-                        <Stethoscope size={13} className="text-[#00B5B5]" /> Select Doctor
+                        <Stethoscope size={13} className="text-[#0E7C66]" /> Select Doctor
                       </label>
                       <select
                         className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 transition-all outline-none font-bold text-xs"
@@ -927,7 +927,7 @@ export default function ClinicDetailsPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1.5">
-                          <Calendar size={13} className="text-[#00B5B5]" /> Select Appointment Date
+                          <Calendar size={13} className="text-[#0E7C66]" /> Select Appointment Date
                         </p>
                         <button 
                           type="button"
@@ -954,7 +954,7 @@ export default function ClinicDetailsPage() {
                             }}
                             className={`px-3 py-2.5 rounded-xl border shrink-0 text-center flex flex-col justify-between h-14 w-18 transition-all ${
                               selectedDate === item.iso
-                                ? "bg-primary border-primary text-white shadow-md shadow-[#00B5B5]/15"
+                                ? "bg-primary border-primary text-white shadow-md shadow-[#0E7C66]/15"
                                 : "border-slate-150 text-slate-600 bg-white hover:border-slate-300"
                             }`}
                           >
@@ -968,7 +968,7 @@ export default function ClinicDetailsPage() {
                     {/* Time slot selector */}
                     <div className="space-y-3">
                       <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1.5">
-                        <Clock size={13} className="text-[#00B5B5]" /> Choose Slot Timings
+                        <Clock size={13} className="text-[#0E7C66]" /> Choose Slot Timings
                       </p>
 
                       {/* Session Selector Tabs */}
@@ -1055,7 +1055,7 @@ export default function ClinicDetailsPage() {
                         }
                         window.location.href = `/appointments?doctorId=${selectedDoctorId}&date=${selectedDate}&slot=${selectedTime}&clinicId=${clinic._id}`;
                       }}
-                      className="w-full bg-[#00B5B5] hover:bg-[#009A9A] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#00B5B5]/25 hover:shadow-2xl transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-[#0E7C66] hover:bg-[#0B6A59] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#0E7C66]/25 hover:shadow-2xl transition-all flex items-center justify-center gap-2"
                     >
                       Confirm Appointment Slot <ArrowRight size={16} />
                     </button>
@@ -1075,7 +1075,7 @@ export default function ClinicDetailsPage() {
                   return (
                     <div key={day} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
                       <span>{day}</span>
-                      <span className={isWorking ? "font-black text-[#00B5B5]" : "text-slate-400 italic"}>
+                      <span className={isWorking ? "font-black text-[#0E7C66]" : "text-slate-400 italic"}>
                         {isWorking ? `${clinic.openingTime} - ${clinic.closingTime}` : "Closed"}
                       </span>
                     </div>
